@@ -5,8 +5,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        forest: {
+          deep: "#0a0f0a",
+          dark: "#1a2e1a",
+        },
+        text: {
+          primary: "#f5f5f5",
+        },
       },
     },
   },
