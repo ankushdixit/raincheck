@@ -1,0 +1,37 @@
+/*
+ * T3 Stack Global Styles
+ *
+ * This template uses minimal CSS variables for basic theming.
+ * If you want to add shadcn/ui components, you'll need to:
+ * 1. Run: npx shadcn@latest init
+ * 2. Replace this file with the generated globals.css
+ * 3. Update components.json as needed
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
