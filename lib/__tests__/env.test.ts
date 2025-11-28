@@ -20,8 +20,14 @@ describe("Environment Validation", () => {
     jest.resetModules();
   });
 
-  it("validates when DATABASE_URL is present", () => {
+  // Helper to set all required env vars
+  const setRequiredEnvVars = () => {
     process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    process.env.WEATHER_API_KEY = "test-weather-api-key";
+  };
+
+  it("validates when all required variables are present", () => {
+    setRequiredEnvVars();
     setNodeEnv("development");
 
     expect(() => {
@@ -30,7 +36,7 @@ describe("Environment Validation", () => {
   });
 
   it("exports env object with DATABASE_URL", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    setRequiredEnvVars();
     setNodeEnv("development");
     jest.resetModules();
 
@@ -38,8 +44,17 @@ describe("Environment Validation", () => {
     expect(env.DATABASE_URL).toBe("postgresql://localhost:5432/test");
   });
 
+  it("exports env object with WEATHER_API_KEY", () => {
+    setRequiredEnvVars();
+    setNodeEnv("development");
+    jest.resetModules();
+
+    const { env } = require("../env");
+    expect(env.WEATHER_API_KEY).toBe("test-weather-api-key");
+  });
+
   it("exports env object with NODE_ENV", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    setRequiredEnvVars();
     setNodeEnv("production");
     jest.resetModules();
 
@@ -48,7 +63,7 @@ describe("Environment Validation", () => {
   });
 
   it("defaults NODE_ENV to development when not set", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    setRequiredEnvVars();
     (process.env as { NODE_ENV?: string }).NODE_ENV = undefined;
     jest.resetModules();
 
@@ -57,7 +72,7 @@ describe("Environment Validation", () => {
   });
 
   it("accepts development NODE_ENV", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    setRequiredEnvVars();
     setNodeEnv("development");
     jest.resetModules();
 
@@ -67,7 +82,7 @@ describe("Environment Validation", () => {
   });
 
   it("accepts production NODE_ENV", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    setRequiredEnvVars();
     setNodeEnv("production");
     jest.resetModules();
 
@@ -77,7 +92,7 @@ describe("Environment Validation", () => {
   });
 
   it("accepts test NODE_ENV", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    setRequiredEnvVars();
     setNodeEnv("test");
     jest.resetModules();
 
@@ -97,6 +112,7 @@ describe("Environment Validation", () => {
 
     validUrls.forEach((url) => {
       process.env.DATABASE_URL = url;
+      process.env.WEATHER_API_KEY = "test-api-key";
       setNodeEnv("development");
       jest.resetModules();
 
@@ -108,6 +124,7 @@ describe("Environment Validation", () => {
 
   it("throws error when DATABASE_URL is missing", () => {
     delete process.env.DATABASE_URL;
+    process.env.WEATHER_API_KEY = "test-api-key";
     setNodeEnv("development");
 
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
@@ -123,6 +140,7 @@ describe("Environment Validation", () => {
 
   it("throws error when DATABASE_URL is empty string", () => {
     process.env.DATABASE_URL = "";
+    process.env.WEATHER_API_KEY = "test-api-key";
     setNodeEnv("development");
 
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
@@ -138,6 +156,39 @@ describe("Environment Validation", () => {
 
   it("throws error when DATABASE_URL is not a valid URL", () => {
     process.env.DATABASE_URL = "not-a-url";
+    process.env.WEATHER_API_KEY = "test-api-key";
+    setNodeEnv("development");
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+    jest.resetModules();
+
+    expect(() => {
+      require("../env");
+    }).toThrow("Invalid environment variables");
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("throws error when WEATHER_API_KEY is missing", () => {
+    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    delete process.env.WEATHER_API_KEY;
+    setNodeEnv("development");
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+    jest.resetModules();
+
+    expect(() => {
+      require("../env");
+    }).toThrow("Invalid environment variables");
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("throws error when WEATHER_API_KEY is empty string", () => {
+    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
+    process.env.WEATHER_API_KEY = "";
     setNodeEnv("development");
 
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
@@ -153,6 +204,7 @@ describe("Environment Validation", () => {
 
   it("logs error details when validation fails", () => {
     delete process.env.DATABASE_URL;
+    delete process.env.WEATHER_API_KEY;
     setNodeEnv("development");
 
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();

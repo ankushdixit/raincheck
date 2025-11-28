@@ -77,6 +77,7 @@ jobs:
       - name: Run integration tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
         run: npm test
 
   e2e-tests:
