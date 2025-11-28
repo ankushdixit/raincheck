@@ -19,6 +19,9 @@ const envSchema = z.object({
 
   // Node Environment
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+
+  // Weather API
+  WEATHER_API_KEY: z.string().min(1, "WEATHER_API_KEY is required"),
 });
 
 // Validate environment variables

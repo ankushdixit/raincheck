@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Composite unique constraint on WeatherCache (location, datetime) to prevent duplicates
 - Index on WeatherCache expiresAt for efficient cache cleanup queries
 - Integration tests for database seed script verification
+- Weather API client (`lib/weather-client.ts`) with WeatherAPI.com integration
+- Rate limiting (50 calls/day safety limit) and retry logic (3 retries with exponential backoff)
+- WeatherData type and WeatherAPIError class for type-safe weather handling
+- WEATHER_API_KEY environment variable validation
 
 ### Changed
 
