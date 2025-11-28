@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RainCheck homepage with dark forest theme and trail background image
 - Custom color palette (forest-deep, forest-dark, text-primary) in Tailwind config
 - App metadata with RainCheck branding and description
+- Health check tRPC endpoint (`health.check`) with database connectivity status
 
 ### Changed
 
