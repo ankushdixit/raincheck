@@ -30,13 +30,9 @@ describeFn("Database Seed", () => {
       });
 
       expect(userSettings).not.toBeNull();
-      expect(userSettings?.raceName).toBe(
-        "Life Style Sports Fastlane Summer Edition 2026"
-      );
+      expect(userSettings?.raceName).toBe("Life Style Sports Fastlane Summer Edition 2026");
       expect(userSettings?.targetTime).toBe("2:00:00");
-      expect(userSettings?.raceDate).toEqual(
-        new Date("2026-05-17T10:00:00.000Z")
-      );
+      expect(userSettings?.raceDate).toEqual(new Date("2026-05-17T10:00:00.000Z"));
     });
 
     it("follows singleton pattern with known ID", async () => {
