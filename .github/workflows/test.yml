@@ -69,10 +69,15 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
         run: npx prisma migrate deploy
 
+      - name: Seed database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+        run: npx prisma db seed
+
       - name: Run integration tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-        run: npm run test:integration --if-present
+        run: npm test
 
   e2e-tests:
     runs-on: ubuntu-latest
