@@ -18,3 +18,25 @@ model UserSettings {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model WeatherCache {
+  id            String   @id @default(cuid())
+  location      String   // Location name, e.g., "Balbriggan, IE"
+  latitude      Float
+  longitude     Float
+  datetime      DateTime // Forecast timestamp
+  condition     String   // Weather condition, e.g., "Clear", "Light Rain", "Heavy Snow"
+  description   String   // Detailed weather description
+  temperature   Float    // Temperature in Celsius
+  feelsLike     Float    // Feels-like temperature in Celsius
+  precipitation Float    // Precipitation probability 0-100
+  humidity      Int      // Humidity percentage 0-100
+  windSpeed     Float    // Wind speed in km/h
+  windDirection Int      // Wind direction in degrees 0-360
+  cachedAt      DateTime @default(now())
+  expiresAt     DateTime // Cache expiry time (TTL: 1 hour)
+
+  @@unique([location, datetime])
+  @@index([location, datetime])
+  @@index([expiresAt])
+}

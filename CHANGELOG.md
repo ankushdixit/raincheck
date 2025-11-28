@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - App metadata with RainCheck branding and description
 - Health check tRPC endpoint (`health.check`) with database connectivity status
 - CI/CD pipeline with GitHub Actions (Tests, Build, Quality Check, Security, Deploy workflows)
+- WeatherCache model for caching weather API responses with 1-hour TTL
+- Composite unique constraint on WeatherCache (location, datetime) to prevent duplicates
+- Index on WeatherCache expiresAt for efficient cache cleanup queries
+- Integration tests for database seed script verification
 
 ### Changed
 
