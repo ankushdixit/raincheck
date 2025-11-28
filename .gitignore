@@ -58,3 +58,4 @@ ehthumbs.db         # Windows
 Desktop.ini         # Windows
 $RECYCLE.BIN/       # Windows
 *~                  # Linux backup files
+.env
