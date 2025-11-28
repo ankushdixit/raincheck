@@ -2,31 +2,21 @@ import { render, screen } from "@testing-library/react";
 import Home from "../page";
 
 describe("Home Page", () => {
-  it("renders the main heading", () => {
+  it("renders the RainCheck title", () => {
     render(<Home />);
-    expect(screen.getByText(/Welcome to/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/T3/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("RainCheck")).toBeInTheDocument();
   });
 
-  it("displays the getting started message", () => {
+  it("displays the subtitle", () => {
     render(<Home />);
-    expect(screen.getByText(/Your T3 Stack application is ready/i)).toBeInTheDocument();
+    expect(screen.getByText("Weather-aware half-marathon training")).toBeInTheDocument();
   });
 
-  it("shows guidance about ARCHITECTURE.md", () => {
+  it("renders heading as h1", () => {
     render(<Home />);
-    expect(screen.getByText(/Read ARCHITECTURE.md/i)).toBeInTheDocument();
-  });
-
-  it("shows guidance about PRD", () => {
-    render(<Home />);
-    expect(screen.getByText(/Create your PRD/i)).toBeInTheDocument();
-  });
-
-  it("has gradient background styling", () => {
-    const { container } = render(<Home />);
-    const main = container.querySelector("main");
-    expect(main).toHaveClass("bg-gradient-to-b");
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toBeInTheDocument();
+    expect(heading).toHaveTextContent("RainCheck");
   });
 
   it("has centered layout", () => {
@@ -38,10 +28,10 @@ describe("Home Page", () => {
     expect(main).toHaveClass("justify-center");
   });
 
-  it("renders heading as h1", () => {
-    render(<Home />);
-    const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toBeInTheDocument();
+  it("has background image style", () => {
+    const { container } = render(<Home />);
+    const main = container.querySelector("main");
+    expect(main).toHaveStyle({ backgroundImage: expect.stringContaining("default-trail.webp") });
   });
 
   it("renders without errors", () => {

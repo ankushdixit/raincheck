@@ -1,15 +1,18 @@
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-        <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-          Welcome to <span className="text-[hsl(280,100%,70%)]">T3</span>
+    <main
+      className="relative flex min-h-screen flex-col items-center justify-center bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(rgba(10, 15, 10, 0.6), rgba(10, 15, 10, 0.6)), url('/images/trails/default-trail.webp')`,
+      }}
+    >
+      <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+        <h1 className="text-4xl font-bold tracking-tight text-text-primary sm:text-[4rem]">
+          RainCheck
         </h1>
-        <p className="text-xl text-white/80">Your T3 Stack application is ready. Start building!</p>
-        <div className="text-center text-white/60">
-          <p>Read ARCHITECTURE.md to understand the stack patterns.</p>
-          <p>Create your PRD at docs/PRD.md to define your features.</p>
-        </div>
+        <p className="mt-4 text-lg text-text-primary/80 sm:text-xl">
+          Weather-aware half-marathon training
+        </p>
       </div>
     </main>
   );
