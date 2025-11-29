@@ -1,7 +1,14 @@
 /**
  * Tests for tRPC configuration
  */
-import { createTRPCContext, createTRPCRouter, publicProcedure, createCallerFactory } from "../trpc";
+import {
+  createTRPCContext,
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+  createCallerFactory,
+} from "../trpc";
+import { TRPCError } from "@trpc/server";
 
 // Mock superjson to avoid ES module issues in Jest
 jest.mock("superjson", () => ({
@@ -21,7 +28,18 @@ jest.mock("@/server/db", () => ({
   },
 }));
 
+// Mock auth - default to no session
+const mockAuth = jest.fn();
+jest.mock("@/lib/auth", () => ({
+  auth: () => mockAuth(),
+}));
+
 describe("tRPC Configuration", () => {
+  beforeEach(() => {
+    mockAuth.mockReset();
+    mockAuth.mockResolvedValue(null);
+  });
+
   describe("createTRPCContext", () => {
     it("creates context with db", async () => {
       const headers = new Headers();
@@ -47,6 +65,28 @@ describe("tRPC Configuration", () => {
       const context2 = await createTRPCContext({ headers: headers2 });
 
       expect(context1.db).toBe(context2.db);
+    });
+
+    it("includes session when authenticated", async () => {
+      const mockSession = {
+        user: { id: "owner", name: "Ankush", email: "ankush@raincheck.app" },
+        expires: new Date(Date.now() + 86400000).toISOString(),
+      };
+      mockAuth.mockResolvedValue(mockSession);
+
+      const headers = new Headers();
+      const context = await createTRPCContext({ headers });
+
+      expect(context.session).toEqual(mockSession);
+    });
+
+    it("session is null when not authenticated", async () => {
+      mockAuth.mockResolvedValue(null);
+
+      const headers = new Headers();
+      const context = await createTRPCContext({ headers });
+
+      expect(context.session).toBeNull();
     });
   });
 
@@ -154,6 +194,107 @@ describe("tRPC Configuration", () => {
       });
 
       expect(router).toBeDefined();
+    });
+  });
+
+  describe("protectedProcedure", () => {
+    it("is defined", () => {
+      expect(protectedProcedure).toBeDefined();
+    });
+
+    it("can create a query procedure", () => {
+      const procedure = protectedProcedure.query(() => "protected");
+      expect(procedure).toBeDefined();
+    });
+
+    it("can create a mutation procedure", () => {
+      const procedure = protectedProcedure.mutation(() => "protected");
+      expect(procedure).toBeDefined();
+    });
+
+    it("throws UNAUTHORIZED when no session", async () => {
+      mockAuth.mockResolvedValue(null);
+
+      const testRouter = createTRPCRouter({
+        protectedAction: protectedProcedure.mutation(() => "success"),
+      });
+
+      const createCaller = createCallerFactory(testRouter);
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+
+      await expect(caller.protectedAction()).rejects.toThrow(TRPCError);
+      await expect(caller.protectedAction()).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+        message: "You must be logged in to perform this action",
+      });
+    });
+
+    it("allows execution when session exists", async () => {
+      const mockSession = {
+        user: { id: "owner", name: "Ankush", email: "ankush@raincheck.app" },
+        expires: new Date(Date.now() + 86400000).toISOString(),
+      };
+      mockAuth.mockResolvedValue(mockSession);
+
+      const testRouter = createTRPCRouter({
+        protectedAction: protectedProcedure.mutation(() => "success"),
+      });
+
+      const createCaller = createCallerFactory(testRouter);
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+
+      const result = await caller.protectedAction();
+      expect(result).toBe("success");
+    });
+
+    it("provides session in context for protected procedures", async () => {
+      const mockSession = {
+        user: { id: "owner", name: "Ankush", email: "ankush@raincheck.app" },
+        expires: new Date(Date.now() + 86400000).toISOString(),
+      };
+      mockAuth.mockResolvedValue(mockSession);
+
+      const testRouter = createTRPCRouter({
+        getUser: protectedProcedure.query(({ ctx }) => ctx.session.user),
+      });
+
+      const createCaller = createCallerFactory(testRouter);
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+
+      const result = await caller.getUser();
+      expect(result).toEqual(mockSession.user);
+    });
+
+    it("public procedures still work without auth", async () => {
+      mockAuth.mockResolvedValue(null);
+
+      const testRouter = createTRPCRouter({
+        publicAction: publicProcedure.query(() => "public"),
+      });
+
+      const createCaller = createCallerFactory(testRouter);
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+
+      const result = await caller.publicAction();
+      expect(result).toBe("public");
+    });
+
+    it("public procedures work with auth", async () => {
+      const mockSession = {
+        user: { id: "owner", name: "Ankush", email: "ankush@raincheck.app" },
+        expires: new Date(Date.now() + 86400000).toISOString(),
+      };
+      mockAuth.mockResolvedValue(mockSession);
+
+      const testRouter = createTRPCRouter({
+        publicAction: publicProcedure.query(() => "public"),
+      });
+
+      const createCaller = createCallerFactory(testRouter);
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+
+      const result = await caller.publicAction();
+      expect(result).toBe("public");
     });
   });
 });

@@ -303,20 +303,65 @@ export default async function PostsPage() {
 }
 ```
 
-### Protected Procedures (Auth Required)
+### Public vs Protected Procedures
+
+The app uses two types of procedures:
+
+| Procedure            | Auth Required | Use Case                     |
+| -------------------- | ------------- | ---------------------------- |
+| `publicProcedure`    | No            | Read operations (queries)    |
+| `protectedProcedure` | Yes           | Write operations (mutations) |
+
+**Rule**: All queries use `publicProcedure`, all mutations use `protectedProcedure`.
 
 ```typescript
-// server/api/trpc.ts
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+// server/api/routers/example.ts
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "@/server/api/trpc";
+
+export const exampleRouter = createTRPCRouter({
+  // Public - anyone can read
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    return await ctx.db.item.findMany();
+  }),
+
+  // Protected - only authenticated users can create
+  create: protectedProcedure
+    .input(z.object({ name: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // ctx.session is guaranteed to exist here
+      return await ctx.db.item.create({ data: input });
+    }),
+});
+```
+
+**Protected Procedure Implementation** (in `server/api/trpc.ts`):
+
+```typescript
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "You must be logged in to perform this action",
+    });
   }
   return next({
     ctx: {
-      session: ctx.session,
+      ...ctx,
+      session: ctx.session, // Guaranteed non-null
     },
   });
 });
+```
+
+**Error Response** (when not authenticated):
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "You must be logged in to perform this action"
+  }
+}
 ```
 
 ## Database Workflow

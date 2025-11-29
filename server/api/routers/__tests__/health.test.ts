@@ -11,6 +11,11 @@ jest.mock("superjson", () => ({
   parse: (str: string) => JSON.parse(str),
 }));
 
+// Mock next-auth to avoid ESM issues
+jest.mock("@/lib/auth", () => ({
+  auth: jest.fn().mockResolvedValue(null),
+}));
+
 describe("Health Router", () => {
   describe("health.check", () => {
     it("returns ok status when database is connected", async () => {
@@ -21,6 +26,7 @@ describe("Health Router", () => {
       const caller = createCaller({
         db: mockDb as never,
         headers: new Headers(),
+        session: null,
       });
 
       const result = await caller.health.check();
@@ -39,6 +45,7 @@ describe("Health Router", () => {
       const caller = createCaller({
         db: mockDb as never,
         headers: new Headers(),
+        session: null,
       });
 
       const result = await caller.health.check();
@@ -56,6 +63,7 @@ describe("Health Router", () => {
       const caller = createCaller({
         db: mockDb as never,
         headers: new Headers(),
+        session: null,
       });
 
       const result = await caller.health.check();
@@ -73,6 +81,7 @@ describe("Health Router", () => {
       const caller = createCaller({
         db: mockDb as never,
         headers: new Headers(),
+        session: null,
       });
 
       const result = await caller.health.check();
