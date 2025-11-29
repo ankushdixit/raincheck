@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Runs tRPC router (`server/api/routers/runs.ts`) with full CRUD operations for training runs
+- `runs.getAll` query with optional limit and completed filter parameters
+- `runs.getById` query returning single run by ID
+- `runs.getByDateRange` query for fetching runs within a date range
+- `runs.create` mutation with Zod validation for date, distance, pace, duration, type, notes, completed
+- `runs.update` mutation with partial updates and date conflict detection
+- `runs.delete` mutation with existence check
+- `runs.markComplete` mutation for toggling run completion status
+- Duplicate date detection on create/update throwing TRPCError with CONFLICT code
+- Pace format validation (M:SS or MM:SS regex) and duration format validation
+- Public procedures for queries (portfolio visibility) and protected procedures for mutations
+- 35 comprehensive tests for runs router with 100% code coverage
 - Run model in Prisma schema for storing scheduled and completed runs
 - Historical runs seed data with 18 completed runs from Sept-Nov 2025 (based on actual training data)
 - Unique constraint on Run date field (one run per day)
