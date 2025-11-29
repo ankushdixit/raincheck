@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Login page at `/login` with password-only authentication form
+- `LoginForm` component with NextAuth signIn integration, loading states, and error handling
+- Automatic redirect for authenticated users visiting login page
+- "Back to home" link on login page for guest navigation
 - UI access control components for read-only views for unauthenticated users
 - `ProtectedAction` wrapper component for conditionally rendering protected UI elements
 - `LoginPrompt` component displaying "Log in to schedule runs" link for guests
