@@ -6,7 +6,7 @@
  * - UserSettings: Singleton record with default race configuration
  * - TrainingPlan: 24 weeks of half-marathon training (Nov 30, 2025 - May 16, 2026)
  * - WeatherPreference: Weather tolerance thresholds for each run type
- * - Run: 18 historical runs from Sept-Nov 2025 (pre-training data)
+ * - Run: 22 historical runs from Sept-Nov 2025 (pre-training data)
  *
  * Training Plan Structure (weeks run Sun-Sat):
  * - Long run on Sundays
@@ -19,7 +19,7 @@
  * - PEAK_TAPER (Weeks 22-24): Taper for race, 16km → 8km long runs
  *
  * Historical Runs (Sept-Nov 2025):
- * - 18 completed runs showing fitness progression
+ * - 22 completed runs showing fitness progression
  * - Mix of LONG_RUN, EASY_RUN, TEMPO_RUN, RECOVERY_RUN types
  * - Distances from 5km to 12km
  * - Paces from 5:30 to 7:00 per km
@@ -152,10 +152,10 @@ const trainingPlanData: Array<{
 ];
 
 /**
- * Historical runs data (18 runs from Sept-Nov 2025)
+ * Historical runs data (22 runs from Sept-Nov 2025)
  * Based on actual training data from runs.csv
  * Mix of LONG_RUN and EASY_RUN types
- * Distances: 4.51km to 10.82km
+ * Distances: 4.51km to 11.48km
  * Paces: 6:17 to 6:53 per km
  */
 const historicalRunsData: Array<{
@@ -261,7 +261,7 @@ const historicalRunsData: Array<{
     type: RunType.LONG_RUN,
   },
 
-  // November 2025 runs (5 runs - leading into training plan)
+  // November 2025 runs (9 runs - leading into training plan)
   {
     date: new Date("2025-11-03T08:00:00.000Z"),
     distance: 5.7,
@@ -296,6 +296,34 @@ const historicalRunsData: Array<{
     distance: 5.72,
     pace: "6:36",
     duration: "37:46",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-11-16T08:00:00.000Z"),
+    distance: 10.82,
+    pace: "6:42",
+    duration: "72:25",
+    type: RunType.LONG_RUN,
+  },
+  {
+    date: new Date("2025-11-20T08:00:00.000Z"),
+    distance: 6.01,
+    pace: "6:37",
+    duration: "39:42",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-11-23T08:00:00.000Z"),
+    distance: 11.48,
+    pace: "6:45",
+    duration: "77:32",
+    type: RunType.LONG_RUN,
+  },
+  {
+    date: new Date("2025-11-26T08:00:00.000Z"),
+    distance: 6.15,
+    pace: "6:39",
+    duration: "40:53",
     type: RunType.EASY_RUN,
   },
 ];

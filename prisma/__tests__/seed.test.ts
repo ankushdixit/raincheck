@@ -348,9 +348,9 @@ describeFn("Database Seed", () => {
   });
 
   describe("Run (Historical Runs)", () => {
-    it("creates exactly 18 historical runs", async () => {
+    it("creates exactly 22 historical runs", async () => {
       const count = await db.run.count();
-      expect(count).toBe(18);
+      expect(count).toBe(22);
     });
 
     it("all historical runs are marked as completed", async () => {
@@ -367,7 +367,7 @@ describeFn("Database Seed", () => {
 
       const dates = runs.map((r) => r.date.toISOString());
       const uniqueDates = new Set(dates);
-      expect(uniqueDates.size).toBe(18);
+      expect(uniqueDates.size).toBe(22);
     });
 
     it("has runs spanning Sept to Nov 2025", async () => {
