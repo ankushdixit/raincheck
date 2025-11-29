@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { Run, RunType } from "@prisma/client";
 import { api } from "@/lib/api";
 
@@ -68,6 +68,13 @@ function formatDateKey(date: Date): string {
  */
 function isSameDay(date1: Date, date2: Date): boolean {
   return formatDateKey(date1) === formatDateKey(date2);
+}
+
+/**
+ * Check if two dates are in the same month and year
+ */
+function isSameMonth(date1: Date, date2: Date): boolean {
+  return date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth();
 }
 
 /**
@@ -234,24 +241,46 @@ function EmptyState() {
 /**
  * Training Calendar Component
  *
- * Displays the current month with scheduled runs color-coded by type.
+ * Displays a monthly calendar with scheduled runs color-coded by type.
+ * Supports navigation between months with Previous/Next buttons and a Today button.
  */
 export function TrainingCalendar() {
   const today = new Date();
-  const monthStart = getMonthStart(today);
-  const monthEnd = getMonthEnd(today);
 
-  // Fetch runs for the current month
+  // Track the currently displayed month (defaults to current month)
+  const [displayedMonth, setDisplayedMonth] = useState<Date>(() => new Date(today));
+
+  // Navigation handlers
+  const goToPreviousMonth = useCallback(() => {
+    setDisplayedMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1));
+  }, []);
+
+  const goToNextMonth = useCallback(() => {
+    setDisplayedMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1));
+  }, []);
+
+  const goToToday = useCallback(() => {
+    setDisplayedMonth(new Date());
+  }, []);
+
+  // Calculate date range for the displayed month
+  const monthStart = useMemo(() => getMonthStart(displayedMonth), [displayedMonth]);
+  const monthEnd = useMemo(() => getMonthEnd(displayedMonth), [displayedMonth]);
+
+  // Check if currently viewing the current month
+  const isCurrentMonth = isSameMonth(displayedMonth, today);
+
+  // Fetch runs for the displayed month
   const { data: runs, isLoading } = api.runs.getByDateRange.useQuery({
     startDate: monthStart,
     endDate: monthEnd,
   });
 
-  // Generate the calendar grid
-  const grid = useMemo(() => generateMonthGrid(today), []);
+  // Generate the calendar grid for the displayed month
+  const grid = useMemo(() => generateMonthGrid(displayedMonth), [displayedMonth]);
 
-  // Format month name
-  const monthName = today.toLocaleDateString("en-US", {
+  // Format month name for the displayed month
+  const monthName = displayedMonth.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
@@ -270,11 +299,66 @@ export function TrainingCalendar() {
       style={{ backgroundColor: "rgba(10,15,10,0.5)" }}
       data-testid="training-calendar"
     >
-      {/* Month header */}
-      <div className="p-4 flex items-center justify-center">
-        <h3 className="text-lg font-semibold text-white" data-testid="calendar-month">
-          {monthName}
-        </h3>
+      {/* Month header with navigation */}
+      <div className="p-4 flex items-center justify-between">
+        {/* Previous month button */}
+        <button
+          onClick={goToPreviousMonth}
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+          aria-label="Previous month"
+          data-testid="calendar-prev"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+
+        {/* Month name and Today button */}
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-white" data-testid="calendar-month">
+            {monthName}
+          </h3>
+          {!isCurrentMonth && (
+            <button
+              onClick={goToToday}
+              className="px-2 py-1 text-xs rounded bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+              aria-label="Go to current month"
+              data-testid="calendar-today"
+            >
+              Today
+            </button>
+          )}
+        </div>
+
+        {/* Next month button */}
+        <button
+          onClick={goToNextMonth}
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+          aria-label="Next month"
+          data-testid="calendar-next"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
       </div>
 
       {/* Day headers */}

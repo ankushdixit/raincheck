@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Calendar navigation with Previous/Next month buttons and Today button
+- Month navigation state management using React useState hook
+- Dynamic date range queries that update when navigating between months
+- Today button appears only when viewing a different month, returns to current month on click
+- Navigation wraps correctly between years (December to January, January to December)
+- 10 new navigation tests for TrainingCalendar component with 100% coverage
 - Training calendar component displaying scheduled runs on a monthly grid view
 - Run type color coding: Long (blue), Easy (green), Tempo (orange), Intervals (purple), Recovery (gray), Race (gold)
 - Run badges showing abbreviated type and distance (e.g., "Long 16km")
