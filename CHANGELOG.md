@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Run suggestions UI components (`RunSuggestionCard`, `RunSuggestions`) with glass-effect styling matching weather cards
+- Info icon tooltip with reasoning displayed via React Portal for proper z-index handling
+- Time range display for each suggestion showing optimal running windows
+- Hybrid weather fetching combining WeatherAPI.com (days 1-5) and Open-Meteo (days 6-16)
+- `fetchFromOpenMeteo()` function for free extended 16-day forecasts
+- `fetchHybridForecast()` function merging paid and free API data
+- WMO weather code mapping for Open-Meteo condition text conversion
+- Open-Meteo hourly data parsing with temperature, precipitation, wind, humidity
+- Weekend-only long run scheduling with 2-day rest enforcement
+- Easy run scheduling with hourly weather scoring and 1-day rest enforcement
+- Time window constraints: 9am-5pm for easy runs, 9am-2pm for long runs (Ireland winter daylight)
 - Planning tRPC endpoint (`planning.generateSuggestions`) for frontend access to run suggestions
 - Cache-first weather fetching in planning router for performance optimization
 - Input validation for days (1-14) and optional location parameters
