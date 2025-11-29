@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Planning tRPC endpoint (`planning.generateSuggestions`) for frontend access to run suggestions
+- Cache-first weather fetching in planning router for performance optimization
+- Input validation for days (1-14) and optional location parameters
+- Graceful degradation returning empty array when no training plan exists
+- Comprehensive test suite with 21 tests for the planning router
 - Planning algorithm core for generating optimal run suggestions based on weather and training plan
 - `generateSuggestions()` function implementing multi-stage scheduling algorithm
 - Weather scoring integration using `lib/weather-preferences.ts` functions
