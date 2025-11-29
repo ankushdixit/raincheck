@@ -31,7 +31,7 @@ describe("LoginForm", () => {
     it("renders password field", () => {
       render(<LoginForm />);
 
-      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/enter password/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/enter password/i)).toBeInTheDocument();
     });
 
@@ -52,7 +52,7 @@ describe("LoginForm", () => {
     it("password field has correct attributes", () => {
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       expect(passwordInput).toHaveAttribute("type", "password");
       expect(passwordInput).toHaveAttribute("autocomplete", "current-password");
       expect(passwordInput).toBeRequired();
@@ -64,7 +64,7 @@ describe("LoginForm", () => {
       const user = userEvent.setup();
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       await user.type(passwordInput, "testpassword");
 
       expect(passwordInput).toHaveValue("testpassword");
@@ -75,7 +75,7 @@ describe("LoginForm", () => {
       mockSignIn.mockResolvedValue({ error: null });
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "correctpassword");
@@ -92,7 +92,7 @@ describe("LoginForm", () => {
       mockSignIn.mockResolvedValue({ error: null });
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       await user.type(passwordInput, "testpassword{enter}");
 
       expect(mockSignIn).toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe("LoginForm", () => {
       mockSignIn.mockImplementation(() => new Promise(() => {}));
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "testpassword");
@@ -120,7 +120,7 @@ describe("LoginForm", () => {
       mockSignIn.mockImplementation(() => new Promise(() => {}));
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "testpassword");
@@ -137,7 +137,7 @@ describe("LoginForm", () => {
       mockSignIn.mockResolvedValue({ error: "CredentialsSignin" });
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "wrongpassword");
@@ -153,7 +153,7 @@ describe("LoginForm", () => {
       mockSignIn.mockResolvedValue({ error: "CredentialsSignin" });
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "wrongpassword");
@@ -170,7 +170,7 @@ describe("LoginForm", () => {
       mockSignIn.mockRejectedValue(new Error("Network error"));
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "testpassword");
@@ -188,7 +188,7 @@ describe("LoginForm", () => {
         .mockImplementation(() => new Promise(() => {}));
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       // First submission - error
@@ -218,7 +218,7 @@ describe("LoginForm", () => {
       mockSignIn.mockResolvedValue({ error: null });
       render(<LoginForm />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "correctpassword");
@@ -235,7 +235,7 @@ describe("LoginForm", () => {
       mockSignIn.mockResolvedValue({ error: null });
       render(<LoginForm callbackUrl="/dashboard" />);
 
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/enter password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
       await user.type(passwordInput, "correctpassword");

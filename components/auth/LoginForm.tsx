@@ -56,27 +56,42 @@ export function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6">
-      <div className="space-y-2">
-        <label htmlFor="password" className="block text-sm font-medium text-text-primary/80">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isLoading}
-          className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-text-primary placeholder-text-primary/50 backdrop-blur-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50"
-          placeholder="Enter password"
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="w-full">
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        required
+        aria-label="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        disabled={isLoading}
+        className="box-border w-full text-text-primary placeholder-text-primary/40 disabled:opacity-50 transition-all"
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.08)",
+          padding: "14px 16px",
+          borderRadius: "8px",
+          border: "2px solid transparent",
+          outline: "none",
+          caretColor: "white",
+        }}
+        onFocus={(e) => (e.target.style.borderColor = "rgba(255, 255, 255, 0.4)")}
+        onBlur={(e) => (e.target.style.borderColor = "transparent")}
+        placeholder="Enter password"
+      />
 
       {error && (
-        <div role="alert" className="rounded-lg bg-red-500/20 px-4 py-3 text-sm text-red-200">
+        <div
+          role="alert"
+          className="text-sm text-red-200"
+          style={{
+            backgroundColor: "rgba(239, 68, 68, 0.15)",
+            padding: "14px 16px",
+            borderRadius: "8px",
+            marginTop: "16px",
+          }}
+        >
           {error}
         </div>
       )}
@@ -84,15 +99,26 @@ export function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full rounded-lg bg-white/20 px-4 py-3 font-medium text-text-primary backdrop-blur-sm transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="box-border w-full font-semibold text-white transition-all hover:opacity-90 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        style={{
+          backgroundColor: "rgba(5, 150, 105, 0.8)",
+          padding: "14px 16px",
+          borderRadius: "8px",
+          border: "none",
+          marginTop: "16px",
+        }}
       >
         {isLoading ? "Signing in..." : "Sign in"}
       </button>
 
-      <div className="text-center">
+      <div className="text-center" style={{ marginTop: "16px" }}>
         <Link
           href="/"
-          className="text-sm text-text-primary/60 hover:text-text-primary/80 transition-colors"
+          style={{
+            color: "rgba(245, 245, 245, 0.6)",
+            fontSize: "14px",
+            textDecoration: "none",
+          }}
         >
           Back to home
         </Link>
