@@ -1,3 +1,5 @@
+import { CurrentWeather } from "@/components/weather";
+
 export default function Home() {
   return (
     <main
@@ -13,6 +15,10 @@ export default function Home() {
         <p className="mt-4 text-lg text-text-primary/80 sm:text-xl">
           Weather-aware half-marathon training
         </p>
+
+        <div className="mt-8">
+          <CurrentWeather />
+        </div>
       </div>
     </main>
   );

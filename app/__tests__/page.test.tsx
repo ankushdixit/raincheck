@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import Home from "../page";
 
+// Mock the CurrentWeather component since it uses tRPC hooks
+jest.mock("@/components/weather", () => ({
+  CurrentWeather: () => <div data-testid="current-weather-mock">Weather Component</div>,
+}));
+
 describe("Home Page", () => {
   it("renders the RainCheck title", () => {
     render(<Home />);
@@ -36,5 +41,10 @@ describe("Home Page", () => {
 
   it("renders without errors", () => {
     expect(() => render(<Home />)).not.toThrow();
+  });
+
+  it("renders the CurrentWeather component", () => {
+    render(<Home />);
+    expect(screen.getByTestId("current-weather-mock")).toBeInTheDocument();
   });
 });

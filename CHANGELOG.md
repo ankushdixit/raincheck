@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cache hit/miss logic with 1-hour TTL for weather data
 - Default location fallback to UserSettings when not provided
 - Error mapping from WeatherAPIError to TRPCError codes
+- CurrentWeather component (`components/weather/CurrentWeather.tsx`) with loading/error/success states
+- WeatherIcon component (`components/weather/WeatherIcon.tsx`) mapping conditions to emoji icons
+- Homepage integration displaying current weather data
+- Skeleton loading animation for weather card
+- Error state with retry functionality
 
 ### Changed
 
