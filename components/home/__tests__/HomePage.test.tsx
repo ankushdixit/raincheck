@@ -1,30 +1,32 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { HomePage } from "../HomePage";
 
-// Mock the tRPC api
-jest.mock("@/lib/api", () => ({
-  api: {
-    weather: {
-      getCurrentWeather: {
-        useQuery: jest.fn(() => ({
-          data: { condition: "Sunny" },
-          isLoading: false,
-          isError: false,
-          refetch: jest.fn(),
-          isFetching: false,
-        })),
-      },
-    },
-  },
-}));
+/** Selected day type for callback */
+interface SelectedDay {
+  condition: string;
+  datetime: Date;
+}
+
+// Store the onDaySelect callback so we can trigger it in tests
+// eslint-disable-next-line no-unused-vars
+let capturedOnDaySelect: ((day: SelectedDay) => void) | undefined;
 
 // Mock the weather components
 jest.mock("@/components/weather", () => ({
   CurrentWeather: () => <div data-testid="current-weather-mock">Weather Component</div>,
-  WeatherForecast: () => <div data-testid="weather-forecast-mock">Forecast Component</div>,
+  // eslint-disable-next-line no-unused-vars
+  WeatherForecast: ({ onDaySelect }: { onDaySelect?: (day: SelectedDay) => void }) => {
+    // Capture the callback for testing
+    capturedOnDaySelect = onDaySelect;
+    return <div data-testid="weather-forecast-mock">Forecast Component</div>;
+  },
 }));
 
 describe("HomePage", () => {
+  beforeEach(() => {
+    capturedOnDaySelect = undefined;
+  });
+
   it("renders the RainCheck title", () => {
     render(<HomePage />);
     expect(screen.getByText("RainCheck")).toBeInTheDocument();
@@ -47,13 +49,6 @@ describe("HomePage", () => {
     expect(screen.getByTestId("trail-background")).toBeInTheDocument();
   });
 
-  it("applies weather-reactive background for sunny condition", () => {
-    render(<HomePage />);
-    const main = screen.getByTestId("trail-background");
-    expect(main.style.backgroundImage).toContain("sunny-trail.webp");
-    expect(main.style.backgroundImage).toContain("linear-gradient");
-  });
-
   it("renders the CurrentWeather component", () => {
     render(<HomePage />);
     expect(screen.getByTestId("current-weather-mock")).toBeInTheDocument();
@@ -64,17 +59,7 @@ describe("HomePage", () => {
     expect(screen.getByTestId("weather-forecast-mock")).toBeInTheDocument();
   });
 
-  it("uses default background when weather data is not loaded", () => {
-    // Override the mock to return no data
-    const apiMock = require("@/lib/api").api;
-    apiMock.weather.getCurrentWeather.useQuery.mockReturnValueOnce({
-      data: undefined,
-      isLoading: true,
-      isError: false,
-      refetch: jest.fn(),
-      isFetching: false,
-    });
-
+  it("uses default background when no day is selected", () => {
     render(<HomePage />);
     const main = screen.getByTestId("trail-background");
     expect(main.style.backgroundImage).toContain("default-trail.webp");
@@ -89,10 +74,74 @@ describe("HomePage", () => {
     expect(main).toHaveClass("justify-center");
   });
 
-  it("has transition classes for smooth animation", () => {
-    render(<HomePage />);
-    const main = screen.getByTestId("trail-background");
-    expect(main).toHaveClass("duration-[2000ms]");
-    expect(main).toHaveClass("transition-all");
+  describe("background updates based on selected day", () => {
+    it("updates background when sunny day is selected", () => {
+      render(<HomePage />);
+
+      // Simulate forecast calling onDaySelect with sunny condition
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Sunny", datetime: new Date() });
+      });
+
+      const main = screen.getByTestId("trail-background");
+      expect(main.style.backgroundImage).toContain("sunny-trail.webp");
+    });
+
+    it("updates background when rainy day is selected", () => {
+      render(<HomePage />);
+
+      // Simulate forecast calling onDaySelect with rainy condition
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Light rain", datetime: new Date() });
+      });
+
+      const main = screen.getByTestId("trail-background");
+      expect(main.style.backgroundImage).toContain("rainy-trail.webp");
+    });
+
+    it("updates background when cloudy day is selected", () => {
+      render(<HomePage />);
+
+      // Simulate forecast calling onDaySelect with cloudy condition
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Overcast", datetime: new Date() });
+      });
+
+      const main = screen.getByTestId("trail-background");
+      expect(main.style.backgroundImage).toContain("cloudy-trail.webp");
+    });
+
+    it("updates background when snowy day is selected", () => {
+      render(<HomePage />);
+
+      // Simulate forecast calling onDaySelect with snowy condition
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Snow", datetime: new Date() });
+      });
+
+      const main = screen.getByTestId("trail-background");
+      expect(main.style.backgroundImage).toContain("snowy-trail.webp");
+    });
+
+    it("updates background with correct tint for each condition", () => {
+      render(<HomePage />);
+
+      // Select sunny day
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Sunny", datetime: new Date() });
+      });
+
+      const main = screen.getByTestId("trail-background");
+      // Sunny tint is golden rgba(255, 183, 77, 0.15)
+      expect(main.style.backgroundImage).toContain("linear-gradient");
+      expect(main.style.backgroundImage).toContain("rgba(255, 183, 77, 0.15)");
+    });
+
+    it("passes onDaySelect callback to WeatherForecast", () => {
+      render(<HomePage />);
+
+      // The callback should have been captured
+      expect(capturedOnDaySelect).toBeDefined();
+    });
   });
 });

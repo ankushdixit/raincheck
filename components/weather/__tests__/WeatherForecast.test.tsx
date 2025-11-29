@@ -161,13 +161,46 @@ describe("WeatherForecast", () => {
     });
 
     it("calls onDaySelect callback when card is clicked", () => {
+      const mockForecastData = createMockForecastData();
+      mockUseQuery.mockReturnValue({
+        data: mockForecastData,
+        isLoading: false,
+        isError: false,
+        refetch: mockRefetch,
+        isFetching: false,
+      });
+
       const onDaySelect = jest.fn();
       render(<WeatherForecast onDaySelect={onDaySelect} />);
 
       const cards = screen.getAllByTestId("weather-day-card");
       fireEvent.click(cards[3]!);
 
-      expect(onDaySelect).toHaveBeenCalledWith(3);
+      // Should be called with the weather data for the 4th day
+      expect(onDaySelect).toHaveBeenCalledWith({
+        condition: mockForecastData[3].condition,
+        datetime: mockForecastData[3].datetime,
+      });
+    });
+
+    it("calls onDaySelect with first day data on initial load", () => {
+      const mockForecastData = createMockForecastData();
+      mockUseQuery.mockReturnValue({
+        data: mockForecastData,
+        isLoading: false,
+        isError: false,
+        refetch: mockRefetch,
+        isFetching: false,
+      });
+
+      const onDaySelect = jest.fn();
+      render(<WeatherForecast onDaySelect={onDaySelect} />);
+
+      // Should be called with the first day's data on initial load
+      expect(onDaySelect).toHaveBeenCalledWith({
+        condition: mockForecastData[0].condition,
+        datetime: mockForecastData[0].datetime,
+      });
     });
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { WeatherDayCard } from "./WeatherDayCard";
 
@@ -78,8 +78,9 @@ function ForecastEmpty() {
 }
 
 interface WeatherForecastProps {
+  /** Callback when a day is selected, receives the weather data for that day */
   // eslint-disable-next-line no-unused-vars
-  onDaySelect?: (index: number) => void;
+  onDaySelect?: (day: { condition: string; datetime: Date }) => void;
 }
 
 /**
@@ -100,8 +101,17 @@ export function WeatherForecast({ onDaySelect }: WeatherForecastProps) {
 
   const handleSelect = (index: number) => {
     setSelectedIndex(index);
-    onDaySelect?.(index);
+    if (forecast && forecast[index]) {
+      onDaySelect?.({ condition: forecast[index].condition, datetime: forecast[index].datetime });
+    }
   };
+
+  // Notify parent of initial selection when forecast loads
+  useEffect(() => {
+    if (forecast && forecast.length > 0 && onDaySelect) {
+      onDaySelect({ condition: forecast[0].condition, datetime: forecast[0].datetime });
+    }
+  }, [forecast, onDaySelect]);
 
   // Show skeleton during initial load
   if (isLoading) {
