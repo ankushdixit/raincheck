@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Skeleton loading animation for weather card
 - Error state with retry functionality
 - Weather forecast tRPC endpoint (`weather.getForecast`) for 7-day weather forecasts
+- Weather-reactive trail background that changes based on current weather condition
+- Trail background utility functions (`getTrailImage`, `getTintColor`) for condition-to-asset mapping
+- Support for sunny, rainy, cloudy, foggy, snowy, and default trail images with matching tint overlays
+- Smooth 2-second CSS transitions when weather condition changes
 - `fetchForecast` function in weather client for multi-day forecast API calls
 - Cache-first strategy for forecast data with per-day caching and 1-hour TTL
 - Partial cache hit handling (fetches only missing days from API)
