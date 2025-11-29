@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Training calendar component displaying scheduled runs on a monthly grid view
+- Run type color coding: Long (blue), Easy (green), Tempo (orange), Intervals (purple), Recovery (gray), Race (gold)
+- Run badges showing abbreviated type and distance (e.g., "Long 16km")
+- Today's date highlighting with amber text and background
+- Calendar loading skeleton with animated placeholders
+- Empty state with helpful message when no runs scheduled
+- Legend showing all run type colors when runs are present
+- Integration with `runs.getByDateRange` tRPC query for fetching monthly runs
+- Training Calendar section on homepage below Run Suggestions
+- 32 comprehensive tests for TrainingCalendar component with 100% coverage
+- 4 additional historical runs to seed data (Nov 16, 20, 23, 26) from runs.csv
 - "Accept & Schedule" button on RunSuggestionCard for converting suggestions to scheduled runs
 - Accept button state management (idle, loading, success, error) with visual feedback
 - Loading spinner animation during run creation

@@ -31,6 +31,11 @@ jest.mock("@/components/suggestions", () => ({
   ),
 }));
 
+// Mock the calendar component
+jest.mock("@/components/calendar", () => ({
+  TrainingCalendar: () => <div data-testid="training-calendar-mock">Training Calendar</div>,
+}));
+
 // Mock the useIsAuthenticated hook
 jest.mock("@/hooks", () => ({
   useIsAuthenticated: () => ({
@@ -89,7 +94,19 @@ describe("HomePage", () => {
 
   it("renders the Suggested Runs heading", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Suggested Runs");
+    expect(screen.getByText("Suggested Runs")).toBeInTheDocument();
+  });
+
+  it("renders the Training Calendar heading", () => {
+    render(<HomePage />);
+    const headings = screen.getAllByRole("heading", { level: 2 });
+    const calendarHeading = headings.find((h) => h.textContent === "Training Calendar");
+    expect(calendarHeading).toBeInTheDocument();
+  });
+
+  it("renders the TrainingCalendar component", () => {
+    render(<HomePage />);
+    expect(screen.getByTestId("training-calendar-mock")).toBeInTheDocument();
   });
 
   it("renders two background layers for cross-fade transitions", () => {
