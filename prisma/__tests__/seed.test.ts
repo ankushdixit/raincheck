@@ -348,42 +348,61 @@ describeFn("Database Seed", () => {
   });
 
   describe("Run (Historical Runs)", () => {
-    it("creates exactly 22 historical runs", async () => {
+    // Note: These tests check seeded historical runs. User-accepted run suggestions
+    // may add additional runs to the database, so we use minimum counts rather than exact values.
+
+    it("creates at least 22 historical runs from seed", async () => {
       const count = await db.run.count();
-      expect(count).toBe(22);
+      expect(count).toBeGreaterThanOrEqual(22);
     });
 
-    it("all historical runs are marked as completed", async () => {
-      const incompleteRuns = await db.run.count({
-        where: { completed: false },
+    it("seeded historical runs (before Nov 27, 2025) are marked as completed", async () => {
+      // Only check runs that were definitely seeded (Sept to mid-Nov 2025)
+      // Using Nov 27 as cutoff since seed data ends before that date
+      // User-accepted runs for dates after that may not be completed
+      const incompleteSeededRuns = await db.run.count({
+        where: {
+          completed: false,
+          date: {
+            lt: new Date("2025-11-27T00:00:00.000Z"),
+          },
+        },
       });
-      expect(incompleteRuns).toBe(0);
+      expect(incompleteSeededRuns).toBe(0);
     });
 
-    it("has unique dates for all runs", async () => {
+    it("has at least 22 unique dates for runs", async () => {
       const runs = await db.run.findMany({
         select: { date: true },
       });
 
       const dates = runs.map((r) => r.date.toISOString());
       const uniqueDates = new Set(dates);
-      expect(uniqueDates.size).toBe(22);
+      expect(uniqueDates.size).toBeGreaterThanOrEqual(22);
     });
 
-    it("has runs spanning Sept to Nov 2025", async () => {
-      const runs = await db.run.findMany({
+    it("has seeded runs spanning Sept to Nov 2025", async () => {
+      // Check seeded runs only (before Dec 2025)
+      const seededRuns = await db.run.findMany({
+        where: {
+          date: {
+            lt: new Date("2025-12-01T00:00:00.000Z"),
+          },
+        },
         select: { date: true },
         orderBy: { date: "asc" },
       });
 
-      // First run should be in September 2025
-      expect(runs[0]?.date.getFullYear()).toBe(2025);
-      expect(runs[0]?.date.getMonth()).toBe(8); // September (0-indexed)
+      expect(seededRuns.length).toBeGreaterThanOrEqual(22);
 
-      // Last run should be in November 2025
-      const lastRun = runs[runs.length - 1];
-      expect(lastRun?.date.getFullYear()).toBe(2025);
-      expect(lastRun?.date.getMonth()).toBe(10); // November (0-indexed)
+      // First run should be in September 2025
+      expect(seededRuns[0]?.date.getFullYear()).toBe(2025);
+      expect(seededRuns[0]?.date.getMonth()).toBe(8); // September (0-indexed)
+
+      // Last seeded run should be in November 2025
+      const lastSeededRun = seededRuns[seededRuns.length - 1];
+      expect(lastSeededRun?.date.getFullYear()).toBe(2025);
+      expect(lastSeededRun?.date.getMonth()).toBe(10); // November (0-indexed)
     });
 
     it("has mix of LONG_RUN and EASY_RUN types", async () => {

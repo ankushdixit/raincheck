@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Checkmark indicator (✓) for completed runs on calendar badges
+- Visual distinction between completed runs (with checkmark) and scheduled runs (without)
+- 10 new tests for completed run indicator and today highlight behavior
 - Calendar navigation with Previous/Next month buttons and Today button
 - Month navigation state management using React useState hook
 - Dynamic date range queries that update when navigating between months
@@ -162,5 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated seed test to handle non-empty WeatherCache table
 
 ### Fixed
+
+- Seed tests now resilient to user-accepted run suggestions (using minimum counts and date filters)
 
 ### Removed
