@@ -39,8 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `fetchForecast` function in weather client for multi-day forecast API calls
 - Cache-first strategy for forecast data with per-day caching and 1-hour TTL
 - Partial cache hit handling (fetches only missing days from API)
+- WeatherDayCard component (`components/weather/WeatherDayCard.tsx`) for individual forecast day display
+- WeatherForecast component (`components/weather/WeatherForecast.tsx`) displaying 5-day forecast grid
+- Glass-effect card styling with semi-transparent backgrounds and backdrop blur
+- Card selection state with visual feedback
+- Loading skeleton for forecast cards
+- Error and empty states for forecast component
+- Homepage integration with WeatherForecast below CurrentWeather
 
 ### Changed
+
+- Increased internal rate limit from 50 to 1000 calls/day for paid WeatherAPI plans
+- Updated seed test to handle non-empty WeatherCache table
 
 ### Fixed
 

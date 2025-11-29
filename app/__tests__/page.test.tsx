@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import Home from "../page";
 
-// Mock the CurrentWeather component since it uses tRPC hooks
+// Mock the weather components since they use tRPC hooks
 jest.mock("@/components/weather", () => ({
   CurrentWeather: () => <div data-testid="current-weather-mock">Weather Component</div>,
+  WeatherForecast: () => <div data-testid="weather-forecast-mock">Forecast Component</div>,
 }));
 
 describe("Home Page", () => {
@@ -46,5 +47,10 @@ describe("Home Page", () => {
   it("renders the CurrentWeather component", () => {
     render(<Home />);
     expect(screen.getByTestId("current-weather-mock")).toBeInTheDocument();
+  });
+
+  it("renders the WeatherForecast component", () => {
+    render(<Home />);
+    expect(screen.getByTestId("weather-forecast-mock")).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { CurrentWeather } from "@/components/weather";
+import { CurrentWeather, WeatherForecast } from "@/components/weather";
 
 export default function Home() {
   return (
@@ -18,6 +18,10 @@ export default function Home() {
 
         <div className="mt-8">
           <CurrentWeather />
+        </div>
+
+        <div className="mt-8 w-full max-w-4xl">
+          <WeatherForecast />
         </div>
       </div>
     </main>
