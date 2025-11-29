@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- UI access control components for read-only views for unauthenticated users
+- `ProtectedAction` wrapper component for conditionally rendering protected UI elements
+- `LoginPrompt` component displaying "Log in to schedule runs" link for guests
+- `useIsAuthenticated` hook for simple authentication state checking
+- Smooth CSS transitions for auth state changes in protected components
 - Protected tRPC procedures with `protectedProcedure` middleware for authenticated mutations
 - Settings tRPC router with public read and protected write operations
 - Session context integration in tRPC for authentication checks
