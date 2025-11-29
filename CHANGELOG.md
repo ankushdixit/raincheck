@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rate limiting (50 calls/day safety limit) and retry logic (3 retries with exponential backoff)
 - WeatherData type and WeatherAPIError class for type-safe weather handling
 - WEATHER_API_KEY environment variable validation
+- Weather tRPC endpoint (`weather.getCurrentWeather`) with cache-first strategy
+- Cache hit/miss logic with 1-hour TTL for weather data
+- Default location fallback to UserSettings when not provided
+- Error mapping from WeatherAPIError to TRPCError codes
 
 ### Changed
 
