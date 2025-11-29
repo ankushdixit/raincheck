@@ -20,3 +20,5 @@ jest.mock("next/navigation", () => ({
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
+process.env.AUTH_PASSWORD = "test-password-123";

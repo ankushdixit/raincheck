@@ -1,0 +1,14 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "RainCheck Gitleaks Config"
+
+# Allowlist test files that contain placeholder/mock secrets
+[allowlist]
+  description = "Allow test files with mock secrets"
+  paths = [
+    '''tests/setup\.ts''',
+    '''lib/__tests__/env\.test\.ts''',
+    '''lib/__tests__/auth\.test\.ts''',
+    '''\.env\..*\.example''',
+  ]

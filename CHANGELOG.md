@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- NextAuth.js v5 authentication with credentials provider for single-user password login
+- SessionProvider component for client-side session access throughout the app
+- Auth API route (`/api/auth/[...nextauth]`) handling signin, signout, session, and CSRF
+- NEXTAUTH_SECRET and AUTH_PASSWORD environment variable validation in `lib/env.ts`
+- JWT session strategy for stateless authentication
+- Custom login page configuration (`/login`)
 - Initial project setup with Session-Driven Development
 - UserSettings model in Prisma schema for race configuration
 - Database seed script for initial UserSettings data
