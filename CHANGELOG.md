@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Homepage integration displaying current weather data
 - Skeleton loading animation for weather card
 - Error state with retry functionality
+- Weather forecast tRPC endpoint (`weather.getForecast`) for 7-day weather forecasts
+- `fetchForecast` function in weather client for multi-day forecast API calls
+- Cache-first strategy for forecast data with per-day caching and 1-hour TTL
+- Partial cache hit handling (fetches only missing days from API)
 
 ### Changed
 
