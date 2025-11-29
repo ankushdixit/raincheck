@@ -128,4 +128,222 @@ describeFn("Database Seed", () => {
       await db.weatherCache.delete({ where: { id: first.id } });
     });
   });
+
+  describe("TrainingPlan", () => {
+    it("creates exactly 24 TrainingPlan entries", async () => {
+      const count = await db.trainingPlan.count();
+      expect(count).toBe(24);
+    });
+
+    it("creates unique week numbers 1-24", async () => {
+      const plans = await db.trainingPlan.findMany({
+        select: { weekNumber: true },
+        orderBy: { weekNumber: "asc" },
+      });
+
+      const weekNumbers = plans.map((p) => p.weekNumber);
+      expect(weekNumbers).toHaveLength(24);
+      expect(weekNumbers[0]).toBe(1);
+      expect(weekNumbers[23]).toBe(24);
+
+      // Check all week numbers are unique and sequential
+      for (let i = 0; i < 24; i++) {
+        expect(weekNumbers[i]).toBe(i + 1);
+      }
+    });
+
+    it("has correct phase progression", async () => {
+      const plans = await db.trainingPlan.findMany({
+        select: { weekNumber: true, phase: true },
+        orderBy: { weekNumber: "asc" },
+      });
+
+      // Weeks 1-6: BASE_BUILDING
+      for (let i = 0; i < 6; i++) {
+        expect(plans[i]?.phase).toBe("BASE_BUILDING");
+      }
+
+      // Weeks 7-14: BASE_EXTENSION
+      for (let i = 6; i < 14; i++) {
+        expect(plans[i]?.phase).toBe("BASE_EXTENSION");
+      }
+
+      // Weeks 15-21: SPEED_DEVELOPMENT
+      for (let i = 14; i < 21; i++) {
+        expect(plans[i]?.phase).toBe("SPEED_DEVELOPMENT");
+      }
+
+      // Weeks 22-24: PEAK_TAPER
+      for (let i = 21; i < 24; i++) {
+        expect(plans[i]?.phase).toBe("PEAK_TAPER");
+      }
+    });
+
+    it("has week dates spanning Nov 30, 2025 to May 16, 2026", async () => {
+      const firstWeek = await db.trainingPlan.findFirst({
+        where: { weekNumber: 1 },
+      });
+      const lastWeek = await db.trainingPlan.findFirst({
+        where: { weekNumber: 24 },
+      });
+
+      // Week 1 starts on Nov 30, 2025 (Sunday)
+      expect(firstWeek?.weekStart).toEqual(new Date("2025-11-30T00:00:00.000Z"));
+
+      // Week 24 ends on May 16, 2026 (Saturday before race on May 17)
+      const expectedLastWeekEnd = new Date("2025-11-30T00:00:00.000Z");
+      expectedLastWeekEnd.setDate(expectedLastWeekEnd.getDate() + 23 * 7 + 6);
+      expectedLastWeekEnd.setHours(23, 59, 59, 999);
+      expect(lastWeek?.weekEnd).toEqual(expectedLastWeekEnd);
+    });
+
+    it("has appropriate long run targets for each phase", async () => {
+      const plans = await db.trainingPlan.findMany({
+        select: { weekNumber: true, longRunTarget: true, phase: true },
+        orderBy: { weekNumber: "asc" },
+      });
+
+      // BASE_BUILDING: 12km → 14km
+      const baseBuildingPlans = plans.filter((p) => p.phase === "BASE_BUILDING");
+      expect(baseBuildingPlans[0]?.longRunTarget).toBe(12);
+      expect(baseBuildingPlans[baseBuildingPlans.length - 1]?.longRunTarget).toBe(14);
+
+      // BASE_EXTENSION: 15km → 18km
+      const baseExtensionPlans = plans.filter((p) => p.phase === "BASE_EXTENSION");
+      expect(baseExtensionPlans[0]?.longRunTarget).toBe(15);
+      expect(baseExtensionPlans[baseExtensionPlans.length - 1]?.longRunTarget).toBe(18);
+
+      // SPEED_DEVELOPMENT: peaks at 20km
+      const speedDevPlans = plans.filter((p) => p.phase === "SPEED_DEVELOPMENT");
+      const maxLongRun = Math.max(...speedDevPlans.map((p) => p.longRunTarget));
+      expect(maxLongRun).toBe(20);
+
+      // PEAK_TAPER: ends at 8km (race week)
+      const peakTaperPlans = plans.filter((p) => p.phase === "PEAK_TAPER");
+      expect(peakTaperPlans[peakTaperPlans.length - 1]?.longRunTarget).toBe(8);
+    });
+
+    it("has appropriate weekly mileage targets", async () => {
+      const plans = await db.trainingPlan.findMany({
+        select: { weekNumber: true, weeklyMileageTarget: true, phase: true },
+        orderBy: { weekNumber: "asc" },
+      });
+
+      // BASE_BUILDING: 24-26km
+      const baseBuildingPlans = plans.filter((p) => p.phase === "BASE_BUILDING");
+      expect(baseBuildingPlans[0]?.weeklyMileageTarget).toBe(24);
+      expect(baseBuildingPlans[baseBuildingPlans.length - 1]?.weeklyMileageTarget).toBe(26);
+
+      // PEAK_TAPER: ends at 16km (race week)
+      const peakTaperPlans = plans.filter((p) => p.phase === "PEAK_TAPER");
+      expect(peakTaperPlans[peakTaperPlans.length - 1]?.weeklyMileageTarget).toBe(16);
+    });
+  });
+
+  describe("WeatherPreference", () => {
+    it("creates entries for all 6 run types", async () => {
+      const count = await db.weatherPreference.count();
+      expect(count).toBe(6);
+    });
+
+    it("has unique RunType for each entry", async () => {
+      const preferences = await db.weatherPreference.findMany({
+        select: { runType: true },
+      });
+
+      const runTypes = preferences.map((p) => p.runType);
+      const expectedTypes = [
+        "LONG_RUN",
+        "EASY_RUN",
+        "TEMPO_RUN",
+        "INTERVAL_RUN",
+        "RECOVERY_RUN",
+        "RACE",
+      ];
+
+      expect(runTypes).toHaveLength(6);
+      expectedTypes.forEach((type) => {
+        expect(runTypes).toContain(type);
+      });
+    });
+
+    it("has correct LONG_RUN preferences", async () => {
+      const longRun = await db.weatherPreference.findUnique({
+        where: { runType: "LONG_RUN" },
+      });
+
+      expect(longRun).not.toBeNull();
+      expect(longRun?.maxPrecipitation).toBe(20);
+      expect(longRun?.maxWindSpeed).toBe(25);
+      expect(longRun?.minTemperature).toBe(0);
+      expect(longRun?.maxTemperature).toBe(25);
+      expect(longRun?.avoidConditions).toContain("Heavy Rain");
+      expect(longRun?.avoidConditions).toContain("Thunderstorm");
+      expect(longRun?.avoidConditions).toContain("Heavy Snow");
+    });
+
+    it("has correct EASY_RUN preferences", async () => {
+      const easyRun = await db.weatherPreference.findUnique({
+        where: { runType: "EASY_RUN" },
+      });
+
+      expect(easyRun).not.toBeNull();
+      expect(easyRun?.maxPrecipitation).toBe(50);
+      expect(easyRun?.maxWindSpeed).toBe(35);
+      expect(easyRun?.minTemperature).toBe(-5);
+      expect(easyRun?.maxTemperature).toBe(30);
+      expect(easyRun?.avoidConditions).toContain("Thunderstorm");
+      expect(easyRun?.avoidConditions).toContain("Heavy Snow");
+    });
+
+    it("has correct TEMPO_RUN preferences", async () => {
+      const tempoRun = await db.weatherPreference.findUnique({
+        where: { runType: "TEMPO_RUN" },
+      });
+
+      expect(tempoRun).not.toBeNull();
+      expect(tempoRun?.maxPrecipitation).toBe(30);
+      expect(tempoRun?.maxWindSpeed).toBe(25);
+      expect(tempoRun?.minTemperature).toBe(5);
+      expect(tempoRun?.maxTemperature).toBe(25);
+    });
+
+    it("has correct INTERVAL_RUN preferences", async () => {
+      const intervalRun = await db.weatherPreference.findUnique({
+        where: { runType: "INTERVAL_RUN" },
+      });
+
+      expect(intervalRun).not.toBeNull();
+      expect(intervalRun?.maxPrecipitation).toBe(30);
+      expect(intervalRun?.maxWindSpeed).toBe(25);
+      expect(intervalRun?.minTemperature).toBe(5);
+      expect(intervalRun?.maxTemperature).toBe(25);
+    });
+
+    it("has correct RECOVERY_RUN preferences", async () => {
+      const recoveryRun = await db.weatherPreference.findUnique({
+        where: { runType: "RECOVERY_RUN" },
+      });
+
+      expect(recoveryRun).not.toBeNull();
+      expect(recoveryRun?.maxPrecipitation).toBe(60);
+      expect(recoveryRun?.maxWindSpeed).toBe(40);
+      expect(recoveryRun?.minTemperature).toBe(-5);
+      expect(recoveryRun?.maxTemperature).toBe(30);
+      expect(recoveryRun?.avoidConditions).toContain("Thunderstorm");
+    });
+
+    it("has correct RACE preferences (no limits)", async () => {
+      const race = await db.weatherPreference.findUnique({
+        where: { runType: "RACE" },
+      });
+
+      expect(race).not.toBeNull();
+      expect(race?.maxPrecipitation).toBe(100);
+      expect(race?.maxWindSpeed).toBeNull();
+      expect(race?.minTemperature).toBeNull();
+      expect(race?.maxTemperature).toBeNull();
+      expect(race?.avoidConditions).toHaveLength(0);
+    });
+  });
 });
