@@ -9,6 +9,8 @@ export interface TimeRange {
   end: string;
 }
 
+export type AcceptState = "idle" | "loading" | "success" | "error";
+
 export interface RunSuggestionCardProps {
   suggestion: {
     date: Date;
@@ -27,6 +29,8 @@ export interface RunSuggestionCardProps {
   };
   isAuthenticated?: boolean;
   onAccept?: () => void;
+  acceptState?: AcceptState;
+  acceptError?: string;
 }
 
 /**
@@ -101,11 +105,16 @@ export function RunSuggestionCard({
   suggestion,
   isAuthenticated = false,
   onAccept,
+  acceptState = "idle",
+  acceptError,
 }: RunSuggestionCardProps) {
   const { date, runType, distance, weatherScore, isOptimal, reason, weather, timeRange } =
     suggestion;
   const scoreColor = getScoreColor(weatherScore);
   const isLongRun = runType === "LONG_RUN";
+  const isAccepted = acceptState === "success";
+  const isLoading = acceptState === "loading";
+  const hasError = acceptState === "error";
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -137,9 +146,11 @@ export function RunSuggestionCard({
         borderRadius: "0.5rem",
         margin: "0 4px",
         border: isLongRun ? "2px solid rgba(251, 191, 36, 0.5)" : "2px solid transparent",
+        opacity: isAccepted ? 0.6 : 1,
       }}
       data-testid="run-suggestion-card"
       data-run-type={runType}
+      data-accepted={isAccepted}
     >
       {/* Info icon for reasoning tooltip - positioned in top right corner */}
       <button
@@ -289,23 +300,65 @@ export function RunSuggestionCard({
 
       {/* Accept Button (Phase 5, authenticated only) */}
       {isAuthenticated && onAccept && (
-        <button
-          onClick={onAccept}
+        <div
           style={{
             marginTop: "12px",
-            padding: "6px 12px",
-            backgroundColor: "rgba(217, 119, 6, 0.8)",
-            color: "white",
-            borderRadius: "0.375rem",
-            fontSize: "0.75rem",
-            fontWeight: 500,
-            border: "none",
-            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "4px",
           }}
-          data-testid="accept-button"
         >
-          Accept
-        </button>
+          <button
+            onClick={onAccept}
+            disabled={isLoading || isAccepted}
+            style={{
+              padding: "6px 12px",
+              backgroundColor: isAccepted
+                ? "rgba(34, 197, 94, 0.8)" // green-500
+                : "rgba(217, 119, 6, 0.8)", // amber-600
+              color: "white",
+              borderRadius: "0.375rem",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              border: "none",
+              cursor: isLoading || isAccepted ? "not-allowed" : "pointer",
+              opacity: isLoading ? 0.7 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            data-testid="accept-button"
+          >
+            {isLoading && (
+              <span
+                className="animate-spin"
+                style={{
+                  width: "12px",
+                  height: "12px",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "white",
+                  borderRadius: "50%",
+                }}
+                data-testid="accept-spinner"
+              />
+            )}
+            {isAccepted ? "Scheduled ✓" : isLoading ? "Scheduling..." : "Accept & Schedule"}
+          </button>
+          {hasError && acceptError && (
+            <span
+              style={{
+                color: "rgba(248, 113, 113, 1)", // red-400
+                fontSize: "0.625rem",
+                textAlign: "center",
+                maxWidth: "120px",
+              }}
+              data-testid="accept-error"
+            >
+              {acceptError}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

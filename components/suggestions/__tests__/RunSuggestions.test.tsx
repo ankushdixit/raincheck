@@ -1,9 +1,13 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RunSuggestions } from "../RunSuggestions";
 
 // Mock the tRPC api
 const mockRefetch = jest.fn();
 const mockUseQuery = jest.fn();
+const mockMutateAsync = jest.fn();
+const mockInvalidate = jest.fn();
+
+const mockGetAllRuns = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -12,6 +16,27 @@ jest.mock("@/lib/api", () => ({
         useQuery: () => mockUseQuery(),
       },
     },
+    runs: {
+      getAll: {
+        useQuery: () => mockGetAllRuns(),
+      },
+      create: {
+        useMutation: (opts?: { onSuccess?: () => void }) => ({
+          mutateAsync: async (...args: unknown[]) => {
+            const result = await mockMutateAsync(...args);
+            opts?.onSuccess?.();
+            return result;
+          },
+        }),
+      },
+    },
+    useUtils: () => ({
+      runs: {
+        getAll: {
+          invalidate: mockInvalidate,
+        },
+      },
+    }),
   },
 }));
 
@@ -69,6 +94,9 @@ describe("RunSuggestions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRefetch.mockResolvedValue({ data: createMockSuggestions() });
+    mockMutateAsync.mockResolvedValue({ id: "run-1" });
+    // Default: no existing scheduled runs
+    mockGetAllRuns.mockReturnValue({ data: [] });
   });
 
   describe("loading state", () => {
@@ -329,6 +357,184 @@ describe("RunSuggestions", () => {
       render(<RunSuggestions />);
 
       expect(screen.queryByTestId("accept-button")).not.toBeInTheDocument();
+    });
+
+    it("shows accept buttons when authenticated", () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      expect(buttons).toHaveLength(3);
+    });
+  });
+
+  describe("accept functionality", () => {
+    beforeEach(() => {
+      mockUseQuery.mockReturnValue({
+        data: createMockSuggestions(),
+        isLoading: false,
+        isError: false,
+        refetch: mockRefetch,
+        isFetching: false,
+      });
+    });
+
+    it("calls runs.create mutation when accept button is clicked", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      });
+
+      // Verify mutation was called with correct data
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          distance: 16,
+          type: "LONG_RUN",
+          completed: false,
+        })
+      );
+    });
+
+    it("shows success state after successful accept", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("accept-button")[0]).toHaveTextContent("Scheduled ✓");
+      });
+    });
+
+    it("dims card after successful accept", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        const cards = screen.getAllByTestId("run-suggestion-card");
+        expect(cards[0]).toHaveAttribute("data-accepted", "true");
+      });
+    });
+
+    it("disables button after successful accept", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("accept-button")[0]).toBeDisabled();
+      });
+    });
+
+    it("invalidates runs query cache after success", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(mockInvalidate).toHaveBeenCalled();
+      });
+    });
+
+    it("shows error message on duplicate date conflict", async () => {
+      mockMutateAsync.mockRejectedValueOnce(new Error("A run already exists on this date"));
+
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("accept-error")).toBeInTheDocument();
+        expect(screen.getByTestId("accept-error")).toHaveTextContent(
+          "Run already scheduled for this date"
+        );
+      });
+    });
+
+    it("shows generic error message on other errors", async () => {
+      mockMutateAsync.mockRejectedValueOnce(new Error("Network error"));
+
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("accept-error")).toBeInTheDocument();
+        expect(screen.getByTestId("accept-error")).toHaveTextContent("Network error");
+      });
+    });
+
+    it("can accept multiple different suggestions", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+
+      // Accept first suggestion
+      fireEvent.click(buttons[0]);
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      });
+
+      // Accept second suggestion
+      fireEvent.click(buttons[1]);
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it("includes reason in notes when creating run", async () => {
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            notes: expect.stringContaining("Best weather of the week"),
+          })
+        );
+      });
+    });
+
+    it("shows already scheduled runs as accepted on page load", () => {
+      const suggestions = createMockSuggestions();
+      // Mock that the first suggestion's date already has a scheduled run
+      mockGetAllRuns.mockReturnValue({
+        data: [{ date: suggestions[0].date, completed: false }],
+      });
+
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const buttons = screen.getAllByTestId("accept-button");
+      // First button should show "Scheduled ✓" because it's already in the database
+      expect(buttons[0]).toHaveTextContent("Scheduled ✓");
+      expect(buttons[0]).toBeDisabled();
+      // Other buttons should still be available
+      expect(buttons[1]).toHaveTextContent("Accept & Schedule");
+      expect(buttons[1]).not.toBeDisabled();
+    });
+
+    it("dims cards for already scheduled runs", () => {
+      const suggestions = createMockSuggestions();
+      mockGetAllRuns.mockReturnValue({
+        data: [{ date: suggestions[0].date, completed: false }],
+      });
+
+      render(<RunSuggestions isAuthenticated={true} />);
+
+      const cards = screen.getAllByTestId("run-suggestion-card");
+      expect(cards[0]).toHaveAttribute("data-accepted", "true");
+      expect(cards[1]).toHaveAttribute("data-accepted", "false");
     });
   });
 

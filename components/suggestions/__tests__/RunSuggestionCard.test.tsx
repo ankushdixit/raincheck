@@ -235,13 +235,13 @@ describe("RunSuggestionCard", () => {
     });
   });
 
-  describe("accept button (Phase 5 preparation)", () => {
+  describe("accept button", () => {
     it("shows accept button when authenticated with onAccept callback", () => {
       const onAccept = jest.fn();
       render(<RunSuggestionCard {...defaultProps} isAuthenticated={true} onAccept={onAccept} />);
 
       expect(screen.getByTestId("accept-button")).toBeInTheDocument();
-      expect(screen.getByTestId("accept-button")).toHaveTextContent("Accept");
+      expect(screen.getByTestId("accept-button")).toHaveTextContent("Accept & Schedule");
     });
 
     it("hides accept button when not authenticated", () => {
@@ -263,6 +263,151 @@ describe("RunSuggestionCard", () => {
       fireEvent.click(screen.getByTestId("accept-button"));
 
       expect(onAccept).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows loading spinner when acceptState is loading", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="loading"
+        />
+      );
+
+      expect(screen.getByTestId("accept-spinner")).toBeInTheDocument();
+      expect(screen.getByTestId("accept-button")).toHaveTextContent("Scheduling...");
+    });
+
+    it("shows 'Scheduled ✓' when acceptState is success", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="success"
+        />
+      );
+
+      expect(screen.getByTestId("accept-button")).toHaveTextContent("Scheduled ✓");
+      expect(screen.queryByTestId("accept-spinner")).not.toBeInTheDocument();
+    });
+
+    it("disables button when loading", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="loading"
+        />
+      );
+
+      expect(screen.getByTestId("accept-button")).toBeDisabled();
+    });
+
+    it("disables button after success", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="success"
+        />
+      );
+
+      expect(screen.getByTestId("accept-button")).toBeDisabled();
+    });
+
+    it("shows error message when acceptState is error", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="error"
+          acceptError="Run already scheduled for this date"
+        />
+      );
+
+      expect(screen.getByTestId("accept-error")).toBeInTheDocument();
+      expect(screen.getByTestId("accept-error")).toHaveTextContent(
+        "Run already scheduled for this date"
+      );
+    });
+
+    it("does not show error when no error message", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="error"
+        />
+      );
+
+      expect(screen.queryByTestId("accept-error")).not.toBeInTheDocument();
+    });
+
+    it("has green background when accepted", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="success"
+        />
+      );
+
+      const button = screen.getByTestId("accept-button");
+      expect(button).toHaveStyle({ backgroundColor: "rgba(34, 197, 94, 0.8)" });
+    });
+  });
+
+  describe("card dimming when accepted", () => {
+    it("dims card to 60% opacity when accepted", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="success"
+        />
+      );
+
+      const card = screen.getByTestId("run-suggestion-card");
+      expect(card).toHaveStyle({ opacity: 0.6 });
+    });
+
+    it("has full opacity when not accepted", () => {
+      const onAccept = jest.fn();
+      render(<RunSuggestionCard {...defaultProps} isAuthenticated={true} onAccept={onAccept} />);
+
+      const card = screen.getByTestId("run-suggestion-card");
+      expect(card).toHaveStyle({ opacity: 1 });
+    });
+
+    it("sets data-accepted attribute when accepted", () => {
+      const onAccept = jest.fn();
+      render(
+        <RunSuggestionCard
+          {...defaultProps}
+          isAuthenticated={true}
+          onAccept={onAccept}
+          acceptState="success"
+        />
+      );
+
+      const card = screen.getByTestId("run-suggestion-card");
+      expect(card).toHaveAttribute("data-accepted", "true");
     });
   });
 

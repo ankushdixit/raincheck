@@ -24,7 +24,19 @@ jest.mock("@/components/weather", () => ({
 
 // Mock the suggestions component
 jest.mock("@/components/suggestions", () => ({
-  RunSuggestions: () => <div data-testid="run-suggestions-mock">Run Suggestions</div>,
+  RunSuggestions: ({ isAuthenticated }: { isAuthenticated?: boolean }) => (
+    <div data-testid="run-suggestions-mock" data-authenticated={isAuthenticated}>
+      Run Suggestions
+    </div>
+  ),
+}));
+
+// Mock the useIsAuthenticated hook
+jest.mock("@/hooks", () => ({
+  useIsAuthenticated: () => ({
+    isAuthenticated: true,
+    isLoading: false,
+  }),
 }));
 
 describe("HomePage", () => {
@@ -67,6 +79,12 @@ describe("HomePage", () => {
   it("renders the RunSuggestions component", () => {
     render(<HomePage />);
     expect(screen.getByTestId("run-suggestions-mock")).toBeInTheDocument();
+  });
+
+  it("passes isAuthenticated prop to RunSuggestions", () => {
+    render(<HomePage />);
+    const suggestions = screen.getByTestId("run-suggestions-mock");
+    expect(suggestions).toHaveAttribute("data-authenticated", "true");
   });
 
   it("renders the Suggested Runs heading", () => {

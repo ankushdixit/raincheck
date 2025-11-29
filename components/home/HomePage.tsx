@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
 import { RunSuggestions } from "@/components/suggestions";
+import { useIsAuthenticated } from "@/hooks";
 
 /** Selected day data for background coordination */
 interface SelectedDay {
@@ -23,6 +24,9 @@ interface BackgroundLayer {
  * Background changes based on the selected forecast day with smooth cross-fade.
  */
 export function HomePage() {
+  // Get authentication state
+  const { isAuthenticated } = useIsAuthenticated();
+
   // Default background configuration
   const defaultImage = getTrailImage("default");
   const defaultTint = getTintColor("default");
@@ -111,7 +115,7 @@ export function HomePage() {
         {/* Run Suggestions Section */}
         <div className="mt-12 w-full max-w-4xl">
           <h2 className="text-2xl font-bold text-text-primary mb-4">Suggested Runs</h2>
-          <RunSuggestions />
+          <RunSuggestions isAuthenticated={isAuthenticated} />
         </div>
       </div>
     </main>

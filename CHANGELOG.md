@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- "Accept & Schedule" button on RunSuggestionCard for converting suggestions to scheduled runs
+- Accept button state management (idle, loading, success, error) with visual feedback
+- Loading spinner animation during run creation
+- Success state showing "Scheduled ✓" with green button background
+- Card dimming (60% opacity) after successful acceptance to indicate scheduled status
+- Error message display for duplicate date conflicts and other errors
+- Automatic pace and duration calculation based on run type and distance
+- Cache invalidation of runs query after successful acceptance
+- 20 new tests for accept button functionality and integration
 - Runs tRPC router (`server/api/routers/runs.ts`) with full CRUD operations for training runs
 - `runs.getAll` query with optional limit and completed filter parameters
 - `runs.getById` query returning single run by ID
