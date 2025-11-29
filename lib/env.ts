@@ -22,6 +22,11 @@ const envSchema = z.object({
 
   // Weather API
   WEATHER_API_KEY: z.string().min(1, "WEATHER_API_KEY is required"),
+
+  // Authentication
+  NEXTAUTH_SECRET: z.string().min(32, "NEXTAUTH_SECRET must be at least 32 characters"),
+  AUTH_PASSWORD: z.string().min(8, "AUTH_PASSWORD must be at least 8 characters"),
+  NEXTAUTH_URL: z.string().url().optional(),
 });
 
 // Validate environment variables
