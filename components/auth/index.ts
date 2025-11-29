@@ -1,3 +1,5 @@
+export { LoginForm } from "./LoginForm";
+export type { LoginFormProps } from "./LoginForm";
 export { LoginPrompt } from "./LoginPrompt";
 export type { LoginPromptProps } from "./LoginPrompt";
 export { ProtectedAction } from "./ProtectedAction";
