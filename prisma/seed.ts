@@ -6,6 +6,7 @@
  * - UserSettings: Singleton record with default race configuration
  * - TrainingPlan: 24 weeks of half-marathon training (Nov 30, 2025 - May 16, 2026)
  * - WeatherPreference: Weather tolerance thresholds for each run type
+ * - Run: 18 historical runs from Sept-Nov 2025 (pre-training data)
  *
  * Training Plan Structure (weeks run Sun-Sat):
  * - Long run on Sundays
@@ -16,6 +17,12 @@
  * - BASE_EXTENSION (Weeks 7-14): Extend to 15km → 18km long runs
  * - SPEED_DEVELOPMENT (Weeks 15-21): Peak at 20km long runs
  * - PEAK_TAPER (Weeks 22-24): Taper for race, 16km → 8km long runs
+ *
+ * Historical Runs (Sept-Nov 2025):
+ * - 18 completed runs showing fitness progression
+ * - Mix of LONG_RUN, EASY_RUN, TEMPO_RUN, RECOVERY_RUN types
+ * - Distances from 5km to 12km
+ * - Paces from 5:30 to 7:00 per km
  *
  * Race: May 17, 2026 (Sunday after week 24)
  *
@@ -141,6 +148,155 @@ const trainingPlanData: Array<{
     longRunTarget: 8,
     weeklyMileageTarget: 16,
     notes: "Race week - rest and prepare, race is Sunday May 17",
+  },
+];
+
+/**
+ * Historical runs data (18 runs from Sept-Nov 2025)
+ * Based on actual training data from runs.csv
+ * Mix of LONG_RUN and EASY_RUN types
+ * Distances: 4.51km to 10.82km
+ * Paces: 6:17 to 6:53 per km
+ */
+const historicalRunsData: Array<{
+  date: Date;
+  distance: number;
+  pace: string;
+  duration: string;
+  type: RunType;
+  notes?: string;
+}> = [
+  // September 2025 runs (3 runs)
+  {
+    date: new Date("2025-09-23T08:00:00.000Z"),
+    distance: 7,
+    pace: "6:20",
+    duration: "44:20",
+    type: RunType.LONG_RUN,
+  },
+  {
+    date: new Date("2025-09-26T08:00:00.000Z"),
+    distance: 4.51,
+    pace: "6:17",
+    duration: "28:20",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-09-29T08:00:00.000Z"),
+    distance: 5.38,
+    pace: "6:34",
+    duration: "35:20",
+    type: RunType.EASY_RUN,
+  },
+
+  // October 2025 runs (10 runs)
+  {
+    date: new Date("2025-10-02T08:00:00.000Z"),
+    distance: 6.03,
+    pace: "6:42",
+    duration: "40:25",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-10-05T08:00:00.000Z"),
+    distance: 7.33,
+    pace: "6:35",
+    duration: "48:17",
+    type: RunType.LONG_RUN,
+  },
+  {
+    date: new Date("2025-10-08T08:00:00.000Z"),
+    distance: 6.04,
+    pace: "6:47",
+    duration: "40:59",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-10-11T08:00:00.000Z"),
+    distance: 6.03,
+    pace: "6:33",
+    duration: "39:33",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-10-15T08:00:00.000Z"),
+    distance: 8.05,
+    pace: "6:48",
+    duration: "54:46",
+    type: RunType.LONG_RUN,
+  },
+  {
+    date: new Date("2025-10-17T08:00:00.000Z"),
+    distance: 6,
+    pace: "6:32",
+    duration: "39:12",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-10-21T08:00:00.000Z"),
+    distance: 9.01,
+    pace: "6:33",
+    duration: "59:06",
+    type: RunType.LONG_RUN,
+  },
+  {
+    date: new Date("2025-10-24T08:00:00.000Z"),
+    distance: 5,
+    pace: "6:53",
+    duration: "34:25",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-10-27T08:00:00.000Z"),
+    distance: 5,
+    pace: "6:45",
+    duration: "33:45",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-10-31T08:00:00.000Z"),
+    distance: 9,
+    pace: "6:41",
+    duration: "60:09",
+    type: RunType.LONG_RUN,
+  },
+
+  // November 2025 runs (5 runs - leading into training plan)
+  {
+    date: new Date("2025-11-03T08:00:00.000Z"),
+    distance: 5.7,
+    pace: "6:23",
+    duration: "36:25",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-11-05T08:00:00.000Z"),
+    distance: 5.71,
+    pace: "6:46",
+    duration: "38:41",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-11-07T08:00:00.000Z"),
+    distance: 5.63,
+    pace: "6:45",
+    duration: "38:03",
+    type: RunType.EASY_RUN,
+  },
+  {
+    date: new Date("2025-11-09T08:00:00.000Z"),
+    distance: 10.1,
+    pace: "6:38",
+    duration: "66:59",
+    type: RunType.LONG_RUN,
+    notes: "First double-digit run",
+  },
+  {
+    date: new Date("2025-11-12T08:00:00.000Z"),
+    distance: 5.72,
+    pace: "6:36",
+    duration: "37:46",
+    type: RunType.EASY_RUN,
   },
 ];
 
@@ -288,12 +444,38 @@ async function seedWeatherPreferences() {
   return createdPreferences;
 }
 
+async function seedRuns() {
+  // Delete existing runs to allow re-seeding
+  await prisma.run.deleteMany({});
+
+  // Create all historical runs (all marked as completed)
+  const createdRuns = await Promise.all(
+    historicalRunsData.map((data) =>
+      prisma.run.create({
+        data: {
+          date: data.date,
+          distance: data.distance,
+          pace: data.pace,
+          duration: data.duration,
+          type: data.type,
+          notes: data.notes,
+          completed: true, // All historical runs are completed
+        },
+      })
+    )
+  );
+
+  console.log(`✅ Run created: ${createdRuns.length} historical runs`);
+  return createdRuns;
+}
+
 async function main() {
   console.log("🌱 Seeding database...");
 
   await seedUserSettings();
   await seedTrainingPlan();
   await seedWeatherPreferences();
+  await seedRuns();
 
   console.log("🌱 Seeding completed!");
 }
