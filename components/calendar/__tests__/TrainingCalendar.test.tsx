@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { TrainingCalendar, TrainingCalendarSkeleton } from "../TrainingCalendar";
 import type { Run, RunType } from "@prisma/client";
 
@@ -340,6 +340,171 @@ describe("TrainingCalendar", () => {
 
       const calendar = screen.getByTestId("training-calendar");
       expect(calendar).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+    });
+  });
+
+  describe("navigation", () => {
+    beforeEach(() => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15) })],
+        isLoading: false,
+      });
+    });
+
+    it("renders navigation buttons", () => {
+      render(<TrainingCalendar />);
+
+      expect(screen.getByTestId("calendar-prev")).toBeInTheDocument();
+      expect(screen.getByTestId("calendar-next")).toBeInTheDocument();
+    });
+
+    it("navigation buttons have accessible labels", () => {
+      render(<TrainingCalendar />);
+
+      const prevButton = screen.getByTestId("calendar-prev");
+      const nextButton = screen.getByTestId("calendar-next");
+
+      expect(prevButton).toHaveAttribute("aria-label", "Previous month");
+      expect(nextButton).toHaveAttribute("aria-label", "Next month");
+    });
+
+    it("clicking Next navigates to next month", () => {
+      render(<TrainingCalendar />);
+
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const expectedNextMonth = nextMonth.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent(expectedNextMonth);
+    });
+
+    it("clicking Previous navigates to previous month", () => {
+      render(<TrainingCalendar />);
+
+      const now = new Date();
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const expectedPrevMonth = prevMonth.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+
+      const prevButton = screen.getByTestId("calendar-prev");
+      fireEvent.click(prevButton);
+
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent(expectedPrevMonth);
+    });
+
+    it("Today button appears when viewing a different month", () => {
+      render(<TrainingCalendar />);
+
+      // Initially, Today button should not be visible (we're on current month)
+      expect(screen.queryByTestId("calendar-today")).not.toBeInTheDocument();
+
+      // Navigate to next month
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+
+      // Now Today button should be visible
+      expect(screen.getByTestId("calendar-today")).toBeInTheDocument();
+    });
+
+    it("Today button is not visible when viewing current month", () => {
+      render(<TrainingCalendar />);
+
+      expect(screen.queryByTestId("calendar-today")).not.toBeInTheDocument();
+    });
+
+    it("clicking Today returns to current month", () => {
+      render(<TrainingCalendar />);
+
+      const now = new Date();
+      const currentMonth = now.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+
+      // Navigate away from current month
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+      fireEvent.click(nextButton);
+
+      // Click Today
+      const todayButton = screen.getByTestId("calendar-today");
+      fireEvent.click(todayButton);
+
+      // Should be back to current month
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent(currentMonth);
+      // Today button should disappear
+      expect(screen.queryByTestId("calendar-today")).not.toBeInTheDocument();
+    });
+
+    it("navigation wraps correctly from December to January", () => {
+      render(<TrainingCalendar />);
+
+      const now = new Date();
+      // Navigate to December of current year
+      const monthsToDecember = 11 - now.getMonth();
+      const nextButton = screen.getByTestId("calendar-next");
+
+      for (let i = 0; i < monthsToDecember; i++) {
+        fireEvent.click(nextButton);
+      }
+
+      // Should show December
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent("December");
+
+      // Navigate one more month
+      fireEvent.click(nextButton);
+
+      // Should show January of next year
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent("January");
+    });
+
+    it("navigation wraps correctly from January to December", () => {
+      render(<TrainingCalendar />);
+
+      const now = new Date();
+      // Navigate to January of current year
+      const monthsToJanuary = now.getMonth();
+      const prevButton = screen.getByTestId("calendar-prev");
+
+      for (let i = 0; i < monthsToJanuary; i++) {
+        fireEvent.click(prevButton);
+      }
+
+      // Should show January
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent("January");
+
+      // Navigate one more month back
+      fireEvent.click(prevButton);
+
+      // Should show December of previous year
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent("December");
+    });
+
+    it("updates API query when navigating to different month", () => {
+      render(<TrainingCalendar />);
+
+      // Clear initial call
+      mockUseQuery.mockClear();
+
+      // Navigate to next month
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+
+      // API should be called again with new date range
+      expect(mockUseQuery).toHaveBeenCalled();
+      const callArgs = mockUseQuery.mock.calls[0][0];
+
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      expect(callArgs.startDate.getMonth()).toBe(nextMonth.getMonth());
     });
   });
 });
