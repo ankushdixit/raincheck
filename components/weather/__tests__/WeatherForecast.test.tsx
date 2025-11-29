@@ -105,7 +105,7 @@ describe("WeatherForecast", () => {
       render(<WeatherForecast />);
 
       const cards = screen.getAllByTestId("weather-day-card");
-      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.7)" });
+      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
     });
 
     it("displays temperatures for all days", () => {
@@ -134,7 +134,7 @@ describe("WeatherForecast", () => {
       const cards = screen.getAllByTestId("weather-day-card");
 
       // Initially first card is selected
-      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.7)" });
+      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
       expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
 
       // Click second card
@@ -142,7 +142,7 @@ describe("WeatherForecast", () => {
 
       // Now second card should be selected
       expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
-      expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.7)" });
+      expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
     });
 
     it("only one card can be selected at a time", () => {
@@ -154,7 +154,7 @@ describe("WeatherForecast", () => {
       fireEvent.click(cards[2]!);
 
       // Third card should be selected
-      expect(cards[2]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.7)" });
+      expect(cards[2]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
       // Others should not be selected
       expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
       expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });

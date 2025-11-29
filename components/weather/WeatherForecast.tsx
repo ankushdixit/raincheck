@@ -11,7 +11,7 @@ import { WeatherDayCard } from "./WeatherDayCard";
 function ForecastSkeleton() {
   return (
     <div
-      className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
+      className="flex gap-4 overflow-x-auto py-2 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
       data-testid="forecast-skeleton"
     >
       {Array.from({ length: 7 }).map((_, index) => (
@@ -130,7 +130,7 @@ export function WeatherForecast({ onDaySelect }: WeatherForecastProps) {
 
   return (
     <div
-      className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
+      className="flex gap-4 overflow-x-auto py-2 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
       data-testid="weather-forecast"
     >
       {forecast.map((day, index) => (

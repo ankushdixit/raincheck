@@ -100,7 +100,7 @@ describe("WeatherDayCard", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={true} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.7)" });
+      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
     });
 
     it("has lighter background when not selected", () => {
@@ -108,6 +108,20 @@ describe("WeatherDayCard", () => {
 
       const card = screen.getByTestId("weather-day-card");
       expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+    });
+
+    it("has inset box-shadow ring when selected", () => {
+      render(<WeatherDayCard {...defaultProps} isSelected={true} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      expect(card).toHaveStyle({ boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.4)" });
+    });
+
+    it("has no box-shadow when not selected", () => {
+      render(<WeatherDayCard {...defaultProps} isSelected={false} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      expect(card).toHaveStyle({ boxShadow: "none" });
     });
 
     it("has aria-pressed false when not selected", () => {
@@ -142,16 +156,40 @@ describe("WeatherDayCard", () => {
       const card = screen.getByTestId("weather-day-card");
       expect(card.tagName).toBe("BUTTON");
     });
-  });
 
-  describe("hover styling", () => {
-    it("has hover scale classes for lift effect", () => {
-      render(<WeatherDayCard {...defaultProps} />);
+    it("changes background on mouse enter when not selected", () => {
+      render(<WeatherDayCard {...defaultProps} isSelected={false} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveClass("hover:scale-[1.02]");
+      fireEvent.mouseEnter(card);
+
+      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.65)" });
+      expect(card).toHaveStyle({ borderColor: "rgba(255,255,255,0.2)" });
     });
 
+    it("restores background on mouse leave", () => {
+      render(<WeatherDayCard {...defaultProps} isSelected={false} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      fireEvent.mouseEnter(card);
+      fireEvent.mouseLeave(card);
+
+      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+      expect(card).toHaveStyle({ borderColor: "transparent" });
+    });
+
+    it("does not change background on hover when selected", () => {
+      render(<WeatherDayCard {...defaultProps} isSelected={true} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      fireEvent.mouseEnter(card);
+
+      // Background should remain the selected color
+      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
+    });
+  });
+
+  describe("styling", () => {
     it("has transition classes for smooth animation", () => {
       render(<WeatherDayCard {...defaultProps} />);
 
@@ -171,6 +209,27 @@ describe("WeatherDayCard", () => {
 
       const card = screen.getByTestId("weather-day-card");
       expect(card).toHaveStyle({ borderRadius: "0.5rem" });
+    });
+
+    it("has correct min-width for card sizing", () => {
+      render(<WeatherDayCard {...defaultProps} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      expect(card).toHaveStyle({ minWidth: "130px" });
+    });
+
+    it("has correct padding for card spacing", () => {
+      render(<WeatherDayCard {...defaultProps} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      expect(card).toHaveStyle({ padding: "20px 16px" });
+    });
+
+    it("has transparent border for hover effect", () => {
+      render(<WeatherDayCard {...defaultProps} />);
+
+      const card = screen.getByTestId("weather-day-card");
+      expect(card).toHaveStyle({ border: "2px solid transparent" });
     });
   });
 

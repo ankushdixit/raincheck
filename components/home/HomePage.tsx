@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
 
@@ -10,36 +10,88 @@ interface SelectedDay {
   datetime: Date;
 }
 
+/** Background layer state for cross-fade */
+interface BackgroundLayer {
+  image: string;
+  tint: string;
+}
+
 /**
  * HomePage component that coordinates the weather-reactive background
  * with the weather display components.
- * Background changes based on the selected forecast day.
+ * Background changes based on the selected forecast day with smooth cross-fade.
  */
 export function HomePage() {
-  // Track selected day from forecast for background
-  const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null);
+  // Default background configuration
+  const defaultImage = getTrailImage("default");
+  const defaultTint = getTintColor("default");
 
-  // Memoize callback to prevent unnecessary re-renders
+  // Two background layers for cross-fade effect
+  const [layers, setLayers] = useState<[BackgroundLayer, BackgroundLayer]>([
+    { image: defaultImage, tint: defaultTint },
+    { image: defaultImage, tint: defaultTint },
+  ]);
+
+  // Track which layer is currently visible (0 or 1)
+  const [activeLayer, setActiveLayer] = useState<0 | 1>(0);
+
+  // Use ref to track active layer in callback without causing re-renders
+  const activeLayerRef = useRef<0 | 1>(0);
+
+  // Memoize callback that handles day selection and background transition
   const handleDaySelect = useCallback((day: SelectedDay) => {
-    setSelectedDay(day);
+    const condition = day.condition;
+    const newImage = getTrailImage(condition);
+    const newTint = getTintColor(condition);
+
+    // Determine which layer to update (the inactive one)
+    const currentActive = activeLayerRef.current;
+    const inactiveLayer: 0 | 1 = currentActive === 0 ? 1 : 0;
+
+    // Update the inactive layer with new background
+    setLayers((prev) => {
+      const newLayers: [BackgroundLayer, BackgroundLayer] = [...prev];
+      newLayers[inactiveLayer] = { image: newImage, tint: newTint };
+      return newLayers;
+    });
+
+    // Toggle active layer to trigger cross-fade
+    activeLayerRef.current = inactiveLayer;
+    setActiveLayer(inactiveLayer);
   }, []);
-
-  // Use selected day's condition for background, or default if not loaded
-  const condition = selectedDay?.condition ?? "default";
-
-  // Get the trail image and tint for the current condition
-  const trailImage = getTrailImage(condition);
-  const tintColor = getTintColor(condition);
 
   return (
     <main
-      className="relative flex min-h-screen flex-col items-center justify-center bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: `linear-gradient(${tintColor}, ${tintColor}), url('/images/trails/${trailImage}')`,
-      }}
+      className="relative flex min-h-screen flex-col items-center justify-center"
       data-testid="trail-background"
+      data-active-layer={activeLayer}
+      data-layer0-image={layers[0].image}
+      data-layer1-image={layers[1].image}
     >
-      <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      {/* Background Layer 0 */}
+      <div
+        className="absolute top-0 left-0 w-full h-full z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
+        style={{
+          backgroundImage: `linear-gradient(${layers[0].tint}, ${layers[0].tint}), url('/images/trails/${layers[0].image}')`,
+          opacity: activeLayer === 0 ? 1 : 0,
+        }}
+        data-testid="background-layer-0"
+        aria-hidden="true"
+      />
+
+      {/* Background Layer 1 */}
+      <div
+        className="absolute top-0 left-0 w-full h-full z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
+        style={{
+          backgroundImage: `linear-gradient(${layers[1].tint}, ${layers[1].tint}), url('/images/trails/${layers[1].image}')`,
+          opacity: activeLayer === 1 ? 1 : 0,
+        }}
+        data-testid="background-layer-1"
+        aria-hidden="true"
+      />
+
+      {/* Content Layer */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-16 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-text-primary sm:text-[4rem]">
           RainCheck
         </h1>
