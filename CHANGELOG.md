@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Planning algorithm core for generating optimal run suggestions based on weather and training plan
+- `generateSuggestions()` function implementing multi-stage scheduling algorithm
+- Weather scoring integration using `lib/weather-preferences.ts` functions
+- Long run prioritization for best weather days with weekend preference
+- Easy run distribution with gap prevention (no 4+ day gaps between runs)
+- Rest day enforcement after long runs
+- Human-readable reasoning generation for each suggestion
+- Validation utilities (`validateNoLargeGaps`, `validateNoBackToBackHardDays`)
+- Comprehensive test suite with 72 tests and 100% statement coverage
 - Login page at `/login` with password-only authentication form
 - `LoginForm` component with NextAuth signIn integration, loading states, and error handling
 - Automatic redirect for authenticated users visiting login page
