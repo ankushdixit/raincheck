@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Run model in Prisma schema for storing scheduled and completed runs
+- Historical runs seed data with 18 completed runs from Sept-Nov 2025 (based on actual training data)
+- Unique constraint on Run date field (one run per day)
+- Indexes on Run date and completed fields for efficient queries
+- Integration tests for Run seeding (9 new tests)
 - Run suggestions UI components (`RunSuggestionCard`, `RunSuggestions`) with glass-effect styling matching weather cards
 - Info icon tooltip with reasoning displayed via React Portal for proper z-index handling
 - Time range display for each suggestion showing optimal running windows

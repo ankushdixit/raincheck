@@ -84,3 +84,19 @@ model WeatherPreference {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+model Run {
+  id        String   @id @default(cuid())
+  date      DateTime @unique // One run per day max
+  distance  Float    // Kilometers
+  pace      String   // Format: "6:30" (min:sec per km)
+  duration  String   // Format: "45:30" (min:sec total)
+  type      RunType
+  notes     String?
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([completed])
+}

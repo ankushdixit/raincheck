@@ -346,4 +346,107 @@ describeFn("Database Seed", () => {
       expect(race?.avoidConditions).toHaveLength(0);
     });
   });
+
+  describe("Run (Historical Runs)", () => {
+    it("creates exactly 18 historical runs", async () => {
+      const count = await db.run.count();
+      expect(count).toBe(18);
+    });
+
+    it("all historical runs are marked as completed", async () => {
+      const incompleteRuns = await db.run.count({
+        where: { completed: false },
+      });
+      expect(incompleteRuns).toBe(0);
+    });
+
+    it("has unique dates for all runs", async () => {
+      const runs = await db.run.findMany({
+        select: { date: true },
+      });
+
+      const dates = runs.map((r) => r.date.toISOString());
+      const uniqueDates = new Set(dates);
+      expect(uniqueDates.size).toBe(18);
+    });
+
+    it("has runs spanning Sept to Nov 2025", async () => {
+      const runs = await db.run.findMany({
+        select: { date: true },
+        orderBy: { date: "asc" },
+      });
+
+      // First run should be in September 2025
+      expect(runs[0]?.date.getFullYear()).toBe(2025);
+      expect(runs[0]?.date.getMonth()).toBe(8); // September (0-indexed)
+
+      // Last run should be in November 2025
+      const lastRun = runs[runs.length - 1];
+      expect(lastRun?.date.getFullYear()).toBe(2025);
+      expect(lastRun?.date.getMonth()).toBe(10); // November (0-indexed)
+    });
+
+    it("has mix of LONG_RUN and EASY_RUN types", async () => {
+      const runTypes = await db.run.groupBy({
+        by: ["type"],
+        _count: true,
+      });
+
+      const typeMap = Object.fromEntries(runTypes.map((r) => [r.type, r._count]));
+
+      // Should have LONG_RUN entries
+      expect(typeMap["LONG_RUN"]).toBeGreaterThan(0);
+      // Should have EASY_RUN entries
+      expect(typeMap["EASY_RUN"]).toBeGreaterThan(0);
+    });
+
+    it("has valid pace format (M:SS or MM:SS)", async () => {
+      const runs = await db.run.findMany({
+        select: { pace: true },
+      });
+
+      const paceRegex = /^\d{1,2}:\d{2}$/;
+      runs.forEach((run) => {
+        expect(run.pace).toMatch(paceRegex);
+      });
+    });
+
+    it("has valid duration format", async () => {
+      const runs = await db.run.findMany({
+        select: { duration: true },
+      });
+
+      // Duration can be M:SS, MM:SS, or HH:MM:SS format
+      const durationRegex = /^\d{1,2}:\d{2}(:\d{2})?$/;
+      runs.forEach((run) => {
+        expect(run.duration).toMatch(durationRegex);
+      });
+    });
+
+    it("has positive distances", async () => {
+      const runs = await db.run.findMany({
+        select: { distance: true },
+      });
+
+      runs.forEach((run) => {
+        expect(run.distance).toBeGreaterThan(0);
+      });
+    });
+
+    it("can be queried by date range", async () => {
+      const octoberRuns = await db.run.findMany({
+        where: {
+          date: {
+            gte: new Date("2025-10-01T00:00:00.000Z"),
+            lt: new Date("2025-11-01T00:00:00.000Z"),
+          },
+        },
+      });
+
+      expect(octoberRuns.length).toBeGreaterThan(0);
+      octoberRuns.forEach((run) => {
+        expect(run.date.getMonth()).toBe(9); // October (0-indexed)
+      });
+    });
+  });
 });
