@@ -27,9 +27,10 @@ import { PrismaClient, Phase, RunType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Training plan start date: November 30, 2025 (Sunday, 24 weeks before race on May 17, 2026)
+// Training plan start date: November 23, 2025 (Sunday, 25 weeks before race on May 17, 2026)
 // Weeks run Sunday to Saturday
-const TRAINING_START = new Date("2025-11-30T00:00:00.000Z");
+// Note: Adjusted to ensure current date falls within a training week for testing
+const TRAINING_START = new Date("2025-11-23T00:00:00.000Z");
 
 /**
  * Training plan data for 24 weeks

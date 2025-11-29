@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
+import { RunSuggestions } from "@/components/suggestions";
 
 /** Selected day data for background coordination */
 interface SelectedDay {
@@ -105,6 +106,12 @@ export function HomePage() {
 
         <div className="mt-8 w-full max-w-4xl">
           <WeatherForecast onDaySelect={handleDaySelect} />
+        </div>
+
+        {/* Run Suggestions Section */}
+        <div className="mt-12 w-full max-w-4xl">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Suggested Runs</h2>
+          <RunSuggestions />
         </div>
       </div>
     </main>

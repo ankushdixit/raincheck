@@ -11,6 +11,8 @@
 import {
   fetchCurrentWeather,
   fetchForecast,
+  fetchFromOpenMeteo,
+  fetchHybridForecast,
   getRateLimitStatus,
   resetRateLimit,
 } from "../weather-client";
@@ -605,6 +607,237 @@ describe("Weather Client", () => {
       const afterStatus = getRateLimitStatus();
 
       expect(afterStatus.count).toBe(beforeStatus.count + 1);
+    });
+  });
+
+  describe("fetchFromOpenMeteo", () => {
+    const mockOpenMeteoResponse = {
+      latitude: 53.61,
+      longitude: -6.18,
+      timezone: "Europe/Dublin",
+      hourly: {
+        time: Array.from({ length: 48 }, (_, i) => {
+          const date = new Date("2025-11-28T00:00:00");
+          date.setHours(i);
+          return date.toISOString().slice(0, 16);
+        }),
+        temperature_2m: Array.from(
+          { length: 48 },
+          (_, i) => 8 + Math.sin((i / 24) * Math.PI * 2) * 4
+        ),
+        apparent_temperature: Array.from(
+          { length: 48 },
+          (_, i) => 6 + Math.sin((i / 24) * Math.PI * 2) * 4
+        ),
+        precipitation_probability: Array.from({ length: 48 }, () => 20),
+        precipitation: Array.from({ length: 48 }, () => 0.1),
+        weather_code: Array.from({ length: 48 }, () => 2), // Partly Cloudy
+        wind_speed_10m: Array.from({ length: 48 }, () => 15),
+        is_day: Array.from({ length: 48 }, (_, i) => (i >= 8 && i < 17 ? 1 : 0)),
+        relative_humidity_2m: Array.from({ length: 48 }, () => 75),
+      },
+    };
+
+    it("parses Open-Meteo response correctly", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoResponse),
+      });
+
+      const result = await fetchFromOpenMeteo(
+        { latitude: 53.61, longitude: -6.18 },
+        "Balbriggan, Ireland",
+        2
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        location: "Balbriggan, Ireland",
+        latitude: 53.61,
+        longitude: -6.18,
+        condition: "Partly Cloudy",
+      });
+    });
+
+    it("constructs correct Open-Meteo API URL", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoResponse),
+      });
+
+      await fetchFromOpenMeteo({ latitude: 53.61, longitude: -6.18 }, "Test Location", 7);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("https://api.open-meteo.com/v1/forecast")
+      );
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("latitude=53.61"));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("longitude=-6.18"));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("forecast_days=7"));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("temperature_2m"));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("precipitation_probability"));
+    });
+
+    it("includes hourly data in response", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoResponse),
+      });
+
+      const result = await fetchFromOpenMeteo(
+        { latitude: 53.61, longitude: -6.18 },
+        "Test Location",
+        2
+      );
+
+      expect(result[0]?.hourly).toBeDefined();
+      expect(result[0]?.hourly).toHaveLength(24);
+      expect(result[0]?.hourly?.[0]).toHaveProperty("time");
+      expect(result[0]?.hourly?.[0]).toHaveProperty("temperature");
+      expect(result[0]?.hourly?.[0]).toHaveProperty("precipitation");
+    });
+
+    it("throws error on API failure", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+      });
+
+      await expect(
+        fetchFromOpenMeteo({ latitude: 53.61, longitude: -6.18 }, "Test Location", 7)
+      ).rejects.toThrow(WeatherAPIError);
+    });
+
+    it("clamps days to maximum of 16", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoResponse),
+      });
+
+      await fetchFromOpenMeteo(
+        { latitude: 53.61, longitude: -6.18 },
+        "Test Location",
+        20 // Request 20 days
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("forecast_days=16"));
+    });
+  });
+
+  describe("fetchHybridForecast", () => {
+    const mockOpenMeteoExtended = {
+      latitude: 53.61,
+      longitude: -6.18,
+      timezone: "Europe/Dublin",
+      hourly: {
+        time: Array.from({ length: 14 * 24 }, (_, i) => {
+          const date = new Date("2025-11-28T00:00:00");
+          date.setHours(i);
+          return date.toISOString().slice(0, 16);
+        }),
+        temperature_2m: Array.from({ length: 14 * 24 }, () => 10),
+        apparent_temperature: Array.from({ length: 14 * 24 }, () => 8),
+        precipitation_probability: Array.from({ length: 14 * 24 }, () => 20),
+        precipitation: Array.from({ length: 14 * 24 }, () => 0.1),
+        weather_code: Array.from({ length: 14 * 24 }, () => 2),
+        wind_speed_10m: Array.from({ length: 14 * 24 }, () => 15),
+        is_day: Array.from({ length: 14 * 24 }, (_, i) => (i % 24 >= 8 && i % 24 < 17 ? 1 : 0)),
+        relative_humidity_2m: Array.from({ length: 14 * 24 }, () => 75),
+      },
+    };
+
+    it("fetches only from WeatherAPI when days <= 5", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockForecastResponse),
+      });
+
+      const result = await fetchHybridForecast("Balbriggan, IE", 5);
+
+      // Should only call WeatherAPI, not Open-Meteo
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("api.weatherapi.com"));
+      expect(result.length).toBeLessThanOrEqual(7); // MockForecastResponse has 7 days
+    });
+
+    it("combines WeatherAPI and Open-Meteo for days > 5", async () => {
+      // First call: WeatherAPI (5 days)
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockForecastResponse),
+      });
+
+      // Second call: Open-Meteo (extended)
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoExtended),
+      });
+
+      const result = await fetchHybridForecast("Balbriggan, IE", 14);
+
+      // Should call both APIs
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenNthCalledWith(1, expect.stringContaining("api.weatherapi.com"));
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("api.open-meteo.com"));
+
+      // Result should have data from both sources
+      expect(result.length).toBeGreaterThan(5);
+    });
+
+    it("falls back to WeatherAPI data if Open-Meteo fails", async () => {
+      // First call: WeatherAPI success
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockForecastResponse),
+      });
+
+      // Second call: Open-Meteo fails
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+      });
+
+      const result = await fetchHybridForecast("Balbriggan, IE", 14);
+
+      // Should still return WeatherAPI data
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]?.location).toBe("Balbriggan, Ireland");
+    });
+
+    it("clamps days to maximum of 16", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockForecastResponse),
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoExtended),
+      });
+
+      await fetchHybridForecast("Balbriggan, IE", 20);
+
+      // Open-Meteo call should have forecast_days=16
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("forecast_days=16"));
+    });
+
+    it("uses WeatherAPI coordinates for Open-Meteo request", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockForecastResponse),
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoExtended),
+      });
+
+      await fetchHybridForecast("Balbriggan, IE", 10);
+
+      // Open-Meteo should use coordinates from WeatherAPI response
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("latitude=53.61"));
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("longitude=-6.18"));
     });
   });
 });
