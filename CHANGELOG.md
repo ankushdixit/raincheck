@@ -81,6 +81,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seed data for 24-week training plan with progressive long run targets (12km → 20km peak)
 - Seed data for weather preferences matching PRD specifications
 - Integration tests for TrainingPlan and WeatherPreference seeding
+- Weather preferences logic module (`lib/weather-preferences.ts`) with scoring and acceptability functions
+- `getWeatherScore()` function calculating 0-100 quality score based on precipitation, wind, temperature, conditions
+- `isAcceptableWeather()` function checking if weather meets run type thresholds
+- `getWeatherQuality()` function mapping scores to "excellent"/"good"/"fair"/"poor" labels
+- `getRejectionReason()` function generating human-readable explanations for unacceptable weather
+- 74 unit tests for weather preferences logic with 100% code coverage
 
 ### Changed
 
