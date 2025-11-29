@@ -179,7 +179,7 @@ describeFn("Database Seed", () => {
       }
     });
 
-    it("has week dates spanning Nov 30, 2025 to May 16, 2026", async () => {
+    it("has week dates spanning Nov 23, 2025 to May 9, 2026", async () => {
       const firstWeek = await db.trainingPlan.findFirst({
         where: { weekNumber: 1 },
       });
@@ -187,11 +187,11 @@ describeFn("Database Seed", () => {
         where: { weekNumber: 24 },
       });
 
-      // Week 1 starts on Nov 30, 2025 (Sunday)
-      expect(firstWeek?.weekStart).toEqual(new Date("2025-11-30T00:00:00.000Z"));
+      // Week 1 starts on Nov 23, 2025 (Sunday)
+      expect(firstWeek?.weekStart).toEqual(new Date("2025-11-23T00:00:00.000Z"));
 
-      // Week 24 ends on May 16, 2026 (Saturday before race on May 17)
-      const expectedLastWeekEnd = new Date("2025-11-30T00:00:00.000Z");
+      // Week 24 ends 23*7+6 days after the start date
+      const expectedLastWeekEnd = new Date("2025-11-23T00:00:00.000Z");
       expectedLastWeekEnd.setDate(expectedLastWeekEnd.getDate() + 23 * 7 + 6);
       expectedLastWeekEnd.setHours(23, 59, 59, 999);
       expect(lastWeek?.weekEnd).toEqual(expectedLastWeekEnd);

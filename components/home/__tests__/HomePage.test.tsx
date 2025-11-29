@@ -22,6 +22,11 @@ jest.mock("@/components/weather", () => ({
   },
 }));
 
+// Mock the suggestions component
+jest.mock("@/components/suggestions", () => ({
+  RunSuggestions: () => <div data-testid="run-suggestions-mock">Run Suggestions</div>,
+}));
+
 describe("HomePage", () => {
   beforeEach(() => {
     capturedOnDaySelect = undefined;
@@ -57,6 +62,16 @@ describe("HomePage", () => {
   it("renders the WeatherForecast component", () => {
     render(<HomePage />);
     expect(screen.getByTestId("weather-forecast-mock")).toBeInTheDocument();
+  });
+
+  it("renders the RunSuggestions component", () => {
+    render(<HomePage />);
+    expect(screen.getByTestId("run-suggestions-mock")).toBeInTheDocument();
+  });
+
+  it("renders the Suggested Runs heading", () => {
+    render(<HomePage />);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Suggested Runs");
   });
 
   it("renders two background layers for cross-fade transitions", () => {

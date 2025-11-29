@@ -5,18 +5,13 @@
  * value proposition of RainCheck. It takes weather forecasts, training plan requirements,
  * and weather preferences as inputs, then generates optimal run suggestions.
  *
- * Algorithm Stages:
- * 1. Gather Requirements - Load training plan data and determine required runs
- * 2. Score Weather - Calculate weather scores for each day in the forecast period
- * 3. Place Long Run - Assign long run to the best weather day
- * 4. Place Other Runs - Distribute easy runs with proper spacing and gap prevention
- * 5. Generate Reasoning - Create human-readable explanations for each suggestion
- *
- * Key Constraints:
- * - Long runs get the best weather days (highest priority)
- * - No back-to-back hard days (long run or tempo/intervals)
- * - Rest day after long runs is enforced
- * - Maximum 4-day gap between runs to prevent detraining
+ * Algorithm Rules:
+ * 1. Long runs MUST be on weekends (Saturday or Sunday) only
+ * 2. Long runs are always scheduled regardless of weather (they're too important to skip)
+ * 3. After a long run, 2 rest days are enforced
+ * 4. After an easy run, 1 rest day is enforced
+ * 5. Hourly weather is used to find the best time window for each run
+ * 6. Time windows: 9am-5pm for easy runs, 9am-2pm for long runs (Ireland winter daylight)
  *
  * @example
  * ```typescript
@@ -32,30 +27,46 @@
  */
 
 import type { RunType, TrainingPlan, WeatherPreference } from "@prisma/client";
-import type { WeatherData } from "@/types/weather";
+import type { WeatherData, HourlyWeather } from "@/types/weather";
 import {
   getWeatherScore,
-  getWeatherQuality,
   toWeatherPreferenceThresholds,
   type WeatherDataForScoring,
-  type WeatherQuality,
 } from "./weather-preferences";
 
 // Re-export RunType for convenience
 export { RunType } from "@prisma/client";
 
+// Time window constants (Ireland winter daylight hours)
+const EASY_RUN_START_HOUR = 9; // 9am
+const EASY_RUN_END_HOUR = 17; // 5pm (run should end by this time)
+const LONG_RUN_START_HOUR = 9; // 9am
+const LONG_RUN_END_HOUR = 14; // 2pm (run should end by this time)
+
+// Rest day constants
+const REST_DAYS_AFTER_LONG_RUN = 2;
+const REST_DAYS_AFTER_EASY_RUN = 1;
+
 /**
  * Input parameters for the planning algorithm.
  */
 export interface AlgorithmInput {
-  /** Array of daily weather forecasts for the planning period */
+  /** Array of daily weather forecasts with hourly data */
   forecast: WeatherData[];
   /** Current week's training plan (optional - algorithm works without it) */
   trainingPlan: TrainingPlan | null;
   /** Weather preferences for each run type */
   preferences: WeatherPreference[];
-  /** Already scheduled runs to avoid conflicts (dates as ISO strings or Date objects) */
+  /** Already scheduled runs to avoid conflicts */
   existingRuns: Array<{ date: Date | string; runType: RunType }>;
+}
+
+/**
+ * Time range for a suggested run
+ */
+export interface TimeRange {
+  start: string; // "9am"
+  end: string; // "11am"
 }
 
 /**
@@ -78,70 +89,29 @@ export interface Suggestion {
   runType: RunType;
   /** Suggested distance in km */
   distance: number;
-  /** Weather quality score (0-100) */
+  /** Weather quality score (0-100) for the suggested time window */
   weatherScore: number;
   /** True if score >= 80 (excellent conditions) */
   isOptimal: boolean;
   /** Human-readable explanation for this suggestion */
   reason: string;
-  /** Weather data for the day */
+  /** Weather data for the suggested time window */
+  weather: WeatherSummary;
+  /** Suggested time range for the run */
+  timeRange: TimeRange;
+}
+
+/**
+ * Internal structure for scored time windows.
+ */
+interface ScoredTimeWindow {
+  date: Date;
+  dateKey: string;
+  startHour: number;
+  endHour: number;
+  score: number;
   weather: WeatherSummary;
 }
-
-/**
- * Internal structure for tracking day weather scores.
- */
-interface ScoredDay {
-  date: Date;
-  dateKey: string; // YYYY-MM-DD format for comparisons
-  weather: WeatherData;
-  score: number;
-  quality: WeatherQuality;
-}
-
-/**
- * Internal structure for runs needed in a training week.
- */
-interface RunsNeeded {
-  longRunDistance: number;
-  easyRunDistance: number;
-  totalEasyRuns: number;
-}
-
-/**
- * Reasoning templates for different run types and conditions.
- */
-const REASON_TEMPLATES = {
-  longRun: {
-    excellent:
-      "Best weather of the week (score: {score}/100). {condition}, {temp}°C with {precip}% precipitation chance.",
-    good: "Good conditions for your long run. {condition} with manageable {windSpeed} km/h winds.",
-    fair: "Not ideal, but best available day. Consider starting early to avoid {condition}.",
-    poor: "All days have challenging weather. This day is least problematic. Consider indoor alternatives.",
-  },
-  easyRun: {
-    excellent: "{dayName} offers excellent conditions ({score}/100). {condition}, {temp}°C.",
-    good: "{dayName} has good conditions ({score}/100). {condition}, {temp}°C.",
-    fair: "{dayName} has fair conditions ({score}/100). {condition}, {temp}°C.",
-    poor: "{dayName} has poor conditions ({score}/100). {condition}, {temp}°C.",
-    gapFiller:
-      "Scheduled to maintain training consistency (avoiding 4+ day gap). {condition}, {temp}°C.",
-  },
-  restDay: "Rest day - recovery after long run.",
-} as const;
-
-/**
- * Days of the week for reasoning templates.
- */
-const DAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
 
 /**
  * Format a date as YYYY-MM-DD for consistent comparisons.
@@ -161,16 +131,42 @@ export function addDays(date: Date, days: number): Date {
 }
 
 /**
- * Get the day name (Sunday, Monday, etc.) for a date.
+ * Get the day name for a date.
  */
 export function getDayName(date: Date): string {
-  return DAY_NAMES[date.getDay()]!;
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return days[date.getDay()]!;
+}
+
+/**
+ * Check if a date is a weekend (Saturday or Sunday).
+ */
+export function isWeekend(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+}
+
+/**
+ * Check if a date is a Sunday.
+ */
+export function isSunday(date: Date): boolean {
+  return date.getDay() === 0;
+}
+
+/**
+ * Format hour to readable string (e.g., 9 -> "9am", 14 -> "2pm")
+ */
+export function formatHour(hour: number): string {
+  if (hour === 0) return "12am";
+  if (hour === 12) return "12pm";
+  if (hour < 12) return `${hour}am`;
+  return `${hour - 12}pm`;
 }
 
 /**
  * Get the weather preference for a specific run type.
  */
-export function getPreferenceForRunType(
+function getPreferenceForRunType(
   preferences: WeatherPreference[],
   runType: RunType
 ): WeatherPreference | undefined {
@@ -179,26 +175,22 @@ export function getPreferenceForRunType(
 
 /**
  * Calculate runs needed for a training week.
- *
- * Based on training plan:
- * - 1 long run (distance from plan)
- * - 2-3 easy runs (distance calculated from weekly mileage minus long run)
  */
-export function getRunsNeeded(trainingPlan: TrainingPlan | null): RunsNeeded {
+function getRunsNeeded(trainingPlan: TrainingPlan | null): {
+  longRunDistance: number;
+  easyRunDistance: number;
+  totalEasyRuns: number;
+} {
   if (!trainingPlan) {
-    // Default values if no training plan
     return {
       longRunDistance: 12,
       easyRunDistance: 6,
-      totalEasyRuns: 2,
+      totalEasyRuns: 3,
     };
   }
 
   const longRunDistance = trainingPlan.longRunTarget;
   const remainingMileage = trainingPlan.weeklyMileageTarget - longRunDistance;
-
-  // Typical structure: 2-3 easy runs to fill remaining mileage
-  // If remaining mileage is high (>15km), use 3 easy runs; otherwise 2
   const totalEasyRuns = remainingMileage > 15 ? 3 : 2;
   const easyRunDistance = Math.round((remainingMileage / totalEasyRuns) * 10) / 10;
 
@@ -210,355 +202,335 @@ export function getRunsNeeded(trainingPlan: TrainingPlan | null): RunsNeeded {
 }
 
 /**
- * Score all forecast days using weather preferences for long runs.
+ * Score a time window using hourly weather data.
+ * Returns the average score for hours in the window.
  */
-export function scoreForecastDays(
-  forecast: WeatherData[],
-  preferences: WeatherPreference[]
-): ScoredDay[] {
-  const longRunPreference = getPreferenceForRunType(preferences, "LONG_RUN");
+function scoreTimeWindow(
+  hourlyData: HourlyWeather[],
+  startHour: number,
+  endHour: number,
+  preferences: WeatherPreference[],
+  runType: RunType
+): { score: number; weather: WeatherSummary } {
+  const preference = getPreferenceForRunType(preferences, runType);
+  const thresholds = preference ? toWeatherPreferenceThresholds(preference) : null;
 
-  if (!longRunPreference) {
-    // If no long run preference, use a sensible default
-    return forecast.map((weather) => ({
-      date: weather.datetime,
-      dateKey: formatDateKey(weather.datetime),
-      weather,
-      score: 50, // Neutral score without preferences
-      quality: "fair" as WeatherQuality,
-    }));
-  }
-
-  const thresholds = toWeatherPreferenceThresholds(longRunPreference);
-
-  return forecast.map((weather) => {
-    const weatherForScoring: WeatherDataForScoring = {
-      condition: weather.condition,
-      temperature: weather.temperature,
-      feelsLike: weather.feelsLike,
-      precipitation: weather.precipitation,
-      humidity: weather.humidity,
-      windSpeed: weather.windSpeed,
-    };
-
-    const score = getWeatherScore(weatherForScoring, thresholds);
-    const quality = getWeatherQuality(score);
-
-    return {
-      date: weather.datetime,
-      dateKey: formatDateKey(weather.datetime),
-      weather,
-      score,
-      quality,
-    };
+  // Filter hours within the window
+  const windowHours = hourlyData.filter((h) => {
+    const hour = h.time.getHours();
+    return hour >= startHour && hour < endHour;
   });
-}
 
-/**
- * Find the best day for a long run from scored days.
- *
- * Excludes:
- * - Days that already have existing runs
- * - Days already used in the current planning session
- */
-export function findBestLongRunDay(
-  scoredDays: ScoredDay[],
-  existingRunDates: Set<string>,
-  usedDates: Set<string>
-): ScoredDay | null {
-  // Sort by score descending, then by date (prefer weekends for long runs)
-  const availableDays = scoredDays
-    .filter((day) => !existingRunDates.has(day.dateKey) && !usedDates.has(day.dateKey))
-    .sort((a, b) => {
-      // Primary sort: higher score first
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      // Secondary sort: prefer weekend days (0 = Sunday, 6 = Saturday)
-      const aIsWeekend = a.date.getDay() === 0 || a.date.getDay() === 6;
-      const bIsWeekend = b.date.getDay() === 0 || b.date.getDay() === 6;
-      if (bIsWeekend && !aIsWeekend) return 1;
-      if (aIsWeekend && !bIsWeekend) return -1;
-      return 0;
-    });
-
-  return availableDays[0] ?? null;
-}
-
-/**
- * Find days for easy runs that satisfy:
- * - Not already used (existing runs or this session)
- * - Proper spacing from long run day
- * - No gaps of 4+ days
- */
-export function findEasyRunDays(
-  scoredDays: ScoredDay[],
-  longRunDateKey: string | null,
-  existingRunDates: Set<string>,
-  usedDates: Set<string>,
-  totalEasyRuns: number
-): ScoredDay[] {
-  // Get all available days (not used, not long run day, not rest day after long run)
-  const restDayKey = longRunDateKey ? formatDateKey(addDays(new Date(longRunDateKey), 1)) : null;
-
-  let availableDays = scoredDays.filter(
-    (day) =>
-      !existingRunDates.has(day.dateKey) &&
-      !usedDates.has(day.dateKey) &&
-      day.dateKey !== longRunDateKey &&
-      day.dateKey !== restDayKey
-  );
-
-  // Sort by score descending
-  availableDays = availableDays.sort((a, b) => b.score - a.score);
-
-  // Select easy run days, ensuring no 4+ day gaps
-  const selectedDays: ScoredDay[] = [];
-
-  // Build a set of all run dates (existing + long run)
-  const allRunDates = new Set([...existingRunDates, ...usedDates]);
-  if (longRunDateKey) {
-    allRunDates.add(longRunDateKey);
+  if (windowHours.length === 0) {
+    return {
+      score: 50,
+      weather: { condition: "Unknown", temperature: 10, precipitation: 50, windSpeed: 20 },
+    };
   }
 
-  // Sort all days by date for gap checking
-  const sortedAllDays = [...scoredDays].sort((a, b) => a.date.getTime() - b.date.getTime());
+  // Calculate average weather for the window
+  const avgTemp = windowHours.reduce((sum, h) => sum + h.temperature, 0) / windowHours.length;
+  const avgPrecip = windowHours.reduce((sum, h) => sum + h.precipitation, 0) / windowHours.length;
+  const avgWind = windowHours.reduce((sum, h) => sum + h.windSpeed, 0) / windowHours.length;
+  const avgHumidity = windowHours.reduce((sum, h) => sum + h.humidity, 0) / windowHours.length;
 
-  for (let i = 0; i < totalEasyRuns && availableDays.length > 0; i++) {
-    // Find the best day that doesn't create a 4+ day gap
-    const dayToAdd = findDayWithoutLargeGap(
-      availableDays,
-      [...allRunDates, ...selectedDays.map((d) => d.dateKey)],
-      sortedAllDays
-    );
-
-    if (dayToAdd) {
-      selectedDays.push(dayToAdd);
-      availableDays = availableDays.filter((d) => d.dateKey !== dayToAdd.dateKey);
-    } else if (availableDays.length > 0) {
-      // If no day without gap found, just pick the best available (gap filler)
-      selectedDays.push(availableDays[0]!);
-      availableDays = availableDays.slice(1);
+  // Use the most common condition in the window
+  const conditionCounts = new Map<string, number>();
+  windowHours.forEach((h) => {
+    conditionCounts.set(h.condition, (conditionCounts.get(h.condition) || 0) + 1);
+  });
+  let mostCommonCondition = "Unknown";
+  let maxCount = 0;
+  conditionCounts.forEach((count, condition) => {
+    if (count > maxCount) {
+      maxCount = count;
+      mostCommonCondition = condition;
     }
-  }
+  });
 
-  return selectedDays;
-}
-
-/**
- * Find a day from available days that won't create a 4+ day gap.
- */
-function findDayWithoutLargeGap(
-  availableDays: ScoredDay[],
-  plannedRunDateKeys: string[],
-  allDays: ScoredDay[]
-): ScoredDay | null {
-  const MAX_GAP = 3; // Maximum 3 rest days between runs (4-day gap = 4 days without running)
-
-  for (const candidate of availableDays) {
-    // Simulate adding this day and check for gaps
-    const allRunDates = [...plannedRunDateKeys, candidate.dateKey].sort();
-
-    // Check gaps between consecutive runs
-    let hasLargeGap = false;
-    for (let i = 0; i < allRunDates.length - 1; i++) {
-      const current = new Date(allRunDates[i]!);
-      const next = new Date(allRunDates[i + 1]!);
-      const daysDiff = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff > MAX_GAP + 1) {
-        // +1 because consecutive days have diff of 1
-        hasLargeGap = true;
-        break;
-      }
-    }
-
-    // Also check gap from first run to start of forecast and last run to end
-    if (!hasLargeGap && allDays.length > 0) {
-      const firstForecastDay = allDays[0]!;
-      const lastForecastDay = allDays[allDays.length - 1]!;
-      const sortedRuns = allRunDates.sort();
-
-      if (sortedRuns.length > 0) {
-        const firstRunDate = new Date(sortedRuns[0]!);
-        const lastRunDate = new Date(sortedRuns[sortedRuns.length - 1]!);
-
-        const gapAtStart = Math.floor(
-          (firstRunDate.getTime() - firstForecastDay.date.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        const gapAtEnd = Math.floor(
-          (lastForecastDay.date.getTime() - lastRunDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (gapAtStart > MAX_GAP || gapAtEnd > MAX_GAP) {
-          hasLargeGap = true;
-        }
-      }
-    }
-
-    if (!hasLargeGap) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Generate a human-readable reason for a suggestion.
- */
-export function generateReason(
-  suggestion: Omit<Suggestion, "reason">,
-  scoredDay: ScoredDay,
-  isGapFiller: boolean = false
-): string {
-  const { runType, weatherScore } = suggestion;
-  const { weather, quality } = scoredDay;
-  const dayName = getDayName(suggestion.date);
-
-  const replacements: Record<string, string | number> = {
-    score: weatherScore,
-    condition: weather.condition,
-    temp: Math.round(weather.temperature),
-    precip: Math.round(weather.precipitation),
-    windSpeed: Math.round(weather.windSpeed),
-    dayName,
+  const weatherForScoring: WeatherDataForScoring = {
+    condition: mostCommonCondition,
+    temperature: avgTemp,
+    feelsLike: avgTemp,
+    precipitation: avgPrecip,
+    humidity: avgHumidity,
+    windSpeed: avgWind,
   };
 
-  const replace = (template: string): string => {
-    return template.replace(/{(\w+)}/g, (_, key) => String(replacements[key] ?? key));
-  };
-
-  if (runType === "LONG_RUN") {
-    const template = REASON_TEMPLATES.longRun[quality];
-    return replace(template);
-  }
-
-  // For easy runs and other types
-  if (isGapFiller) {
-    return replace(REASON_TEMPLATES.easyRun.gapFiller);
-  }
-
-  const template = REASON_TEMPLATES.easyRun[quality];
-  return replace(template);
-}
-
-/**
- * Create a suggestion from a scored day.
- */
-function createSuggestion(
-  scoredDay: ScoredDay,
-  runType: RunType,
-  distance: number,
-  isGapFiller: boolean = false
-): Suggestion {
-  const baseSuggestion: Omit<Suggestion, "reason"> = {
-    date: scoredDay.date,
-    runType,
-    distance,
-    weatherScore: scoredDay.score,
-    isOptimal: scoredDay.score >= 80,
-    weather: {
-      condition: scoredDay.weather.condition,
-      temperature: scoredDay.weather.temperature,
-      precipitation: scoredDay.weather.precipitation,
-      windSpeed: scoredDay.weather.windSpeed,
-    },
-  };
+  const score = thresholds ? getWeatherScore(weatherForScoring, thresholds) : 50;
 
   return {
-    ...baseSuggestion,
-    reason: generateReason(baseSuggestion, scoredDay, isGapFiller),
+    score: Math.round(score),
+    weather: {
+      condition: mostCommonCondition,
+      temperature: Math.round(avgTemp),
+      precipitation: Math.round(avgPrecip),
+      windSpeed: Math.round(avgWind),
+    },
+  };
+}
+
+/**
+ * Find the best time window for a run on a given day.
+ */
+function findBestTimeWindow(
+  dayWeather: WeatherData,
+  preferences: WeatherPreference[],
+  runType: RunType
+): ScoredTimeWindow | null {
+  const isLongRun = runType === "LONG_RUN";
+  const startHour = isLongRun ? LONG_RUN_START_HOUR : EASY_RUN_START_HOUR;
+  const endHour = isLongRun ? LONG_RUN_END_HOUR : EASY_RUN_END_HOUR;
+
+  // If no hourly data, use daily data
+  if (!dayWeather.hourly || dayWeather.hourly.length === 0) {
+    const preference = getPreferenceForRunType(preferences, runType);
+    const thresholds = preference ? toWeatherPreferenceThresholds(preference) : null;
+    const weatherForScoring: WeatherDataForScoring = {
+      condition: dayWeather.condition,
+      temperature: dayWeather.temperature,
+      feelsLike: dayWeather.feelsLike,
+      precipitation: dayWeather.precipitation,
+      humidity: dayWeather.humidity,
+      windSpeed: dayWeather.windSpeed,
+    };
+    const score = thresholds ? getWeatherScore(weatherForScoring, thresholds) : 50;
+
+    return {
+      date: dayWeather.datetime,
+      dateKey: formatDateKey(dayWeather.datetime),
+      startHour,
+      endHour,
+      score: Math.round(score),
+      weather: {
+        condition: dayWeather.condition,
+        temperature: Math.round(dayWeather.temperature),
+        precipitation: Math.round(dayWeather.precipitation),
+        windSpeed: Math.round(dayWeather.windSpeed),
+      },
+    };
+  }
+
+  // Try different 2-hour windows within the allowed time range and find the best
+  let bestWindow: ScoredTimeWindow | null = null;
+  let bestScore = -1;
+
+  // Window size: 2 hours for easy runs, 3 hours for long runs
+  const windowSize = isLongRun ? 3 : 2;
+
+  for (let windowStart = startHour; windowStart <= endHour - windowSize; windowStart++) {
+    const { score, weather } = scoreTimeWindow(
+      dayWeather.hourly,
+      windowStart,
+      windowStart + windowSize,
+      preferences,
+      runType
+    );
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestWindow = {
+        date: dayWeather.datetime,
+        dateKey: formatDateKey(dayWeather.datetime),
+        startHour: windowStart,
+        endHour: windowStart + windowSize,
+        score,
+        weather,
+      };
+    }
+  }
+
+  // If no window found, return full range
+  if (!bestWindow) {
+    const { score, weather } = scoreTimeWindow(
+      dayWeather.hourly,
+      startHour,
+      endHour,
+      preferences,
+      runType
+    );
+    return {
+      date: dayWeather.datetime,
+      dateKey: formatDateKey(dayWeather.datetime),
+      startHour,
+      endHour,
+      score,
+      weather,
+    };
+  }
+
+  return bestWindow;
+}
+
+/**
+ * Generate human-readable reasoning for a suggestion.
+ */
+function generateReason(runType: RunType, score: number, weather: WeatherSummary): string {
+  const quality =
+    score >= 80 ? "excellent" : score >= 60 ? "good" : score >= 40 ? "fair" : "challenging";
+
+  if (runType === "LONG_RUN") {
+    if (score >= 60) {
+      return `Best weekend conditions for your long run (${score}/100). ${weather.condition}, ${weather.temperature}°C with ${weather.precipitation}% precipitation chance.`;
+    }
+    return `Scheduled for weekend as required. ${weather.condition} with ${weather.precipitation}% precipitation chance. Consider adjusting pace if needed.`;
+  }
+
+  return `${quality.charAt(0).toUpperCase() + quality.slice(1)} conditions (${score}/100). ${weather.condition}, ${weather.temperature}°C.`;
+}
+
+/**
+ * Create a suggestion from a scored time window.
+ */
+function createSuggestion(
+  window: ScoredTimeWindow,
+  runType: RunType,
+  distance: number
+): Suggestion {
+  return {
+    date: window.date,
+    runType,
+    distance,
+    weatherScore: window.score,
+    isOptimal: window.score >= 80,
+    reason: generateReason(runType, window.score, window.weather),
+    weather: window.weather,
+    timeRange: {
+      start: formatHour(window.startHour),
+      end: formatHour(window.endHour),
+    },
   };
 }
 
 /**
  * Generate optimal run suggestions based on weather and training plan.
  *
- * The algorithm:
- * 1. Determines required runs from training plan
- * 2. Scores all forecast days for weather quality
- * 3. Assigns long run to the best weather day
- * 4. Distributes easy runs across remaining good days
- * 5. Ensures no 4+ day gaps between runs
- * 6. Generates human-readable reasoning for each suggestion
- *
- * @param input - Algorithm input containing forecast, training plan, preferences, and existing runs
- * @returns Array of run suggestions sorted by date
- *
- * @example
- * ```typescript
- * const suggestions = generateSuggestions({
- *   forecast: weatherDataArray,
- *   trainingPlan: { longRunTarget: 16, weeklyMileageTarget: 35, ... },
- *   preferences: weatherPreferencesArray,
- *   existingRuns: [],
- * });
- * ```
+ * Rules:
+ * - Long runs: Weekend only, always scheduled, 2-day rest after
+ * - Easy runs: Best hourly weather, 1-day rest after
+ * - Generates 5-6 suggestions with at least 2 long runs (requires 14 days of forecast)
  */
 export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
   const { forecast, trainingPlan, preferences, existingRuns } = input;
 
-  // Handle edge case: empty forecast
   if (forecast.length === 0) {
     return [];
   }
 
-  // Stage 1: Gather requirements
   const runsNeeded = getRunsNeeded(trainingPlan);
-
-  // Stage 2: Score weather for each day
-  const scoredDays = scoreForecastDays(forecast, preferences);
-
-  // Build set of existing run dates for quick lookup
   const existingRunDates = new Set<string>(existingRuns.map((run) => formatDateKey(run.date)));
-
   const suggestions: Suggestion[] = [];
   const usedDates = new Set<string>();
+  const restDates = new Set<string>(); // Dates that must be rest days
 
-  // Stage 3: Place long run on best available day
-  const longRunDay = findBestLongRunDay(scoredDays, existingRunDates, usedDates);
+  // Step 1: Find all weekend days for long runs
+  const weekendDays = forecast.filter((day) => isWeekend(day.datetime));
 
-  if (longRunDay) {
-    suggestions.push(createSuggestion(longRunDay, "LONG_RUN", runsNeeded.longRunDistance));
-    usedDates.add(longRunDay.dateKey);
+  // Sort weekend days: prefer Sunday, then by weather score
+  const scoredWeekends = weekendDays
+    .map((day) => {
+      const window = findBestTimeWindow(day, preferences, "LONG_RUN");
+      return { day, window };
+    })
+    .filter((item) => item.window !== null)
+    .sort((a, b) => {
+      // First, group by week (days within 7 days of each other)
+      // Then within each week, prefer Sunday over Saturday
+      // Then prefer better weather
+      const aIsSunday = isSunday(a.day.datetime);
+      const bIsSunday = isSunday(b.day.datetime);
 
-    // Mark rest day after long run
-    const restDayKey = formatDateKey(addDays(longRunDay.date, 1));
-    usedDates.add(restDayKey);
+      if (aIsSunday && !bIsSunday) return -1;
+      if (bIsSunday && !aIsSunday) return 1;
+      return b.window!.score - a.window!.score;
+    });
+
+  // Step 2: Schedule long runs on weekends (aim for 2 long runs across 14 days)
+  // One long run per weekend
+  const scheduledWeekends = new Set<number>(); // Track which "week number" has a long run
+
+  for (const { day, window } of scoredWeekends) {
+    if (!window) continue;
+
+    const dateKey = formatDateKey(day.datetime);
+    if (existingRunDates.has(dateKey) || usedDates.has(dateKey) || restDates.has(dateKey)) {
+      continue;
+    }
+
+    // Calculate week number (0 = first week, 1 = second week, etc.)
+    const daysSinceStart = Math.floor(
+      (day.datetime.getTime() - forecast[0]!.datetime.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const weekNum = Math.floor(daysSinceStart / 7);
+
+    // Only one long run per weekend/week
+    if (scheduledWeekends.has(weekNum)) continue;
+
+    // Schedule this long run
+    suggestions.push(createSuggestion(window, "LONG_RUN", runsNeeded.longRunDistance));
+    usedDates.add(dateKey);
+    scheduledWeekends.add(weekNum);
+
+    // Mark 2 rest days after the long run
+    for (let i = 1; i <= REST_DAYS_AFTER_LONG_RUN; i++) {
+      const restDay = addDays(day.datetime, i);
+      restDates.add(formatDateKey(restDay));
+    }
+
+    // Stop after 2 long runs
+    if (suggestions.filter((s) => s.runType === "LONG_RUN").length >= 2) {
+      break;
+    }
   }
 
-  // Stage 4: Place easy runs on remaining good days
-  const longRunDateKey = longRunDay?.dateKey ?? null;
-  const easyRunDays = findEasyRunDays(
-    scoredDays,
-    longRunDateKey,
-    existingRunDates,
-    usedDates,
-    runsNeeded.totalEasyRuns
-  );
-
-  for (const easyDay of easyRunDays) {
-    // Check if this is a gap filler (placed to prevent 4+ day gap, not for weather)
-    const isGapFiller = easyDay.quality === "poor" || easyDay.quality === "fair";
-    suggestions.push(
-      createSuggestion(easyDay, "EASY_RUN", runsNeeded.easyRunDistance, isGapFiller)
+  // Step 3: Schedule easy runs on weekdays
+  // Find all non-weekend, non-rest days
+  const availableDays = forecast.filter((day) => {
+    const dateKey = formatDateKey(day.datetime);
+    return (
+      !isWeekend(day.datetime) &&
+      !existingRunDates.has(dateKey) &&
+      !usedDates.has(dateKey) &&
+      !restDates.has(dateKey)
     );
-    usedDates.add(easyDay.dateKey);
+  });
+
+  // Score all available days
+  const scoredDays = availableDays
+    .map((day) => ({
+      day,
+      window: findBestTimeWindow(day, preferences, "EASY_RUN"),
+    }))
+    .filter((item) => item.window !== null)
+    .sort((a, b) => b.window!.score - a.window!.score);
+
+  // Schedule easy runs with 1-day rest between them
+  let easyRunsScheduled = 0;
+  const targetEasyRuns = Math.max(runsNeeded.totalEasyRuns, 4); // At least 4 easy runs for 5-6 total
+
+  for (const { day, window } of scoredDays) {
+    if (!window) continue;
+    if (easyRunsScheduled >= targetEasyRuns) break;
+
+    const dateKey = formatDateKey(day.datetime);
+
+    // Check if this day is now a rest day (could have been marked by earlier easy run)
+    if (restDates.has(dateKey)) continue;
+
+    // Schedule this easy run
+    suggestions.push(createSuggestion(window, "EASY_RUN", runsNeeded.easyRunDistance));
+    usedDates.add(dateKey);
+    easyRunsScheduled++;
+
+    // Mark 1 rest day after the easy run
+    const restDay = addDays(day.datetime, REST_DAYS_AFTER_EASY_RUN);
+    restDates.add(formatDateKey(restDay));
   }
 
   // Sort suggestions by date
   suggestions.sort((a, b) => a.date.getTime() - b.date.getTime());
 
   return suggestions;
-}
-
-/**
- * Check if a date falls on a weekend (Saturday or Sunday).
- */
-export function isWeekend(date: Date): boolean {
-  const day = date.getDay();
-  return day === 0 || day === 6;
 }
 
 /**
@@ -570,20 +542,21 @@ export function getDayGap(date1: Date, date2: Date): number {
 }
 
 /**
- * Validate that suggestions don't have any 4+ day gaps.
- * Utility function for testing and verification.
+ * Validate that no hard days are back-to-back.
  */
-export function validateNoLargeGaps(suggestions: Suggestion[]): boolean {
-  if (suggestions.length <= 1) {
-    return true;
-  }
+export function validateNoBackToBackHardDays(suggestions: Suggestion[]): boolean {
+  const hardRunTypes: RunType[] = ["LONG_RUN", "TEMPO_RUN", "INTERVAL_RUN"];
+  const sorted = [...suggestions].sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const sortedDates = suggestions.map((s) => s.date).sort((a, b) => a.getTime() - b.getTime());
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i]!;
+    const next = sorted[i + 1]!;
+    const gap = getDayGap(current.date, next.date);
 
-  for (let i = 0; i < sortedDates.length - 1; i++) {
-    const gap = getDayGap(sortedDates[i]!, sortedDates[i + 1]!);
-    if (gap > 4) {
-      return false;
+    if (gap === 1) {
+      const currentIsHard = hardRunTypes.includes(current.runType);
+      const nextIsHard = hardRunTypes.includes(next.runType);
+      if (currentIsHard && nextIsHard) return false;
     }
   }
 
@@ -591,31 +564,19 @@ export function validateNoLargeGaps(suggestions: Suggestion[]): boolean {
 }
 
 /**
- * Validate that no hard days are back-to-back.
- * Hard days: LONG_RUN, TEMPO_RUN, INTERVAL_RUN
- * Utility function for testing and verification.
+ * Validate that there are no large gaps (5+ days) between suggestions.
  */
-export function validateNoBackToBackHardDays(suggestions: Suggestion[]): boolean {
-  const hardRunTypes: RunType[] = ["LONG_RUN", "TEMPO_RUN", "INTERVAL_RUN"];
+export function validateNoLargeGaps(suggestions: Suggestion[]): boolean {
+  if (suggestions.length < 2) return true;
 
-  // Sort by date
   const sorted = [...suggestions].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   for (let i = 0; i < sorted.length - 1; i++) {
     const current = sorted[i]!;
     const next = sorted[i + 1]!;
-
-    // Check if consecutive days
     const gap = getDayGap(current.date, next.date);
-    if (gap === 1) {
-      // Check if both are hard days
-      const currentIsHard = hardRunTypes.includes(current.runType);
-      const nextIsHard = hardRunTypes.includes(next.runType);
 
-      if (currentIsHard && nextIsHard) {
-        return false;
-      }
-    }
+    if (gap >= 5) return false;
   }
 
   return true;

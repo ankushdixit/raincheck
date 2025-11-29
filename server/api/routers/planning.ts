@@ -18,7 +18,7 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { generateSuggestions, type Suggestion } from "@/lib/planning-algorithm";
-import { fetchForecast } from "@/lib/weather-client";
+import { fetchHybridForecast } from "@/lib/weather-client";
 import { WeatherAPIError, type WeatherData } from "@/types/weather";
 import type { PrismaClient } from "@prisma/client";
 
@@ -82,7 +82,7 @@ async function getWeatherForecast(
 
   // Fetch from API for missing days
   try {
-    const forecastData = await fetchForecast(location, days);
+    const forecastData = await fetchHybridForecast(location, days);
     const expiresAt = new Date(now.getTime() + CACHE_TTL_MS);
 
     // Cache each day's data and add to results
