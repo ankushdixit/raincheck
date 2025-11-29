@@ -1,19 +1,31 @@
 "use client";
 
-import { api } from "@/lib/api";
+import { useState, useCallback } from "react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
+
+/** Selected day data for background coordination */
+interface SelectedDay {
+  condition: string;
+  datetime: Date;
+}
 
 /**
  * HomePage component that coordinates the weather-reactive background
  * with the weather display components.
+ * Background changes based on the selected forecast day.
  */
 export function HomePage() {
-  // Fetch current weather to determine background condition
-  const { data: weather } = api.weather.getCurrentWeather.useQuery({});
+  // Track selected day from forecast for background
+  const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null);
 
-  // Use the weather condition for background, or default if not loaded
-  const condition = weather?.condition ?? "default";
+  // Memoize callback to prevent unnecessary re-renders
+  const handleDaySelect = useCallback((day: SelectedDay) => {
+    setSelectedDay(day);
+  }, []);
+
+  // Use selected day's condition for background, or default if not loaded
+  const condition = selectedDay?.condition ?? "default";
 
   // Get the trail image and tint for the current condition
   const trailImage = getTrailImage(condition);
@@ -21,7 +33,7 @@ export function HomePage() {
 
   return (
     <main
-      className="relative flex min-h-screen flex-col items-center justify-center bg-cover bg-center bg-no-repeat transition-all duration-[2000ms] ease-in-out"
+      className="relative flex min-h-screen flex-col items-center justify-center bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `linear-gradient(${tintColor}, ${tintColor}), url('/images/trails/${trailImage}')`,
       }}
@@ -40,7 +52,7 @@ export function HomePage() {
         </div>
 
         <div className="mt-8 w-full max-w-4xl">
-          <WeatherForecast />
+          <WeatherForecast onDaySelect={handleDaySelect} />
         </div>
       </div>
     </main>
