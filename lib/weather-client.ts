@@ -13,7 +13,7 @@ import { WeatherData, WeatherAPIError } from "@/types/weather";
 // Rate limiting state (resets daily)
 let dailyCallCount = 0;
 let lastResetDate = new Date().toDateString();
-const DAILY_LIMIT = 50;
+const DAILY_LIMIT = 1000; // Increased for paid WeatherAPI plans
 
 // Retry configuration
 const MAX_RETRIES = 3;
