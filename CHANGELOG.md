@@ -74,6 +74,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Loading skeleton for forecast cards
 - Error and empty states for forecast component
 - Homepage integration with WeatherForecast below CurrentWeather
+- TrainingPlan model with 24-week half-marathon training structure (Nov 30, 2025 - May 17, 2026)
+- WeatherPreference model with weather tolerance thresholds for each run type
+- RunType enum (LONG_RUN, EASY_RUN, TEMPO_RUN, INTERVAL_RUN, RECOVERY_RUN, RACE)
+- Phase enum (BASE_BUILDING, BASE_EXTENSION, SPEED_DEVELOPMENT, PEAK_TAPER)
+- Seed data for 24-week training plan with progressive long run targets (12km → 20km peak)
+- Seed data for weather preferences matching PRD specifications
+- Integration tests for TrainingPlan and WeatherPreference seeding
 
 ### Changed
 
