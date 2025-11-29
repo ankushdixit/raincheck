@@ -59,10 +59,16 @@ describe("HomePage", () => {
     expect(screen.getByTestId("weather-forecast-mock")).toBeInTheDocument();
   });
 
-  it("uses default background when no day is selected", () => {
+  it("renders two background layers for cross-fade transitions", () => {
     render(<HomePage />);
-    const main = screen.getByTestId("trail-background");
-    expect(main.style.backgroundImage).toContain("default-trail.webp");
+    expect(screen.getByTestId("background-layer-0")).toBeInTheDocument();
+    expect(screen.getByTestId("background-layer-1")).toBeInTheDocument();
+  });
+
+  it("uses default background on initial render", () => {
+    render(<HomePage />);
+    const layer0 = screen.getByTestId("background-layer-0");
+    expect(layer0.style.backgroundImage).toContain("default-trail.webp");
   });
 
   it("has centered layout for main element", () => {
@@ -74,8 +80,23 @@ describe("HomePage", () => {
     expect(main).toHaveClass("justify-center");
   });
 
-  describe("background updates based on selected day", () => {
-    it("updates background when sunny day is selected", () => {
+  describe("layered background transitions", () => {
+    it("starts with layer 0 active (opacity 1)", () => {
+      render(<HomePage />);
+      const layer0 = screen.getByTestId("background-layer-0");
+      const layer1 = screen.getByTestId("background-layer-1");
+      expect(layer0.style.opacity).toBe("1");
+      expect(layer1.style.opacity).toBe("0");
+    });
+
+    it("has transition classes for smooth cross-fade", () => {
+      render(<HomePage />);
+      const layer0 = screen.getByTestId("background-layer-0");
+      expect(layer0).toHaveClass("transition-opacity");
+      expect(layer0).toHaveClass("duration-[2000ms]");
+    });
+
+    it("updates inactive layer and toggles active layer on day select", () => {
       render(<HomePage />);
 
       // Simulate forecast calling onDaySelect with sunny condition
@@ -83,58 +104,93 @@ describe("HomePage", () => {
         capturedOnDaySelect?.({ condition: "Sunny", datetime: new Date() });
       });
 
+      // After selection, layer 1 should become active and contain the new background
       const main = screen.getByTestId("trail-background");
-      expect(main.style.backgroundImage).toContain("sunny-trail.webp");
+      const layer1 = screen.getByTestId("background-layer-1");
+
+      expect(main.getAttribute("data-active-layer")).toBe("1");
+      expect(layer1.style.backgroundImage).toContain("sunny-trail.webp");
+      expect(layer1.style.opacity).toBe("1");
     });
 
-    it("updates background when rainy day is selected", () => {
+    it("alternates between layers on multiple selections", () => {
       render(<HomePage />);
 
-      // Simulate forecast calling onDaySelect with rainy condition
-      act(() => {
-        capturedOnDaySelect?.({ condition: "Light rain", datetime: new Date() });
-      });
-
-      const main = screen.getByTestId("trail-background");
-      expect(main.style.backgroundImage).toContain("rainy-trail.webp");
-    });
-
-    it("updates background when cloudy day is selected", () => {
-      render(<HomePage />);
-
-      // Simulate forecast calling onDaySelect with cloudy condition
-      act(() => {
-        capturedOnDaySelect?.({ condition: "Overcast", datetime: new Date() });
-      });
-
-      const main = screen.getByTestId("trail-background");
-      expect(main.style.backgroundImage).toContain("cloudy-trail.webp");
-    });
-
-    it("updates background when snowy day is selected", () => {
-      render(<HomePage />);
-
-      // Simulate forecast calling onDaySelect with snowy condition
-      act(() => {
-        capturedOnDaySelect?.({ condition: "Snow", datetime: new Date() });
-      });
-
-      const main = screen.getByTestId("trail-background");
-      expect(main.style.backgroundImage).toContain("snowy-trail.webp");
-    });
-
-    it("updates background with correct tint for each condition", () => {
-      render(<HomePage />);
-
-      // Select sunny day
+      // First selection - switches to layer 1
       act(() => {
         capturedOnDaySelect?.({ condition: "Sunny", datetime: new Date() });
       });
 
       const main = screen.getByTestId("trail-background");
+      expect(main.getAttribute("data-active-layer")).toBe("1");
+
+      // Second selection - switches back to layer 0
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Rain", datetime: new Date() });
+      });
+
+      expect(main.getAttribute("data-active-layer")).toBe("0");
+      const layer0 = screen.getByTestId("background-layer-0");
+      expect(layer0.style.backgroundImage).toContain("rainy-trail.webp");
+    });
+  });
+
+  describe("background updates based on selected day", () => {
+    it("updates background when sunny day is selected", () => {
+      render(<HomePage />);
+
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Sunny", datetime: new Date() });
+      });
+
+      const layer1 = screen.getByTestId("background-layer-1");
+      expect(layer1.style.backgroundImage).toContain("sunny-trail.webp");
+    });
+
+    it("updates background when rainy day is selected", () => {
+      render(<HomePage />);
+
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Light rain", datetime: new Date() });
+      });
+
+      const layer1 = screen.getByTestId("background-layer-1");
+      expect(layer1.style.backgroundImage).toContain("rainy-trail.webp");
+    });
+
+    it("updates background when cloudy day is selected", () => {
+      render(<HomePage />);
+
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Overcast", datetime: new Date() });
+      });
+
+      const layer1 = screen.getByTestId("background-layer-1");
+      expect(layer1.style.backgroundImage).toContain("cloudy-trail.webp");
+    });
+
+    it("updates background when snowy day is selected", () => {
+      render(<HomePage />);
+
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Snow", datetime: new Date() });
+      });
+
+      const layer1 = screen.getByTestId("background-layer-1");
+      expect(layer1.style.backgroundImage).toContain("snowy-trail.webp");
+    });
+
+    it("updates background with correct tint for each condition", () => {
+      render(<HomePage />);
+
+      act(() => {
+        capturedOnDaySelect?.({ condition: "Sunny", datetime: new Date() });
+      });
+
+      const layer1 = screen.getByTestId("background-layer-1");
       // Sunny tint is golden rgba(255, 183, 77, 0.15)
-      expect(main.style.backgroundImage).toContain("linear-gradient");
-      expect(main.style.backgroundImage).toContain("rgba(255, 183, 77, 0.15)");
+      expect(layer1.style.backgroundImage).toContain("linear-gradient");
+      expect(layer1.style.backgroundImage).toContain("rgba(255, 183, 77, 0.15)");
     });
 
     it("passes onDaySelect callback to WeatherForecast", () => {

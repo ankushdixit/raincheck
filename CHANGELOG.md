@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WeatherForecast component (`components/weather/WeatherForecast.tsx`) displaying 5-day forecast grid
 - Glass-effect card styling with semi-transparent backgrounds and backdrop blur
 - Card selection state with visual feedback
+- Smooth 2-second cross-fade background transitions when switching forecast days
+- Layered background system with opacity-based transitions for seamless image changes
+- Enhanced WeatherDayCard spacing and typography with larger temperature display
+- Inset ring highlight for selected forecast cards
+- Hover effect with border highlight on unselected cards
 - Loading skeleton for forecast cards
 - Error and empty states for forecast component
 - Homepage integration with WeatherForecast below CurrentWeather
