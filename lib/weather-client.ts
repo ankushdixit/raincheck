@@ -43,8 +43,17 @@ interface WeatherAPIResponse {
   };
   forecast?: {
     forecastday: Array<{
+      date: string;
       day: {
+        maxtemp_c: number;
+        mintemp_c: number;
+        avgtemp_c: number;
         daily_chance_of_rain: number;
+        avghumidity: number;
+        maxwind_kph: number;
+        condition: {
+          text: string;
+        };
       };
     }>;
   };
@@ -197,6 +206,107 @@ export async function fetchCurrentWeather(location: string, apiKey?: string): Pr
       const data = await makeRequest(url);
       incrementRateLimit();
       return parseWeatherResponse(data);
+    } catch (error) {
+      lastError = error as Error;
+
+      // Don't retry on client errors (4xx) - these won't succeed on retry
+      if (error instanceof WeatherAPIError) {
+        const status = error.statusCode ?? 0;
+        if (status >= 400 && status < 500) {
+          throw error;
+        }
+      }
+
+      // Wait before retrying (exponential backoff)
+      if (attempt < MAX_RETRIES - 1) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+        await sleep(delay);
+      }
+    }
+  }
+
+  // All retries failed
+  if (lastError instanceof WeatherAPIError) {
+    throw lastError;
+  }
+  throw new WeatherAPIError("Weather service unavailable", 503);
+}
+
+/**
+ * Parse WeatherAPI.com forecast response into array of WeatherData
+ */
+function parseForecastResponse(data: WeatherAPIResponse): WeatherData[] {
+  const location = `${data.location.name}, ${data.location.country}`;
+  const latitude = data.location.lat;
+  const longitude = data.location.lon;
+
+  if (!data.forecast?.forecastday) {
+    return [];
+  }
+
+  return data.forecast.forecastday.map((day) => ({
+    location,
+    latitude,
+    longitude,
+    datetime: new Date(day.date),
+    condition: day.day.condition.text,
+    description: day.day.condition.text,
+    temperature: day.day.avgtemp_c,
+    feelsLike: day.day.avgtemp_c, // Forecast API doesn't provide feels-like for daily
+    precipitation: day.day.daily_chance_of_rain,
+    humidity: day.day.avghumidity,
+    windSpeed: day.day.maxwind_kph,
+    windDirection: 0, // Forecast API doesn't provide wind direction for daily
+  }));
+}
+
+/**
+ * Fetch weather forecast for a location
+ *
+ * @param location - Location string (e.g., "Balbriggan, IE" or coordinates "53.6108,-6.1817")
+ * @param days - Number of days to fetch (1-14, default 7)
+ * @param apiKey - Optional API key override (defaults to env variable)
+ * @returns Array of weather data for each day
+ * @throws WeatherAPIError on failure
+ */
+export async function fetchForecast(
+  location: string,
+  days: number = 7,
+  apiKey?: string
+): Promise<WeatherData[]> {
+  // Validate API key
+  const key = apiKey ?? process.env.WEATHER_API_KEY;
+  if (!key) {
+    throw new WeatherAPIError("Weather API key invalid", 401);
+  }
+
+  // Validate days parameter
+  if (days < 1 || days > 14) {
+    throw new WeatherAPIError("Days must be between 1 and 14", 400);
+  }
+
+  // Check rate limit
+  checkRateLimit();
+
+  // Build API URL
+  const baseUrl = "https://api.weatherapi.com/v1/forecast.json";
+  const params = new URLSearchParams({
+    key,
+    q: location,
+    days: days.toString(),
+    aqi: "no",
+    alerts: "no",
+  });
+  const url = `${baseUrl}?${params.toString()}`;
+
+  // Retry logic with exponential backoff
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const data = await makeRequest(url);
+      incrementRateLimit();
+      return parseForecastResponse(data);
     } catch (error) {
       lastError = error as Error;
 

@@ -16,13 +16,15 @@ jest.mock("superjson", () => ({
 // Mock the weather client
 jest.mock("@/lib/weather-client", () => ({
   fetchCurrentWeather: jest.fn(),
+  fetchForecast: jest.fn(),
 }));
 
-import { fetchCurrentWeather } from "@/lib/weather-client";
+import { fetchCurrentWeather, fetchForecast } from "@/lib/weather-client";
 
 const mockFetchCurrentWeather = fetchCurrentWeather as jest.MockedFunction<
   typeof fetchCurrentWeather
 >;
+const mockFetchForecast = fetchForecast as jest.MockedFunction<typeof fetchForecast>;
 
 // Sample weather data for tests
 const sampleWeatherData: WeatherData = {
@@ -57,6 +59,38 @@ const sampleCachedData = {
   windDirection: 180,
   cachedAt: new Date("2024-01-15T11:30:00Z"),
   expiresAt: new Date("2024-01-15T12:30:00Z"), // Valid cache
+};
+
+// Sample 7-day forecast data
+const createSampleForecastData = (baseDate: Date): WeatherData[] => {
+  const conditions = [
+    "Partly cloudy",
+    "Light rain",
+    "Rain",
+    "Cloudy",
+    "Sunny",
+    "Clear",
+    "Overcast",
+  ];
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(baseDate);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+    return {
+      location: "Balbriggan, Ireland",
+      latitude: 53.6108,
+      longitude: -6.1817,
+      datetime: date,
+      condition: conditions[i] ?? "Clear",
+      description: conditions[i] ?? "Clear",
+      temperature: 10 + i,
+      feelsLike: 10 + i,
+      precipitation: 10 + i * 5,
+      humidity: 70 + i,
+      windSpeed: 15 + i,
+      windDirection: 0,
+    };
+  });
 };
 
 describe("Weather Router", () => {
@@ -426,6 +460,455 @@ describe("Weather Router", () => {
         expect(typeof result.humidity).toBe("number");
         expect(typeof result.windSpeed).toBe("number");
         expect(typeof result.windDirection).toBe("number");
+      });
+    });
+  });
+
+  describe("weather.getForecast", () => {
+    describe("cache behavior", () => {
+      it("returns cached data when all days are cached", async () => {
+        const now = new Date();
+        const cachedDays = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date(now);
+          date.setDate(date.getDate() + i);
+          date.setHours(0, 0, 0, 0);
+          return {
+            id: `cache-${i}`,
+            location: "Balbriggan, Ireland",
+            latitude: 53.6108,
+            longitude: -6.1817,
+            datetime: date,
+            condition: "Partly cloudy",
+            description: "Partly cloudy",
+            temperature: 10 + i,
+            feelsLike: 10 + i,
+            precipitation: 20,
+            humidity: 75,
+            windSpeed: 15,
+            windDirection: 180,
+            cachedAt: new Date(now.getTime() - 30 * 60 * 1000),
+            expiresAt: new Date(now.getTime() + 30 * 60 * 1000), // Valid cache
+          };
+        });
+
+        let callIndex = 0;
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue({
+              defaultLocation: "Balbriggan, IE",
+            }),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockImplementation(() => {
+              const result = cachedDays[callIndex];
+              callIndex++;
+              return Promise.resolve(result);
+            }),
+            upsert: jest.fn(),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        const result = await caller.weather.getForecast({ days: 7 });
+
+        expect(result).toHaveLength(7);
+        expect(mockFetchForecast).not.toHaveBeenCalled();
+        expect(mockDb.weatherCache.upsert).not.toHaveBeenCalled();
+      });
+
+      it("fetches from API and caches on cache miss", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue({
+              defaultLocation: "Balbriggan, IE",
+            }),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null), // All cache miss
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        const result = await caller.weather.getForecast({ days: 7 });
+
+        expect(result).toHaveLength(7);
+        expect(mockFetchForecast).toHaveBeenCalledWith("Balbriggan, IE", 7);
+        expect(mockDb.weatherCache.upsert).toHaveBeenCalledTimes(7);
+      });
+
+      it("handles partial cache hits correctly", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        // First 3 days cached, rest missing
+        let callIndex = 0;
+        const cachedDays = Array.from({ length: 3 }, (_, i) => {
+          const date = new Date(now);
+          date.setDate(date.getDate() + i);
+          date.setHours(0, 0, 0, 0);
+          return {
+            id: `cache-${i}`,
+            location: "Balbriggan, Ireland",
+            latitude: 53.6108,
+            longitude: -6.1817,
+            datetime: date,
+            condition: "Cached condition",
+            description: "Cached condition",
+            temperature: 10,
+            feelsLike: 10,
+            precipitation: 20,
+            humidity: 75,
+            windSpeed: 15,
+            windDirection: 180,
+            cachedAt: new Date(now.getTime() - 30 * 60 * 1000),
+            expiresAt: new Date(now.getTime() + 30 * 60 * 1000),
+          };
+        });
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue({
+              defaultLocation: "Balbriggan, IE",
+            }),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockImplementation(() => {
+              const result = callIndex < 3 ? cachedDays[callIndex] : null;
+              callIndex++;
+              return Promise.resolve(result);
+            }),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        const result = await caller.weather.getForecast({ days: 7 });
+
+        expect(result).toHaveLength(7);
+        expect(mockFetchForecast).toHaveBeenCalled();
+        // Should cache only the missing 4 days
+        expect(mockDb.weatherCache.upsert).toHaveBeenCalledTimes(4);
+      });
+    });
+
+    describe("location handling", () => {
+      it("uses provided location when specified", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn(),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await caller.weather.getForecast({ location: "Dublin, IE", days: 7 });
+
+        expect(mockFetchForecast).toHaveBeenCalledWith("Dublin, IE", 7);
+        expect(mockDb.userSettings.findFirst).not.toHaveBeenCalled();
+      });
+
+      it("uses default location from UserSettings when not provided", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue({
+              defaultLocation: "Cork, IE",
+            }),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await caller.weather.getForecast({ days: 7 });
+
+        expect(mockFetchForecast).toHaveBeenCalledWith("Cork, IE", 7);
+      });
+
+      it("uses fallback location when no UserSettings exist", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await caller.weather.getForecast({ days: 7 });
+
+        expect(mockFetchForecast).toHaveBeenCalledWith("Balbriggan, IE", 7);
+      });
+    });
+
+    describe("days parameter", () => {
+      it("defaults to 7 days when not specified", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await caller.weather.getForecast({});
+
+        expect(mockFetchForecast).toHaveBeenCalledWith("Balbriggan, IE", 7);
+      });
+
+      it("respects custom days parameter", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now).slice(0, 3);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await caller.weather.getForecast({ days: 3 });
+
+        expect(mockFetchForecast).toHaveBeenCalledWith("Balbriggan, IE", 3);
+      });
+    });
+
+    describe("error handling", () => {
+      it("throws UNAUTHORIZED for invalid API key", async () => {
+        mockFetchForecast.mockRejectedValue(new WeatherAPIError("Weather API key invalid", 401));
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
+        await expect(caller.weather.getForecast({})).rejects.toMatchObject({
+          code: "UNAUTHORIZED",
+          message: "Weather API key invalid",
+        });
+      });
+
+      it("throws BAD_REQUEST for location not found", async () => {
+        mockFetchForecast.mockRejectedValue(new WeatherAPIError("Location not found", 400));
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
+        await expect(caller.weather.getForecast({})).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: "Location not found",
+        });
+      });
+
+      it("throws TOO_MANY_REQUESTS for rate limit exceeded", async () => {
+        mockFetchForecast.mockRejectedValue(new WeatherAPIError("Daily rate limit exceeded", 429));
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
+        await expect(caller.weather.getForecast({})).rejects.toMatchObject({
+          code: "TOO_MANY_REQUESTS",
+          message: "Rate limit exceeded",
+        });
+      });
+
+      it("throws INTERNAL_SERVER_ERROR for service unavailable", async () => {
+        mockFetchForecast.mockRejectedValue(
+          new WeatherAPIError("Weather service unavailable", 503)
+        );
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
+        await expect(caller.weather.getForecast({})).rejects.toMatchObject({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Weather service unavailable",
+        });
+      });
+    });
+
+    describe("response format", () => {
+      it("returns array of weather data with all required fields", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        const result = await caller.weather.getForecast({ days: 7 });
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(7);
+
+        result.forEach((day) => {
+          expect(day).toHaveProperty("location");
+          expect(day).toHaveProperty("latitude");
+          expect(day).toHaveProperty("longitude");
+          expect(day).toHaveProperty("datetime");
+          expect(day).toHaveProperty("condition");
+          expect(day).toHaveProperty("description");
+          expect(day).toHaveProperty("temperature");
+          expect(day).toHaveProperty("feelsLike");
+          expect(day).toHaveProperty("precipitation");
+          expect(day).toHaveProperty("humidity");
+          expect(day).toHaveProperty("windSpeed");
+          expect(day).toHaveProperty("windDirection");
+        });
+      });
+
+      it("returns results sorted by date", async () => {
+        const now = new Date();
+        const forecastData = createSampleForecastData(now);
+        mockFetchForecast.mockResolvedValue(forecastData);
+
+        const mockDb = {
+          userSettings: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          weatherCache: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+        });
+
+        const result = await caller.weather.getForecast({ days: 7 });
+
+        // Verify dates are in ascending order
+        for (let i = 1; i < result.length; i++) {
+          expect(result[i]!.datetime.getTime()).toBeGreaterThan(result[i - 1]!.datetime.getTime());
+        }
       });
     });
   });
