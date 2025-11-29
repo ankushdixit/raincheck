@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Protected tRPC procedures with `protectedProcedure` middleware for authenticated mutations
+- Settings tRPC router with public read and protected write operations
+- Session context integration in tRPC for authentication checks
 - NextAuth.js v5 authentication with credentials provider for single-user password login
 - SessionProvider component for client-side session access throughout the app
 - Auth API route (`/api/auth/[...nextauth]`) handling signin, signout, session, and CSRF

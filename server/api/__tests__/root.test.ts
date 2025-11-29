@@ -16,6 +16,11 @@ jest.mock("@/server/db", () => ({
   db: {},
 }));
 
+// Mock next-auth to avoid ESM issues
+jest.mock("@/lib/auth", () => ({
+  auth: jest.fn().mockResolvedValue(null),
+}));
+
 describe("App Router", () => {
   it("exports appRouter", () => {
     expect(appRouter).toBeDefined();
@@ -28,7 +33,7 @@ describe("App Router", () => {
 
   it("createCaller creates a server-side caller", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const caller = createCaller({ db: {} as any, headers: new Headers() });
+    const caller = createCaller({ db: {} as any, headers: new Headers(), session: null });
     expect(caller).toBeDefined();
   });
 
@@ -54,6 +59,7 @@ describe("Router Configuration", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       db: {} as any,
       headers: new Headers(),
+      session: null,
     };
 
     const caller = createCaller(context);

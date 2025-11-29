@@ -13,6 +13,11 @@ jest.mock("superjson", () => ({
   parse: (str: string) => JSON.parse(str),
 }));
 
+// Mock next-auth to avoid ESM issues
+jest.mock("@/lib/auth", () => ({
+  auth: jest.fn().mockResolvedValue(null),
+}));
+
 // Mock the weather client
 jest.mock("@/lib/weather-client", () => ({
   fetchCurrentWeather: jest.fn(),
@@ -116,6 +121,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getCurrentWeather({});
@@ -145,6 +151,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getCurrentWeather({});
@@ -170,6 +177,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const beforeCall = Date.now();
@@ -208,6 +216,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getCurrentWeather({ location: "Dublin, IE" });
@@ -234,6 +243,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getCurrentWeather({});
@@ -257,6 +267,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getCurrentWeather({});
@@ -283,6 +294,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getCurrentWeather({})).rejects.toThrow(TRPCError);
@@ -307,6 +319,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getCurrentWeather({})).rejects.toThrow(TRPCError);
@@ -333,6 +346,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getCurrentWeather({})).rejects.toThrow(TRPCError);
@@ -359,6 +373,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getCurrentWeather({})).rejects.toThrow(TRPCError);
@@ -383,6 +398,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getCurrentWeather({})).rejects.toThrow(TRPCError);
@@ -410,6 +426,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getCurrentWeather({});
@@ -444,6 +461,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getCurrentWeather({});
@@ -511,6 +529,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getForecast({ days: 7 });
@@ -540,6 +559,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getForecast({ days: 7 });
@@ -598,6 +618,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getForecast({ days: 7 });
@@ -628,6 +649,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getForecast({ location: "Dublin, IE", days: 7 });
@@ -656,6 +678,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getForecast({ days: 7 });
@@ -681,6 +704,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getForecast({ days: 7 });
@@ -708,6 +732,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getForecast({});
@@ -733,6 +758,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await caller.weather.getForecast({ days: 3 });
@@ -757,6 +783,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
@@ -781,6 +808,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
@@ -805,6 +833,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
@@ -831,6 +860,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
@@ -860,6 +890,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getForecast({ days: 7 });
@@ -901,6 +932,7 @@ describe("Weather Router", () => {
         const caller = createCaller({
           db: mockDb as never,
           headers: new Headers(),
+          session: null,
         });
 
         const result = await caller.weather.getForecast({ days: 7 });
