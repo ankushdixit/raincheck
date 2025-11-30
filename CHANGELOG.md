@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Stats tRPC router with five aggregation endpoints for training analytics
+- `stats.getWeeklyMileage` returning weekly totals with targets for last N weeks
+- `stats.getPaceProgression` returning pace data points with dates and run types
+- `stats.getLongRunProgression` returning long run distances with training plan targets
+- `stats.getCompletionRate` returning completion statistics overall and by training phase
+- `stats.getSummary` returning aggregate stats (totalRuns, totalDistance, avgPace, streak, longestRun)
+- Helper functions: `paceToSeconds`, `secondsToPace`, `getWeekNumberForDate`
+- 31 new integration tests for stats router with full coverage
 - Race week features with "RACE WEEK!" banner when race is ≤7 days away
 - Race day weather forecast display when race is within 10-day forecast range
 - Taper reminder messages during race week (race day, 1 day, 2-3 days, 4-7 days)
