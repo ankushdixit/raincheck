@@ -5,6 +5,7 @@ import { RaceCountdown, calculateDaysUntil, formatRaceDate } from "../RaceCountd
 const mockRefetch = jest.fn();
 const mockUseQuery = jest.fn();
 const mockProgressStatsQuery = jest.fn();
+const mockGetCurrentPhaseQuery = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -16,6 +17,11 @@ jest.mock("@/lib/api", () => ({
     runs: {
       getProgressStats: {
         useQuery: () => mockProgressStatsQuery(),
+      },
+    },
+    planning: {
+      getCurrentPhase: {
+        useQuery: () => mockGetCurrentPhaseQuery(),
       },
     },
   },
@@ -115,6 +121,11 @@ describe("RaceCountdown", () => {
         longestRunDistance: 16.5,
         bestLongRunPace: "6:30",
       },
+      isLoading: false,
+    });
+    // Default mock for PhaseBadge component's API call
+    mockGetCurrentPhaseQuery.mockReturnValue({
+      data: { phase: "BASE_BUILDING", weekNumber: 3 },
       isLoading: false,
     });
   });

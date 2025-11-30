@@ -163,6 +163,32 @@ async function getWeatherForecast(
 
 export const planningRouter = createTRPCRouter({
   /**
+   * Get the current training phase based on today's date.
+   *
+   * @returns Current phase info or null if no training plan exists for today
+   */
+  getCurrentPhase: publicProcedure.query(async ({ ctx }) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const currentPlan = await ctx.db.trainingPlan.findFirst({
+      where: {
+        weekStart: { lte: today },
+        weekEnd: { gte: today },
+      },
+    });
+
+    if (!currentPlan) {
+      return null;
+    }
+
+    return {
+      phase: currentPlan.phase,
+      weekNumber: currentPlan.weekNumber,
+    };
+  }),
+
+  /**
    * Generate run suggestions based on weather and training plan.
    *
    * Orchestrates:

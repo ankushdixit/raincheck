@@ -76,7 +76,7 @@ function createSampleTrainingPlan(weekStart: Date) {
 
   return {
     id: "plan-1",
-    phase: Phase.BASE_BUILDING,
+    phase: Phase.BASE_BUILDING as Phase,
     weekNumber: 1,
     weekStart,
     weekEnd,
@@ -1022,6 +1022,191 @@ describe("Planning Router", () => {
         // Should work without authentication
         const result = await caller.planning.generateSuggestions({});
         expect(result.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe("planning.getCurrentPhase", () => {
+    describe("success cases", () => {
+      it("returns current phase when training plan exists for today", async () => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const trainingPlan = createSampleTrainingPlan(now);
+
+        const mockDb = {
+          trainingPlan: {
+            findFirst: jest.fn().mockResolvedValue(trainingPlan),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        const result = await caller.planning.getCurrentPhase();
+
+        expect(result).toEqual({
+          phase: Phase.BASE_BUILDING,
+          weekNumber: 1,
+        });
+      });
+
+      it("returns correct phase for BASE_EXTENSION", async () => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const trainingPlan = createSampleTrainingPlan(now);
+        trainingPlan.phase = Phase.BASE_EXTENSION;
+        trainingPlan.weekNumber = 10;
+
+        const mockDb = {
+          trainingPlan: {
+            findFirst: jest.fn().mockResolvedValue(trainingPlan),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        const result = await caller.planning.getCurrentPhase();
+
+        expect(result).toEqual({
+          phase: Phase.BASE_EXTENSION,
+          weekNumber: 10,
+        });
+      });
+
+      it("returns correct phase for SPEED_DEVELOPMENT", async () => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const trainingPlan = createSampleTrainingPlan(now);
+        trainingPlan.phase = Phase.SPEED_DEVELOPMENT;
+        trainingPlan.weekNumber = 18;
+
+        const mockDb = {
+          trainingPlan: {
+            findFirst: jest.fn().mockResolvedValue(trainingPlan),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        const result = await caller.planning.getCurrentPhase();
+
+        expect(result).toEqual({
+          phase: Phase.SPEED_DEVELOPMENT,
+          weekNumber: 18,
+        });
+      });
+
+      it("returns correct phase for PEAK_TAPER", async () => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const trainingPlan = createSampleTrainingPlan(now);
+        trainingPlan.phase = Phase.PEAK_TAPER;
+        trainingPlan.weekNumber = 24;
+
+        const mockDb = {
+          trainingPlan: {
+            findFirst: jest.fn().mockResolvedValue(trainingPlan),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        const result = await caller.planning.getCurrentPhase();
+
+        expect(result).toEqual({
+          phase: Phase.PEAK_TAPER,
+          weekNumber: 24,
+        });
+      });
+    });
+
+    describe("no training plan", () => {
+      it("returns null when no training plan exists for today", async () => {
+        const mockDb = {
+          trainingPlan: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        const result = await caller.planning.getCurrentPhase();
+
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("query behavior", () => {
+      it("queries training plan with correct date filter", async () => {
+        const mockFindFirst = jest.fn().mockResolvedValue(null);
+
+        const mockDb = {
+          trainingPlan: {
+            findFirst: mockFindFirst,
+          },
+        };
+
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        await caller.planning.getCurrentPhase();
+
+        expect(mockFindFirst).toHaveBeenCalledWith({
+          where: {
+            weekStart: { lte: expect.any(Date) },
+            weekEnd: { gte: expect.any(Date) },
+          },
+        });
+      });
+    });
+
+    describe("public access", () => {
+      it("works without authentication (public procedure)", async () => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const trainingPlan = createSampleTrainingPlan(now);
+
+        const mockDb = {
+          trainingPlan: {
+            findFirst: jest.fn().mockResolvedValue(trainingPlan),
+          },
+        };
+
+        // No session (unauthenticated user)
+        const caller = createCaller({
+          db: mockDb as never,
+          headers: new Headers(),
+          session: null,
+        });
+
+        const result = await caller.planning.getCurrentPhase();
+        expect(result).not.toBeNull();
       });
     });
   });

@@ -7,3 +7,4 @@ export {
   calculateDistanceProgress,
   calculatePaceProgress,
 } from "./TrainingProgress";
+export { PhaseBadge, formatPhaseName, getPhaseColor } from "./PhaseBadge";
