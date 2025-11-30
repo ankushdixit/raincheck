@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Weather effect components for immersive weather animations (`components/weather-effects/`)
+- `RainEffect` component rendering diagonal rain streaks with configurable intensity (30/60/100 particles)
+- `SnowEffect` component rendering drifting snowflakes with horizontal movement (25/50/80 particles)
+- `FogEffect` component rendering 3-layer animated mist overlay with intensity-based opacity
+- `SunEffect` component rendering sun glow, light rays (4/6/8 rays), and lens flare effects
+- `CloudEffect` component rendering drifting cloud shapes in upper screen area (3/5/8 clouds)
+- `Intensity` type export for `"light" | "moderate" | "heavy"` effect strength control
+- CSS animation keyframes for all weather effects (rain-fall, snow-fall, fog-drift, fog-pulse, sun-pulse, ray-shimmer, flare-pulse, cloud-drift)
+- GPU-accelerated animations using `transform`, `opacity`, and `will-change` properties
+- `prefers-reduced-motion` media query support disabling animations for accessibility
+- 64 unit tests for weather effect components with 100% statement coverage
 - Stats Dashboard Page at `/stats` displaying all training analytics in a comprehensive layout
 - `StatsSummaryCard` component showing Total Runs, Total Distance, Average Pace, and Current Streak
 - `CompletionRateCard` component with circular progress indicator for completion rate visualization
