@@ -684,6 +684,172 @@ describe("TrainingCalendar", () => {
   });
 });
 
+describe("adjacent month days", () => {
+  beforeEach(() => {
+    mockUseQuery.mockReturnValue({
+      data: [createMockRun({ date: getDateInCurrentMonth(15) })],
+      isLoading: false,
+    });
+  });
+
+  it("renders adjacent month cells for leading days", () => {
+    render(<TrainingCalendar />);
+
+    // Should have some adjacent month cells (unless the month starts on Sunday)
+    // The number of adjacent cells depends on the current month, but they should exist
+    // We just verify the structure is correct - total cells should include both current and adjacent
+    const currentMonthCells = screen.getAllByTestId("calendar-cell");
+    const adjacentCells = screen.queryAllByTestId("calendar-cell-adjacent");
+    const totalCells = currentMonthCells.length + adjacentCells.length;
+    // A full calendar grid should have at least 28 cells (4 weeks)
+    expect(totalCells).toBeGreaterThanOrEqual(28);
+  });
+
+  it("adjacent month cells have isCurrentMonth false", () => {
+    render(<TrainingCalendar />);
+
+    const adjacentCells = screen.queryAllByTestId("calendar-cell-adjacent");
+    adjacentCells.forEach((cell) => {
+      expect(cell).toHaveAttribute("data-current-month", "false");
+    });
+  });
+
+  it("current month cells have isCurrentMonth true", () => {
+    render(<TrainingCalendar />);
+
+    const currentMonthCells = screen.getAllByTestId("calendar-cell");
+    currentMonthCells.forEach((cell) => {
+      expect(cell).toHaveAttribute("data-current-month", "true");
+    });
+  });
+
+  it("adjacent month cells have muted text styling", () => {
+    render(<TrainingCalendar />);
+
+    const adjacentCells = screen.queryAllByTestId("calendar-cell-adjacent");
+    if (adjacentCells.length > 0) {
+      // Adjacent month cells should have a subtle background
+      adjacentCells.forEach((cell) => {
+        expect(cell).toHaveClass("bg-white/[0.02]");
+      });
+    }
+  });
+
+  it("adjacent month cells contain actual dates (not empty)", () => {
+    render(<TrainingCalendar />);
+
+    const adjacentCells = screen.queryAllByTestId("calendar-cell-adjacent");
+    adjacentCells.forEach((cell) => {
+      // Each adjacent cell should have a data-date attribute with a valid date
+      const dateAttr = cell.getAttribute("data-date");
+      expect(dateAttr).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  it("grid maintains 7 columns for all rows", () => {
+    render(<TrainingCalendar />);
+
+    const grid = screen.getByTestId("calendar-grid");
+    const rows = grid.querySelectorAll(".grid.grid-cols-7");
+
+    rows.forEach((row) => {
+      // Each row should have exactly 7 cells (current + adjacent)
+      const cells = row.querySelectorAll(
+        "[data-testid='calendar-cell'], [data-testid='calendar-cell-adjacent']"
+      );
+      expect(cells).toHaveLength(7);
+    });
+  });
+
+  it("does not render run badges on adjacent month cells", () => {
+    // Create a run that would be in the adjacent month (previous month, last day)
+    const now = new Date();
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 28);
+
+    mockUseQuery.mockReturnValue({
+      data: [
+        createMockRun({ date: getDateInCurrentMonth(15) }),
+        createMockRun({ date: prevMonthDate, type: "LONG_RUN" }),
+      ],
+      isLoading: false,
+    });
+
+    render(<TrainingCalendar />);
+
+    // Adjacent month cells should not show run badges (only current month days do)
+    const adjacentCells = screen.queryAllByTestId("calendar-cell-adjacent");
+    adjacentCells.forEach((cell) => {
+      const badges = cell.querySelectorAll("[data-testid='run-badge']");
+      expect(badges).toHaveLength(0);
+    });
+  });
+});
+
+describe("responsive design", () => {
+  beforeEach(() => {
+    mockUseQuery.mockReturnValue({
+      data: [createMockRun({ date: getDateInCurrentMonth(15) })],
+      isLoading: false,
+    });
+  });
+
+  it("calendar cells have responsive height classes", () => {
+    render(<TrainingCalendar />);
+
+    const cells = screen.getAllByTestId("calendar-cell");
+    cells.forEach((cell) => {
+      // Should have responsive height: min-h-[60px] on mobile, sm:min-h-[80px] on larger
+      expect(cell).toHaveClass("min-h-[60px]");
+      expect(cell).toHaveClass("sm:min-h-[80px]");
+    });
+  });
+
+  it("navigation buttons have minimum touch target size", () => {
+    render(<TrainingCalendar />);
+
+    const prevButton = screen.getByTestId("calendar-prev");
+    const nextButton = screen.getByTestId("calendar-next");
+
+    // 44px minimum for accessibility
+    expect(prevButton).toHaveClass("min-w-[44px]");
+    expect(prevButton).toHaveClass("min-h-[44px]");
+    expect(nextButton).toHaveClass("min-w-[44px]");
+    expect(nextButton).toHaveClass("min-h-[44px]");
+  });
+
+  it("day headers have responsive padding", () => {
+    render(<TrainingCalendar />);
+
+    const dayHeaders = screen.getByTestId("calendar-day-headers");
+    const headerCells = dayHeaders.querySelectorAll("div");
+
+    headerCells.forEach((cell) => {
+      expect(cell).toHaveClass("p-1");
+      expect(cell).toHaveClass("sm:p-2");
+    });
+  });
+
+  it("day headers have responsive font size", () => {
+    render(<TrainingCalendar />);
+
+    const dayHeaders = screen.getByTestId("calendar-day-headers");
+    const headerCells = dayHeaders.querySelectorAll("div");
+
+    headerCells.forEach((cell) => {
+      expect(cell).toHaveClass("text-[10px]");
+      expect(cell).toHaveClass("sm:text-xs");
+    });
+  });
+
+  it("month header has responsive font size", () => {
+    render(<TrainingCalendar />);
+
+    const monthHeader = screen.getByTestId("calendar-month");
+    expect(monthHeader).toHaveClass("text-base");
+    expect(monthHeader).toHaveClass("sm:text-lg");
+  });
+});
+
 describe("TrainingCalendarSkeleton", () => {
   it("renders skeleton element", () => {
     render(<TrainingCalendarSkeleton />);

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Adjacent month days display in calendar (previous/next month days shown in muted style)
+- Responsive calendar design for mobile devices with breakpoints at `sm` (640px)
+- Mobile-optimized touch targets (44px minimum) for navigation buttons
+- Responsive calendar cell heights (60px mobile, 80px desktop)
+- Responsive day headers with smaller font sizes on mobile
+- Responsive legend with smaller icons and text on mobile
+- 12 new tests for adjacent month days and responsive design
 - Checkmark indicator (✓) for completed runs on calendar badges
 - Visual distinction between completed runs (with checkmark) and scheduled runs (without)
 - 10 new tests for completed run indicator and today highlight behavior
