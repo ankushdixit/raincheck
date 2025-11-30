@@ -20,6 +20,8 @@
     "audit": "npm audit --audit-level=moderate"
   },
   "dependencies": {
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/utilities": "3.2.2",
     "@prisma/client": "6.19.0",
     "@tailwindcss/postcss": "4.1.17",
     "@tanstack/react-query": "5.90.7",
