@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mobile tap-to-move feature for touch-friendly run rescheduling
+- `useTouchDevice` hook for detecting touch devices via `(pointer: coarse)` media query
+- `MoveInstructions` component showing guidance when run is selected for moving
+- Tap-to-select run badges with visual selection state (pulsing ring, scale effect)
+- Tap-to-move workflow: tap run to select, tap destination cell to move
+- Cancel selection via tap-again, cancel button, or Escape key
+- 44px minimum touch targets for accessibility on mobile devices
+- Visual highlighting of valid/invalid target cells during tap-to-move mode
+- 26 new tests for tap-to-move functionality with full coverage
 - Drop validation for calendar drag-and-drop preventing invalid moves
 - Calendar validation utilities (`lib/calendar-utils.ts`) with `isValidDropTarget`, `isPastDate`, `hasExistingRun` functions
 - Visual feedback for valid drop targets (green highlight) and invalid targets (red highlight, dimmed during drag)

@@ -33,8 +33,12 @@ jest.mock("@/lib/api", () => ({
 // Mock the useIsAuthenticated hook
 const mockUseIsAuthenticated = jest.fn();
 
+// Mock the useTouchDevice hook
+const mockUseTouchDevice = jest.fn();
+
 jest.mock("@/hooks", () => ({
   useIsAuthenticated: () => mockUseIsAuthenticated(),
+  useTouchDevice: () => mockUseTouchDevice(),
 }));
 
 // Helper to create mock runs
@@ -64,6 +68,11 @@ describe("TrainingCalendar", () => {
     // Default to unauthenticated state
     mockUseIsAuthenticated.mockReturnValue({
       isAuthenticated: false,
+      isLoading: false,
+    });
+    // Default to non-touch device
+    mockUseTouchDevice.mockReturnValue({
+      isTouchDevice: false,
       isLoading: false,
     });
   });
@@ -1244,5 +1253,341 @@ describe("TrainingCalendarSkeleton", () => {
     expect(screen.getByText("Thu")).toBeInTheDocument();
     expect(screen.getByText("Fri")).toBeInTheDocument();
     expect(screen.getByText("Sat")).toBeInTheDocument();
+  });
+});
+
+describe("tap-to-move functionality", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Authenticated user on touch device
+    mockUseIsAuthenticated.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    mockUseTouchDevice.mockReturnValue({
+      isTouchDevice: true,
+      isLoading: false,
+    });
+  });
+
+  describe("run badge selection", () => {
+    it("enables tap-to-move when authenticated on touch device", () => {
+      // Use a date in the current month
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      expect(badge).toHaveAttribute("data-tap-to-move", "true");
+    });
+
+    it("disables tap-to-move for completed runs", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: true })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      expect(badge).toHaveAttribute("data-tap-to-move", "false");
+    });
+
+    it("shows move instructions when run is selected", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      // Initially no instructions
+      expect(screen.queryByTestId("move-instructions")).not.toBeInTheDocument();
+
+      // Click on run to select it
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      // Instructions should appear
+      expect(screen.getByTestId("move-instructions")).toBeInTheDocument();
+      expect(screen.getByText("Tap a day to move this run")).toBeInTheDocument();
+    });
+
+    it("applies selected styling when run is tapped", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      expect(badge).toHaveAttribute("data-selected", "false");
+
+      fireEvent.click(badge);
+
+      expect(badge).toHaveAttribute("data-selected", "true");
+    });
+
+    it("deselects run when tapped again", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+
+      // Select
+      fireEvent.click(badge);
+      expect(badge).toHaveAttribute("data-selected", "true");
+
+      // Deselect
+      fireEvent.click(badge);
+      expect(badge).toHaveAttribute("data-selected", "false");
+    });
+  });
+
+  describe("cancel selection", () => {
+    it("shows cancel button when run is selected", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      expect(screen.getByTestId("move-cancel-button")).toBeInTheDocument();
+    });
+
+    it("clears selection when cancel button is clicked", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      const cancelButton = screen.getByTestId("move-cancel-button");
+      fireEvent.click(cancelButton);
+
+      expect(badge).toHaveAttribute("data-selected", "false");
+      expect(screen.queryByTestId("move-instructions")).not.toBeInTheDocument();
+    });
+
+    it("clears selection when Escape key is pressed", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      expect(badge).toHaveAttribute("data-selected", "true");
+
+      // Press Escape
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(badge).toHaveAttribute("data-selected", "false");
+    });
+  });
+
+  describe("move operation", () => {
+    it("moves run when valid target cell is tapped", () => {
+      // Create a run on day 15 (future date for testing)
+      const today = new Date();
+      const runDate = new Date(today.getFullYear(), today.getMonth(), 15);
+      // Make sure the date is in the future
+      if (runDate <= today) {
+        runDate.setMonth(runDate.getMonth() + 1);
+      }
+
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ id: "run-1", date: runDate, completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      // Navigate to the month with the run if needed
+      const runMonthName = runDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const currentMonthDisplay = screen.getByTestId("calendar-month").textContent;
+      if (currentMonthDisplay !== runMonthName) {
+        const nextButton = screen.getByTestId("calendar-next");
+        fireEvent.click(nextButton);
+      }
+
+      // Select the run
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      // Find a valid target cell (day 20 in the same month)
+      const targetDay = 20;
+      const targetKey = `${runDate.getFullYear()}-${String(runDate.getMonth() + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+      const cells = screen.getAllByTestId("calendar-cell");
+      const targetCell = cells.find((c) => c.getAttribute("data-date") === targetKey);
+
+      if (targetCell) {
+        fireEvent.click(targetCell);
+
+        // Should have called mutation
+        expect(mockMutate).toHaveBeenCalledWith({
+          id: "run-1",
+          data: { date: expect.any(Date) },
+        });
+      }
+    });
+
+    it("does not move run when invalid target is tapped", () => {
+      // Create runs on consecutive days to test collision detection
+      const today = new Date();
+      const runDate1 = new Date(today.getFullYear(), today.getMonth() + 1, 15);
+      const runDate2 = new Date(today.getFullYear(), today.getMonth() + 1, 16);
+
+      mockUseQuery.mockReturnValue({
+        data: [
+          createMockRun({ id: "run-1", date: runDate1, completed: false }),
+          createMockRun({ id: "run-2", date: runDate2, completed: false }),
+        ],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      // Navigate to next month
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+
+      // Select first run
+      const badges = screen.getAllByTestId("run-badge");
+      fireEvent.click(badges[0]);
+
+      // Try to move to cell that already has a run
+      const targetKey = `${runDate2.getFullYear()}-${String(runDate2.getMonth() + 1).padStart(2, "0")}-16`;
+      const cells = screen.getAllByTestId("calendar-cell");
+      const targetCell = cells.find((c) => c.getAttribute("data-date") === targetKey);
+
+      if (targetCell) {
+        fireEvent.click(targetCell);
+
+        // Mutation should NOT have been called
+        expect(mockMutate).not.toHaveBeenCalled();
+      }
+    });
+
+    it("clears selection after successful move", () => {
+      const today = new Date();
+      const runDate = new Date(today.getFullYear(), today.getMonth() + 1, 15);
+
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ id: "run-1", date: runDate, completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      // Navigate to next month
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+
+      // Select the run
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      // Find a valid target cell
+      const targetKey = `${runDate.getFullYear()}-${String(runDate.getMonth() + 1).padStart(2, "0")}-20`;
+      const cells = screen.getAllByTestId("calendar-cell");
+      const targetCell = cells.find((c) => c.getAttribute("data-date") === targetKey);
+
+      if (targetCell) {
+        fireEvent.click(targetCell);
+
+        // Selection should be cleared
+        expect(badge).toHaveAttribute("data-selected", "false");
+        expect(screen.queryByTestId("move-instructions")).not.toBeInTheDocument();
+      }
+    });
+  });
+
+  describe("cell highlighting in move mode", () => {
+    it("cells show move-mode data attribute when run is selected", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      // Initially no move mode
+      const cellsBefore = screen.getAllByTestId("calendar-cell");
+      cellsBefore.forEach((cell) => {
+        expect(cell).toHaveAttribute("data-move-mode", "false");
+      });
+
+      // Select a run
+      const badge = screen.getByTestId("run-badge");
+      fireEvent.click(badge);
+
+      // All cells should be in move mode
+      const cellsAfter = screen.getAllByTestId("calendar-cell");
+      cellsAfter.forEach((cell) => {
+        expect(cell).toHaveAttribute("data-move-mode", "true");
+      });
+    });
+  });
+
+  describe("non-touch device behavior", () => {
+    it("disables tap-to-move on non-touch devices", () => {
+      mockUseTouchDevice.mockReturnValue({
+        isTouchDevice: false,
+        isLoading: false,
+      });
+
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      expect(badge).toHaveAttribute("data-tap-to-move", "false");
+    });
+  });
+
+  describe("unauthenticated user on touch device", () => {
+    it("disables tap-to-move when not authenticated", () => {
+      mockUseIsAuthenticated.mockReturnValue({
+        isAuthenticated: false,
+        isLoading: false,
+      });
+      mockUseTouchDevice.mockReturnValue({
+        isTouchDevice: true,
+        isLoading: false,
+      });
+
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      expect(badge).toHaveAttribute("data-tap-to-move", "false");
+    });
   });
 });
