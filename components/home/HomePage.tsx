@@ -5,6 +5,7 @@ import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
 import { RunSuggestions } from "@/components/suggestions";
 import { TrainingCalendar } from "@/components/calendar";
+import { RaceCountdown } from "@/components/countdown";
 import { useIsAuthenticated } from "@/hooks";
 
 /** Selected day data for background coordination */
@@ -104,6 +105,11 @@ export function HomePage() {
         <p className="mt-4 text-lg text-text-primary/80 sm:text-xl">
           Weather-aware half-marathon training
         </p>
+
+        {/* Race Countdown Widget */}
+        <div className="mt-8">
+          <RaceCountdown />
+        </div>
 
         <div className="mt-8">
           <CurrentWeather />

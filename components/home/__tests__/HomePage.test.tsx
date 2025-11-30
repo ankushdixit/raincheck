@@ -36,6 +36,11 @@ jest.mock("@/components/calendar", () => ({
   TrainingCalendar: () => <div data-testid="training-calendar-mock">Training Calendar</div>,
 }));
 
+// Mock the countdown component
+jest.mock("@/components/countdown", () => ({
+  RaceCountdown: () => <div data-testid="race-countdown-mock">Race Countdown</div>,
+}));
+
 // Mock the useIsAuthenticated hook
 jest.mock("@/hooks", () => ({
   useIsAuthenticated: () => ({
@@ -79,6 +84,11 @@ describe("HomePage", () => {
   it("renders the WeatherForecast component", () => {
     render(<HomePage />);
     expect(screen.getByTestId("weather-forecast-mock")).toBeInTheDocument();
+  });
+
+  it("renders the RaceCountdown component", () => {
+    render(<HomePage />);
+    expect(screen.getByTestId("race-countdown-mock")).toBeInTheDocument();
   });
 
   it("renders the RunSuggestions component", () => {

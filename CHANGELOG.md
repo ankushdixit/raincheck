@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Race countdown widget displaying days until race day (May 17, 2026)
+- `RaceCountdown` component with prominent countdown number, race name, and date display
+- `calculateDaysUntil()` utility function with date normalization for accurate day counting
+- `formatRaceDate()` utility function for human-readable date formatting
+- Amber accent styling with subtle pulse animation on countdown number
+- Race day and past race handling with appropriate label changes
+- Target time display showing sub-2:00 goal
+- Loading skeleton and error states with retry functionality
+- 28 unit tests for RaceCountdown component with edge case coverage
 - Mobile tap-to-move feature for touch-friendly run rescheduling
 - `useTouchDevice` hook for detecting touch devices via `(pointer: coarse)` media query
 - `MoveInstructions` component showing guidance when run is selected for moving
