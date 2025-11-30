@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BarChart3 } from "lucide-react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
+import { WeatherEffectLayer } from "@/components/weather-effects";
 import { RunSuggestions } from "@/components/suggestions";
 import { TrainingCalendar } from "@/components/calendar";
 import { RaceCountdown } from "@/components/countdown";
@@ -45,6 +46,9 @@ export function HomePage() {
   // Track which layer is currently visible (0 or 1)
   const [activeLayer, setActiveLayer] = useState<0 | 1>(0);
 
+  // Track current weather condition for weather effects
+  const [currentCondition, setCurrentCondition] = useState<string>("");
+
   // Use ref to track active layer in callback without causing re-renders
   const activeLayerRef = useRef<0 | 1>(0);
 
@@ -53,6 +57,9 @@ export function HomePage() {
     const condition = day.condition;
     const newImage = getTrailImage(condition);
     const newTint = getTintColor(condition);
+
+    // Update weather condition for effects layer
+    setCurrentCondition(condition);
 
     // Determine which layer to update (the inactive one)
     const currentActive = activeLayerRef.current;
@@ -99,6 +106,9 @@ export function HomePage() {
         data-testid="background-layer-1"
         aria-hidden="true"
       />
+
+      {/* Weather Effects Layer */}
+      {currentCondition && <WeatherEffectLayer condition={currentCondition} />}
 
       {/* Content Layer */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6 py-16 text-center">

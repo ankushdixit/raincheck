@@ -3,4 +3,5 @@ export { SnowEffect } from "./SnowEffect";
 export { FogEffect } from "./FogEffect";
 export { SunEffect } from "./SunEffect";
 export { CloudEffect } from "./CloudEffect";
+export { WeatherEffectLayer } from "./WeatherEffectLayer";
 export type { Intensity } from "./RainEffect";
