@@ -118,7 +118,34 @@ function generateMonthGrid(date: Date): { date: Date | null; isCurrentMonth: boo
 }
 
 /**
+ * Checkmark icon component for completed runs
+ */
+function CheckmarkIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+      data-testid="checkmark-icon"
+      className="inline-block ml-1 flex-shrink-0"
+      style={{ minWidth: "12px", minHeight: "12px" }}
+    >
+      <path
+        fillRule="evenodd"
+        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+/**
  * Run badge component
+ *
+ * Displays a colored badge for a run with type label and distance.
+ * Shows a checkmark icon when the run is marked as completed.
  */
 function RunBadge({ run }: { run: Run }) {
   const color = RUN_TYPE_COLORS[run.type];
@@ -126,14 +153,16 @@ function RunBadge({ run }: { run: Run }) {
 
   return (
     <div
-      className="rounded px-1.5 py-0.5 text-white text-xs font-medium truncate"
+      className="rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center"
       style={{ backgroundColor: color }}
       data-testid="run-badge"
       data-run-type={run.type}
+      data-completed={run.completed}
     >
-      <span className="block truncate">
+      <span className="truncate">
         {label} {run.distance}km
       </span>
+      {run.completed && <CheckmarkIcon />}
     </div>
   );
 }

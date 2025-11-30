@@ -231,8 +231,102 @@ describe("TrainingCalendar", () => {
     });
   });
 
+  describe("completed run indicator", () => {
+    it("displays checkmark for completed runs", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: true })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      const checkmark = screen.getByTestId("checkmark-icon");
+
+      expect(badge).toHaveAttribute("data-completed", "true");
+      expect(checkmark).toBeInTheDocument();
+    });
+
+    it("does not display checkmark for scheduled (incomplete) runs", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badge = screen.getByTestId("run-badge");
+      const checkmark = screen.queryByTestId("checkmark-icon");
+
+      expect(badge).toHaveAttribute("data-completed", "false");
+      expect(checkmark).not.toBeInTheDocument();
+    });
+
+    it("correctly renders mix of completed and scheduled runs", () => {
+      mockUseQuery.mockReturnValue({
+        data: [
+          createMockRun({ date: getDateInCurrentMonth(10), completed: true }),
+          createMockRun({ date: getDateInCurrentMonth(12), completed: false }),
+          createMockRun({ date: getDateInCurrentMonth(14), completed: true }),
+        ],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const badges = screen.getAllByTestId("run-badge");
+      expect(badges).toHaveLength(3);
+
+      const checkmarks = screen.getAllByTestId("checkmark-icon");
+      expect(checkmarks).toHaveLength(2);
+    });
+
+    it("checkmark icon has aria-hidden for accessibility", () => {
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15), completed: true })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const checkmark = screen.getByTestId("checkmark-icon");
+      expect(checkmark).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("checkmark renders on all run type backgrounds", () => {
+      const runTypes: RunType[] = [
+        "LONG_RUN",
+        "EASY_RUN",
+        "TEMPO_RUN",
+        "INTERVAL_RUN",
+        "RECOVERY_RUN",
+        "RACE",
+      ];
+
+      mockUseQuery.mockReturnValue({
+        data: runTypes.map((type, index) =>
+          createMockRun({ date: getDateInCurrentMonth(10 + index), type, completed: true })
+        ),
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const checkmarks = screen.getAllByTestId("checkmark-icon");
+      expect(checkmarks).toHaveLength(6);
+
+      // Verify all badges are present with correct types
+      const badges = screen.getAllByTestId("run-badge");
+      runTypes.forEach((type) => {
+        const badge = badges.find((b) => b.getAttribute("data-run-type") === type);
+        expect(badge).toBeInTheDocument();
+        expect(badge).toHaveAttribute("data-completed", "true");
+      });
+    });
+  });
+
   describe("today highlight", () => {
-    it("highlights today's date", () => {
+    it("highlights today's date when it has a run", () => {
       const today = new Date();
       mockUseQuery.mockReturnValue({
         data: [createMockRun({ date: today })],
@@ -248,6 +342,87 @@ describe("TrainingCalendar", () => {
       // Check for today styling (amber text color for date number and background)
       expect(todayCell).toBeInTheDocument();
       expect(todayCell).toHaveClass("bg-white/10");
+    });
+
+    it("highlights today's date even without any runs scheduled", () => {
+      // Provide a run on a different date to show the calendar grid
+      const otherDate = getDateInCurrentMonth(new Date().getDate() === 15 ? 16 : 15);
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: otherDate })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const today = new Date();
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const allCells = screen.getAllByTestId("calendar-cell");
+      const todayCell = allCells.find((cell) => cell.getAttribute("data-date") === todayKey);
+
+      expect(todayCell).toBeInTheDocument();
+      expect(todayCell).toHaveClass("bg-white/10");
+    });
+
+    it("today's date number has amber color styling", () => {
+      const today = new Date();
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: today })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const allCells = screen.getAllByTestId("calendar-cell");
+      const todayCell = allCells.find((cell) => cell.getAttribute("data-date") === todayKey);
+
+      // The date number div inside the cell should have amber text
+      const dateNumber = todayCell?.querySelector("div:first-child");
+      expect(dateNumber).toHaveClass("text-amber-400");
+    });
+
+    it("today highlight is not shown when viewing a different month", () => {
+      const today = new Date();
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: getDateInCurrentMonth(15) })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      // Navigate to next month
+      const nextButton = screen.getByTestId("calendar-next");
+      fireEvent.click(nextButton);
+
+      // Today's date key format
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      // There should be no cell with today's date in the next month
+      const allCells = screen.getAllByTestId("calendar-cell");
+      const todayCell = allCells.find((cell) => cell.getAttribute("data-date") === todayKey);
+
+      expect(todayCell).toBeUndefined();
+    });
+
+    it("non-today dates do not have highlight styling", () => {
+      const today = new Date();
+      // Pick a date that's not today
+      const otherDay = today.getDate() === 15 ? 16 : 15;
+      const otherDate = getDateInCurrentMonth(otherDay);
+
+      mockUseQuery.mockReturnValue({
+        data: [createMockRun({ date: otherDate })],
+        isLoading: false,
+      });
+
+      render(<TrainingCalendar />);
+
+      const otherKey = `${otherDate.getFullYear()}-${String(otherDate.getMonth() + 1).padStart(2, "0")}-${String(otherDate.getDate()).padStart(2, "0")}`;
+      const allCells = screen.getAllByTestId("calendar-cell");
+      const otherCell = allCells.find((cell) => cell.getAttribute("data-date") === otherKey);
+
+      expect(otherCell).toBeInTheDocument();
+      expect(otherCell).not.toHaveClass("bg-white/10");
     });
   });
 
