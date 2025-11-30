@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import Link from "next/link";
+import { BarChart3 } from "lucide-react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
 import { RunSuggestions } from "@/components/suggestions";
@@ -134,7 +136,16 @@ export function HomePage() {
 
         {/* Weekly Mileage Chart Section */}
         <div className="mt-12 w-full max-w-4xl">
-          <h2 className="text-2xl font-bold text-text-primary mb-4">Weekly Mileage</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-text-primary">Weekly Mileage</h2>
+            <Link
+              href="/stats"
+              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors text-sm font-medium"
+            >
+              <BarChart3 className="h-4 w-4" />
+              View All Stats
+            </Link>
+          </div>
           <div className="bg-surface/80 backdrop-blur-sm rounded-lg p-4">
             <WeeklyMileageChart />
           </div>
