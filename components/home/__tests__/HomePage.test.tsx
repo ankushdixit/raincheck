@@ -41,6 +41,11 @@ jest.mock("@/components/countdown", () => ({
   RaceCountdown: () => <div data-testid="race-countdown-mock">Race Countdown</div>,
 }));
 
+// Mock the stats component
+jest.mock("@/components/stats", () => ({
+  WeeklyMileageChart: () => <div data-testid="weekly-mileage-chart-mock">Weekly Mileage Chart</div>,
+}));
+
 // Mock the useIsAuthenticated hook
 jest.mock("@/hooks", () => ({
   useIsAuthenticated: () => ({
@@ -117,6 +122,18 @@ describe("HomePage", () => {
   it("renders the TrainingCalendar component", () => {
     render(<HomePage />);
     expect(screen.getByTestId("training-calendar-mock")).toBeInTheDocument();
+  });
+
+  it("renders the Weekly Mileage heading", () => {
+    render(<HomePage />);
+    const headings = screen.getAllByRole("heading", { level: 2 });
+    const mileageHeading = headings.find((h) => h.textContent === "Weekly Mileage");
+    expect(mileageHeading).toBeInTheDocument();
+  });
+
+  it("renders the WeeklyMileageChart component", () => {
+    render(<HomePage />);
+    expect(screen.getByTestId("weekly-mileage-chart-mock")).toBeInTheDocument();
   });
 
   it("renders two background layers for cross-fade transitions", () => {

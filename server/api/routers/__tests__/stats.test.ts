@@ -138,14 +138,20 @@ describe("Stats Router", () => {
       expect(week1?.target).toBe(24);
     });
 
-    it("returns empty array when no training plans exist", async () => {
+    it("returns mileage data without targets when no training plans exist", async () => {
       mockTrainingPlanFindMany.mockResolvedValue([]);
       mockRunFindMany.mockResolvedValue(mockCompletedRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage();
 
-      expect(result).toEqual([]);
+      // Should still return mileage data, just without targets
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
+      // All targets should be 0 when no training plan
+      result.forEach((week) => {
+        expect(week.target).toBe(0);
+      });
     });
 
     it("returns empty array when no runs exist", async () => {
@@ -178,6 +184,50 @@ describe("Stats Router", () => {
       // Current week (Dec 1) should be week 2
       const currentWeek = result.find((w) => w.isCurrentWeek);
       expect(currentWeek?.week).toBe("Week 2");
+    });
+
+    it("includes pre-training weeks with 'Pre' label", async () => {
+      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      // Add runs from before training plan start (Nov 23)
+      const preTrainingRuns = [
+        {
+          id: "pre-run-1",
+          date: new Date("2025-09-23T08:00:00.000Z"), // 9 weeks before training
+          distance: 7,
+          pace: "6:20",
+          duration: "44:20",
+          type: RunType.LONG_RUN,
+          completed: true,
+        },
+        {
+          id: "pre-run-2",
+          date: new Date("2025-11-16T08:00:00.000Z"), // 1 week before training
+          distance: 10.82,
+          pace: "6:42",
+          duration: "72:25",
+          type: RunType.LONG_RUN,
+          completed: true,
+        },
+        ...mockCompletedRuns,
+      ];
+      mockRunFindMany.mockResolvedValue(preTrainingRuns);
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getWeeklyMileage({ weeks: 15 });
+
+      // Should include pre-training weeks labeled "Pre X"
+      const preWeeks = result.filter((w) => w.week.startsWith("Pre"));
+      expect(preWeeks.length).toBeGreaterThan(0);
+
+      // Pre-training weeks should have target 0
+      preWeeks.forEach((week) => {
+        expect(week.target).toBe(0);
+      });
+
+      // Pre 1 should be the week before Week 1 (Nov 16-22)
+      const pre1 = result.find((w) => w.week === "Pre 1");
+      expect(pre1).toBeDefined();
+      expect(pre1?.mileage).toBeCloseTo(10.82, 1);
     });
 
     it("works without authentication (public)", async () => {
