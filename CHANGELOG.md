@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Race week features with "RACE WEEK!" banner when race is ≤7 days away
+- Race day weather forecast display when race is within 10-day forecast range
+- Taper reminder messages during race week (race day, 1 day, 2-3 days, 4-7 days)
+- `isRaceWeek()`, `shouldShowRaceWeather()`, and `getTaperReminder()` utility functions
+- `RaceWeekBanner`, `RaceDayWeather`, and `TaperReminder` sub-components
+- Weather forecast integration using existing `weather.getForecast` tRPC endpoint
+- 29 new tests for race week features with full coverage
 - Current phase badge displaying training phase (Base Building, Base Extension, Speed Development, Peak & Taper)
 - `PhaseBadge` component with color-coded phase display (Blue, Green, Orange, Amber)
 - `formatPhaseName` utility for converting enum values to human-readable format

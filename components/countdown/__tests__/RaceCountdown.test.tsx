@@ -1,11 +1,19 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { RaceCountdown, calculateDaysUntil, formatRaceDate } from "../RaceCountdown";
+import {
+  RaceCountdown,
+  calculateDaysUntil,
+  formatRaceDate,
+  isRaceWeek,
+  shouldShowRaceWeather,
+  getTaperReminder,
+} from "../RaceCountdown";
 
 // Mock the tRPC api
 const mockRefetch = jest.fn();
 const mockUseQuery = jest.fn();
 const mockProgressStatsQuery = jest.fn();
 const mockGetCurrentPhaseQuery = jest.fn();
+const mockWeatherForecastQuery = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -22,6 +30,16 @@ jest.mock("@/lib/api", () => ({
     planning: {
       getCurrentPhase: {
         useQuery: () => mockGetCurrentPhaseQuery(),
+      },
+    },
+    weather: {
+      getForecast: {
+        useQuery: (input: unknown, options: { enabled: boolean }) => {
+          if (!options.enabled) {
+            return { data: undefined, isLoading: false };
+          }
+          return mockWeatherForecastQuery();
+        },
       },
     },
   },
@@ -111,6 +129,75 @@ describe("formatRaceDate", () => {
   });
 });
 
+describe("isRaceWeek", () => {
+  it("returns true for 0 days (race day)", () => {
+    expect(isRaceWeek(0)).toBe(true);
+  });
+
+  it("returns true for 1 day", () => {
+    expect(isRaceWeek(1)).toBe(true);
+  });
+
+  it("returns true for 7 days", () => {
+    expect(isRaceWeek(7)).toBe(true);
+  });
+
+  it("returns false for 8 days", () => {
+    expect(isRaceWeek(8)).toBe(false);
+  });
+
+  it("returns false for negative days (past race)", () => {
+    expect(isRaceWeek(-1)).toBe(false);
+  });
+});
+
+describe("shouldShowRaceWeather", () => {
+  it("returns true for 0 days (race day)", () => {
+    expect(shouldShowRaceWeather(0)).toBe(true);
+  });
+
+  it("returns true for 10 days", () => {
+    expect(shouldShowRaceWeather(10)).toBe(true);
+  });
+
+  it("returns false for 11 days", () => {
+    expect(shouldShowRaceWeather(11)).toBe(false);
+  });
+
+  it("returns false for negative days (past race)", () => {
+    expect(shouldShowRaceWeather(-1)).toBe(false);
+  });
+});
+
+describe("getTaperReminder", () => {
+  it("returns race day message for 0 days", () => {
+    expect(getTaperReminder(0)).toBe("Race day! Trust your training!");
+  });
+
+  it("returns tomorrow message for 1 day", () => {
+    expect(getTaperReminder(1)).toBe("Rest up! Tomorrow is the big day!");
+  });
+
+  it("returns light runs message for 2-3 days", () => {
+    expect(getTaperReminder(2)).toBe("Light runs only. Stay fresh!");
+    expect(getTaperReminder(3)).toBe("Light runs only. Stay fresh!");
+  });
+
+  it("returns taper message for 4-7 days", () => {
+    expect(getTaperReminder(4)).toBe("Taper time! Rest and recover.");
+    expect(getTaperReminder(7)).toBe("Taper time! Rest and recover.");
+  });
+
+  it("returns null for more than 7 days", () => {
+    expect(getTaperReminder(8)).toBeNull();
+    expect(getTaperReminder(30)).toBeNull();
+  });
+
+  it("returns null for negative days (past race)", () => {
+    expect(getTaperReminder(-1)).toBeNull();
+  });
+});
+
 describe("RaceCountdown", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -126,6 +213,11 @@ describe("RaceCountdown", () => {
     // Default mock for PhaseBadge component's API call
     mockGetCurrentPhaseQuery.mockReturnValue({
       data: { phase: "BASE_BUILDING", weekNumber: 3 },
+      isLoading: false,
+    });
+    // Default mock for weather forecast (disabled by default since race is far away)
+    mockWeatherForecastQuery.mockReturnValue({
+      data: undefined,
       isLoading: false,
     });
   });
@@ -399,6 +491,317 @@ describe("RaceCountdown", () => {
       render(<RaceCountdown />);
 
       expect(screen.queryByTestId("target-time")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("race week features", () => {
+    describe("race week banner", () => {
+      it("displays race week banner when race is 7 days away", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-10T12:00:00Z")); // 7 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("race-week-banner")).toBeInTheDocument();
+        expect(screen.getByText("RACE WEEK!")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("displays race week banner when race is 1 day away", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-16T12:00:00Z")); // 1 day before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("race-week-banner")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("displays race week banner on race day", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-17T08:00:00Z")); // Race day
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("race-week-banner")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("does not display race week banner when race is 8 days away", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-09T12:00:00Z")); // 8 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.queryByTestId("race-week-banner")).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("does not display race week banner after race has passed", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-20T12:00:00Z")); // 3 days after race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.queryByTestId("race-week-banner")).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+    });
+
+    describe("taper reminders", () => {
+      it("displays taper reminder during race week", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-12T12:00:00Z")); // 5 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("taper-reminder")).toBeInTheDocument();
+        expect(screen.getByText("Taper time! Rest and recover.")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("displays light runs reminder 3 days before race", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-14T12:00:00Z")); // 3 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("taper-reminder")).toBeInTheDocument();
+        expect(screen.getByText("Light runs only. Stay fresh!")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("displays tomorrow reminder 1 day before race", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-16T12:00:00Z")); // 1 day before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("taper-reminder")).toBeInTheDocument();
+        expect(screen.getByText("Rest up! Tomorrow is the big day!")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("displays race day reminder on race day", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-17T08:00:00Z")); // Race day
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("taper-reminder")).toBeInTheDocument();
+        expect(screen.getByText("Race day! Trust your training!")).toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("does not display taper reminder when race is far away", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2025-11-30T12:00:00Z")); // 168 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.queryByTestId("taper-reminder")).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+    });
+
+    describe("race day weather", () => {
+      const mockWeatherData = [
+        {
+          datetime: new Date("2026-05-17T00:00:00Z"),
+          condition: "Partly cloudy",
+          temperature: 15,
+          precipitation: 20,
+          windSpeed: 12,
+          location: "Balbriggan, IE",
+          latitude: 53.6108,
+          longitude: -6.1817,
+          description: "Partly cloudy",
+          feelsLike: 14,
+          humidity: 65,
+          windDirection: 180,
+        },
+      ];
+
+      it("displays race day weather when race is within 10 days", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-10T12:00:00Z")); // 7 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        mockWeatherForecastQuery.mockReturnValue({
+          data: mockWeatherData,
+          isLoading: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.getByTestId("race-day-weather")).toBeInTheDocument();
+        expect(screen.getByText("Race Day Forecast")).toBeInTheDocument();
+        expect(screen.getByTestId("race-weather-temp")).toHaveTextContent("15°C");
+        expect(screen.getByTestId("race-weather-details")).toHaveTextContent("20% rain");
+        expect(screen.getByTestId("race-weather-details")).toHaveTextContent("12 km/h wind");
+        expect(screen.getByTestId("race-weather-condition")).toHaveTextContent("Partly cloudy");
+
+        jest.useRealTimers();
+      });
+
+      it("does not display race day weather when race is more than 10 days away", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2025-11-30T12:00:00Z")); // 168 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.queryByTestId("race-day-weather")).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("does not display race day weather when forecast data is not available", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-10T12:00:00Z")); // 7 days before race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        mockWeatherForecastQuery.mockReturnValue({
+          data: undefined,
+          isLoading: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.queryByTestId("race-day-weather")).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
+
+      it("does not display race day weather after race has passed", () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date("2026-05-20T12:00:00Z")); // 3 days after race
+
+        mockUseQuery.mockReturnValue({
+          data: mockSettingsData,
+          isLoading: false,
+          isError: false,
+          refetch: mockRefetch,
+          isFetching: false,
+        });
+
+        render(<RaceCountdown />);
+
+        expect(screen.queryByTestId("race-day-weather")).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+      });
     });
   });
 });
