@@ -79,19 +79,28 @@ function isSameMonth(date1: Date, date2: Date): boolean {
 
 /**
  * Generate calendar grid data for a month
+ * Includes days from previous and next months for leading/trailing cells
  */
-function generateMonthGrid(date: Date): { date: Date | null; isCurrentMonth: boolean }[][] {
+function generateMonthGrid(date: Date): { date: Date; isCurrentMonth: boolean }[][] {
   const monthStart = getMonthStart(date);
   const daysInMonth = getDaysInMonth(date);
   const startDayOfWeek = getDayOfWeek(monthStart);
 
-  const grid: { date: Date | null; isCurrentMonth: boolean }[][] = [];
-  let currentDay = 1;
-  let currentWeek: { date: Date | null; isCurrentMonth: boolean }[] = [];
+  // Calculate previous month info for leading days
+  const prevMonth = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+  const daysInPrevMonth = getDaysInMonth(prevMonth);
 
-  // Fill in leading empty cells
+  const grid: { date: Date; isCurrentMonth: boolean }[][] = [];
+  let currentDay = 1;
+  let currentWeek: { date: Date; isCurrentMonth: boolean }[] = [];
+
+  // Fill in leading cells with previous month days
   for (let i = 0; i < startDayOfWeek; i++) {
-    currentWeek.push({ date: null, isCurrentMonth: false });
+    const prevMonthDay = daysInPrevMonth - startDayOfWeek + 1 + i;
+    currentWeek.push({
+      date: new Date(prevMonth.getFullYear(), prevMonth.getMonth(), prevMonthDay),
+      isCurrentMonth: false,
+    });
   }
 
   // Fill in the days
@@ -108,9 +117,14 @@ function generateMonthGrid(date: Date): { date: Date | null; isCurrentMonth: boo
     currentDay++;
   }
 
-  // Fill in trailing empty cells
+  // Fill in trailing cells with next month days
+  let nextMonthDay = 1;
   while (currentWeek.length < 7) {
-    currentWeek.push({ date: null, isCurrentMonth: false });
+    currentWeek.push({
+      date: new Date(date.getFullYear(), date.getMonth() + 1, nextMonthDay),
+      isCurrentMonth: false,
+    });
+    nextMonthDay++;
   }
   grid.push(currentWeek);
 
@@ -169,49 +183,71 @@ function RunBadge({ run }: { run: Run }) {
 
 /**
  * Calendar cell component
+ *
+ * Displays a day cell in the calendar with optional run badges.
+ * Supports muted styling for days outside the current month.
+ * Responsive design ensures touch targets meet accessibility guidelines.
  */
 function CalendarCell({
   cellDate,
   runs,
   isToday,
+  isCurrentMonth,
 }: {
-  cellDate: Date | null;
+  cellDate: Date;
   runs: Run[];
   isToday: boolean;
+  isCurrentMonth: boolean;
 }) {
-  if (!cellDate) {
-    return (
-      <div
-        className="min-h-[80px] p-1 border-r border-b border-white/10"
-        data-testid="calendar-cell-empty"
-      />
-    );
-  }
-
   const dayRuns = runs.filter((run) => isSameDay(new Date(run.date), cellDate));
+
+  // Determine styling based on current month and today status
+  const cellClasses = [
+    "min-h-[60px] sm:min-h-[80px]", // Responsive height
+    "p-1 sm:p-1.5", // Responsive padding
+    "border-r border-b border-white/10",
+    isToday && isCurrentMonth ? "bg-white/10" : "",
+    !isCurrentMonth ? "bg-white/[0.02]" : "", // Subtle background for adjacent months
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const dateClasses = [
+    "text-xs font-medium mb-1",
+    "min-h-[20px] min-w-[20px]", // Minimum touch target size for date numbers
+    "flex items-center justify-center sm:justify-start", // Center on mobile, left-align on larger
+    "w-6 h-6 sm:w-auto sm:h-auto", // Fixed size on mobile for touch
+    "rounded-full sm:rounded-none", // Circular on mobile for better touch
+    isToday && isCurrentMonth ? "text-amber-400 sm:bg-transparent bg-amber-500/20" : "",
+    isCurrentMonth ? "text-white/80" : "text-white/30", // Muted for adjacent months
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
-      className={`min-h-[80px] p-1 border-r border-b border-white/10 ${
-        isToday ? "bg-white/10" : ""
-      }`}
-      data-testid="calendar-cell"
+      className={cellClasses}
+      data-testid={isCurrentMonth ? "calendar-cell" : "calendar-cell-adjacent"}
       data-date={formatDateKey(cellDate)}
+      data-current-month={isCurrentMonth}
     >
-      <div className={`text-xs font-medium mb-1 ${isToday ? "text-amber-400" : "text-white/80"}`}>
-        {cellDate.getDate()}
-      </div>
-      <div className="space-y-1">
-        {dayRuns.map((run) => (
-          <RunBadge key={run.id} run={run} />
-        ))}
-      </div>
+      <div className={dateClasses}>{cellDate.getDate()}</div>
+      {isCurrentMonth && (
+        <div className="space-y-0.5 sm:space-y-1">
+          {dayRuns.map((run) => (
+            <RunBadge key={run.id} run={run} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 /**
  * Loading skeleton for the calendar
+ *
+ * Displays a placeholder while calendar data is loading.
+ * Responsive design matches the main calendar component.
  */
 export function TrainingCalendarSkeleton() {
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -223,14 +259,17 @@ export function TrainingCalendarSkeleton() {
       data-testid="calendar-skeleton"
     >
       {/* Month header skeleton */}
-      <div className="p-4 flex items-center justify-center">
-        <div className="h-6 w-40 bg-white/20 rounded animate-pulse" />
+      <div className="p-2 sm:p-4 flex items-center justify-center">
+        <div className="h-5 sm:h-6 w-32 sm:w-40 bg-white/20 rounded animate-pulse" />
       </div>
 
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b border-white/10">
         {weekDays.map((day) => (
-          <div key={day} className="p-2 text-center text-xs font-medium text-white/60">
+          <div
+            key={day}
+            className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-white/60"
+          >
             {day}
           </div>
         ))}
@@ -240,7 +279,10 @@ export function TrainingCalendarSkeleton() {
       {[0, 1, 2, 3, 4].map((row) => (
         <div key={row} className="grid grid-cols-7">
           {[0, 1, 2, 3, 4, 5, 6].map((col) => (
-            <div key={col} className="min-h-[80px] p-1 border-r border-b border-white/10">
+            <div
+              key={col}
+              className="min-h-[60px] sm:min-h-[80px] p-1 border-r border-b border-white/10"
+            >
               <div className="h-3 w-4 bg-white/20 rounded animate-pulse mb-1" />
               {Math.random() > 0.7 && (
                 <div className="h-5 w-full bg-white/10 rounded animate-pulse" />
@@ -329,11 +371,11 @@ export function TrainingCalendar() {
       data-testid="training-calendar"
     >
       {/* Month header with navigation */}
-      <div className="p-4 flex items-center justify-between">
-        {/* Previous month button */}
+      <div className="p-2 sm:p-4 flex items-center justify-between">
+        {/* Previous month button - 44px minimum touch target */}
         <button
           onClick={goToPreviousMonth}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+          className="min-w-[44px] min-h-[44px] p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
           aria-label="Previous month"
           data-testid="calendar-prev"
         >
@@ -352,14 +394,17 @@ export function TrainingCalendar() {
         </button>
 
         {/* Month name and Today button */}
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-white" data-testid="calendar-month">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h3
+            className="text-base sm:text-lg font-semibold text-white"
+            data-testid="calendar-month"
+          >
             {monthName}
           </h3>
           {!isCurrentMonth && (
             <button
               onClick={goToToday}
-              className="px-2 py-1 text-xs rounded bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+              className="min-h-[44px] px-3 py-2 sm:px-2 sm:py-1 sm:min-h-0 text-xs rounded bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
               aria-label="Go to current month"
               data-testid="calendar-today"
             >
@@ -368,10 +413,10 @@ export function TrainingCalendar() {
           )}
         </div>
 
-        {/* Next month button */}
+        {/* Next month button - 44px minimum touch target */}
         <button
           onClick={goToNextMonth}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+          className="min-w-[44px] min-h-[44px] p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
           aria-label="Next month"
           data-testid="calendar-next"
         >
@@ -391,9 +436,12 @@ export function TrainingCalendar() {
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-white/10">
+      <div className="grid grid-cols-7 border-b border-white/10" data-testid="calendar-day-headers">
         {weekDays.map((day) => (
-          <div key={day} className="p-2 text-center text-xs font-medium text-white/60">
+          <div
+            key={day}
+            className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-white/60"
+          >
             {day}
           </div>
         ))}
@@ -409,7 +457,8 @@ export function TrainingCalendar() {
                   key={dayIndex}
                   cellDate={cell.date}
                   runs={runs}
-                  isToday={cell.date ? isSameDay(cell.date, today) : false}
+                  isToday={isSameDay(cell.date, today)}
+                  isCurrentMonth={cell.isCurrentMonth}
                 />
               ))}
             </div>
@@ -422,13 +471,16 @@ export function TrainingCalendar() {
       {/* Legend */}
       {hasRuns && (
         <div
-          className="p-3 border-t border-white/10 flex flex-wrap gap-3 justify-center"
+          className="p-2 sm:p-3 border-t border-white/10 flex flex-wrap gap-2 sm:gap-3 justify-center"
           data-testid="calendar-legend"
         >
           {(Object.keys(RUN_TYPE_COLORS) as RunType[]).map((type) => (
-            <div key={type} className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: RUN_TYPE_COLORS[type] }} />
-              <span className="text-xs text-white/60">{RUN_TYPE_LABELS[type]}</span>
+            <div key={type} className="flex items-center gap-1 sm:gap-1.5">
+              <div
+                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded"
+                style={{ backgroundColor: RUN_TYPE_COLORS[type] }}
+              />
+              <span className="text-[10px] sm:text-xs text-white/60">{RUN_TYPE_LABELS[type]}</span>
             </div>
           ))}
         </div>
