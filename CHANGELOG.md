@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Drag-and-drop functionality for rescheduling runs on the training calendar
+- @dnd-kit/core and @dnd-kit/utilities dependencies for accessible drag-and-drop
+- DraggableRunBadge component wrapping run badges with drag capability
+- DroppableCalendarCell component making calendar cells valid drop targets
+- Visual drag overlay showing the dragged run badge during drag operations
+- Drop target highlighting with amber glow when dragging over valid cells
+- Authentication check for drag-and-drop (only authenticated users can reschedule)
+- Completed run protection (completed runs cannot be dragged/rescheduled)
+- Integration with runs.update tRPC mutation for persisting date changes
+- 116 tests for calendar drag-and-drop functionality with 94.95% coverage
 - Adjacent month days display in calendar (previous/next month days shown in muted style)
 - Responsive calendar design for mobile devices with breakpoints at `sm` (640px)
 - Mobile-optimized touch targets (44px minimum) for navigation buttons

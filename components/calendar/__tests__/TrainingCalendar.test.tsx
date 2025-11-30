@@ -4,6 +4,8 @@ import type { Run, RunType } from "@prisma/client";
 
 // Mock the tRPC api
 const mockUseQuery = jest.fn();
+const mockMutate = jest.fn();
+const mockInvalidate = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -11,8 +13,28 @@ jest.mock("@/lib/api", () => ({
       getByDateRange: {
         useQuery: (input: { startDate: Date; endDate: Date }) => mockUseQuery(input),
       },
+      update: {
+        useMutation: () => ({
+          mutate: mockMutate,
+          isLoading: false,
+        }),
+      },
     },
+    useUtils: () => ({
+      runs: {
+        getByDateRange: {
+          invalidate: mockInvalidate,
+        },
+      },
+    }),
   },
+}));
+
+// Mock the useIsAuthenticated hook
+const mockUseIsAuthenticated = jest.fn();
+
+jest.mock("@/hooks", () => ({
+  useIsAuthenticated: () => mockUseIsAuthenticated(),
 }));
 
 // Helper to create mock runs
@@ -39,6 +61,11 @@ const getDateInCurrentMonth = (day: number): Date => {
 describe("TrainingCalendar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default to unauthenticated state
+    mockUseIsAuthenticated.mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+    });
   });
 
   describe("loading state", () => {
@@ -682,10 +709,200 @@ describe("TrainingCalendar", () => {
       expect(callArgs.startDate.getMonth()).toBe(nextMonth.getMonth());
     });
   });
+
+  describe("drag and drop functionality", () => {
+    describe("authentication-based drag control", () => {
+      it("disables dragging when user is not authenticated", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: false,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveAttribute("data-draggable", "false");
+      });
+
+      it("enables dragging when user is authenticated and run is not completed", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveAttribute("data-draggable", "true");
+      });
+
+      it("disables dragging while auth is loading", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: false,
+          isLoading: true,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveAttribute("data-draggable", "false");
+      });
+    });
+
+    describe("completed runs", () => {
+      it("disables dragging for completed runs even when authenticated", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: true })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveAttribute("data-draggable", "false");
+      });
+
+      it("has default cursor for completed runs", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: true })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveStyle({ cursor: "default" });
+      });
+
+      it("allows scheduled runs to be dragged while completed runs cannot", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [
+            createMockRun({ id: "run-1", date: getDateInCurrentMonth(10), completed: false }),
+            createMockRun({ id: "run-2", date: getDateInCurrentMonth(12), completed: true }),
+            createMockRun({ id: "run-3", date: getDateInCurrentMonth(14), completed: false }),
+          ],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badges = screen.getAllByTestId("run-badge");
+        expect(badges).toHaveLength(3);
+
+        // Check each badge based on order (they should match the data order)
+        expect(badges[0]).toHaveAttribute("data-draggable", "true"); // scheduled
+        expect(badges[1]).toHaveAttribute("data-draggable", "false"); // completed
+        expect(badges[2]).toHaveAttribute("data-draggable", "true"); // scheduled
+      });
+    });
+
+    describe("badge drag styling", () => {
+      it("has grab cursor when authenticated and not completed", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveStyle({ cursor: "grab" });
+      });
+
+      it("has default cursor when not authenticated", () => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: false,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15), completed: false })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const badge = screen.getByTestId("run-badge");
+        expect(badge).toHaveStyle({ cursor: "default" });
+      });
+    });
+
+    describe("droppable cells", () => {
+      beforeEach(() => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15) })],
+          isLoading: false,
+        });
+      });
+
+      it("calendar cells have data-is-over attribute", () => {
+        render(<TrainingCalendar />);
+
+        const cells = screen.getAllByTestId("calendar-cell");
+        cells.forEach((cell) => {
+          expect(cell).toHaveAttribute("data-is-over");
+        });
+      });
+
+      it("calendar cells have transition classes for drop highlighting", () => {
+        render(<TrainingCalendar />);
+
+        const cells = screen.getAllByTestId("calendar-cell");
+        cells.forEach((cell) => {
+          expect(cell).toHaveClass("transition-colors");
+          expect(cell).toHaveClass("duration-150");
+        });
+      });
+    });
+  });
 });
 
 describe("adjacent month days", () => {
   beforeEach(() => {
+    mockUseIsAuthenticated.mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+    });
     mockUseQuery.mockReturnValue({
       data: [createMockRun({ date: getDateInCurrentMonth(15) })],
       isLoading: false,
@@ -787,6 +1004,10 @@ describe("adjacent month days", () => {
 
 describe("responsive design", () => {
   beforeEach(() => {
+    mockUseIsAuthenticated.mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+    });
     mockUseQuery.mockReturnValue({
       data: [createMockRun({ date: getDateInCurrentMonth(15) })],
       isLoading: false,
