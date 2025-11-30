@@ -893,6 +893,141 @@ describe("TrainingCalendar", () => {
           expect(cell).toHaveClass("duration-150");
         });
       });
+
+      it("calendar cells have data-valid-target attribute", () => {
+        render(<TrainingCalendar />);
+
+        const cells = screen.getAllByTestId("calendar-cell");
+        cells.forEach((cell) => {
+          expect(cell).toHaveAttribute("data-valid-target");
+        });
+      });
+    });
+
+    describe("drop validation", () => {
+      beforeEach(() => {
+        mockUseIsAuthenticated.mockReturnValue({
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      });
+
+      it("marks past date cells as invalid targets", () => {
+        // Create a run for tomorrow to ensure calendar renders
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: tomorrow })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        // Navigate to previous month to find past dates
+        const prevButton = screen.getByTestId("calendar-prev");
+        fireEvent.click(prevButton);
+
+        // All cells in the previous month should be invalid (past dates)
+        const cells = screen.getAllByTestId("calendar-cell");
+        cells.forEach((cell) => {
+          expect(cell).toHaveAttribute("data-valid-target", "false");
+        });
+      });
+
+      it("marks cells with existing runs as invalid targets", () => {
+        const day10 = getDateInCurrentMonth(10);
+        const day15 = getDateInCurrentMonth(15);
+        const day20 = getDateInCurrentMonth(20);
+
+        mockUseQuery.mockReturnValue({
+          data: [
+            createMockRun({ id: "run-1", date: day10 }),
+            createMockRun({ id: "run-2", date: day15 }),
+            createMockRun({ id: "run-3", date: day20 }),
+          ],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const cells = screen.getAllByTestId("calendar-cell");
+
+        // Find cells by date attribute
+        const day10Key = `${day10.getFullYear()}-${String(day10.getMonth() + 1).padStart(2, "0")}-10`;
+        const day15Key = `${day15.getFullYear()}-${String(day15.getMonth() + 1).padStart(2, "0")}-15`;
+        const day20Key = `${day20.getFullYear()}-${String(day20.getMonth() + 1).padStart(2, "0")}-20`;
+
+        const cellWith10 = cells.find((c) => c.getAttribute("data-date") === day10Key);
+        const cellWith15 = cells.find((c) => c.getAttribute("data-date") === day15Key);
+        const cellWith20 = cells.find((c) => c.getAttribute("data-date") === day20Key);
+
+        // Cells with runs should be marked as invalid targets
+        // (When no drag is active, run cells are still marked invalid for other runs)
+        expect(cellWith10).toHaveAttribute("data-valid-target", "false");
+        expect(cellWith15).toHaveAttribute("data-valid-target", "false");
+        expect(cellWith20).toHaveAttribute("data-valid-target", "false");
+      });
+
+      it("marks future empty cells as valid targets", () => {
+        // Navigate to next month where all days are in the future
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        nextMonth.setDate(15); // Day 15 of next month
+
+        // Create a run on day 1 of next month so calendar renders
+        const day1NextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: day1NextMonth })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        // Navigate to next month
+        const nextButton = screen.getByTestId("calendar-next");
+        fireEvent.click(nextButton);
+
+        const cells = screen.getAllByTestId("calendar-cell");
+        // Day 15 of next month should be valid (future and empty)
+        const futureKey = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-15`;
+        const futureCell = cells.find((c) => c.getAttribute("data-date") === futureKey);
+
+        expect(futureCell).toHaveAttribute("data-valid-target", "true");
+      });
+
+      it("marks today as valid if no run exists on today", () => {
+        // Create a run on a different day
+        const otherDay = new Date().getDate() === 15 ? 16 : 15;
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(otherDay) })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        const cells = screen.getAllByTestId("calendar-cell");
+        const todayCell = cells.find((c) => c.getAttribute("data-date") === todayKey);
+
+        expect(todayCell).toHaveAttribute("data-valid-target", "true");
+      });
+
+      it("marks adjacent month cells as invalid targets", () => {
+        mockUseQuery.mockReturnValue({
+          data: [createMockRun({ date: getDateInCurrentMonth(15) })],
+          isLoading: false,
+        });
+
+        render(<TrainingCalendar />);
+
+        const adjacentCells = screen.queryAllByTestId("calendar-cell-adjacent");
+        adjacentCells.forEach((cell) => {
+          expect(cell).toHaveAttribute("data-valid-target", "false");
+        });
+      });
     });
   });
 });

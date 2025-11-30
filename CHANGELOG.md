@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Drop validation for calendar drag-and-drop preventing invalid moves
+- Calendar validation utilities (`lib/calendar-utils.ts`) with `isValidDropTarget`, `isPastDate`, `hasExistingRun` functions
+- Visual feedback for valid drop targets (green highlight) and invalid targets (red highlight, dimmed during drag)
+- Past date validation preventing runs from being scheduled in the past
+- Existing run collision detection preventing drops on dates that already have a run
+- `data-valid-target` attribute on calendar cells for testing and accessibility
+- 45 new tests for drop validation covering utility functions and component behavior
 - Drag-and-drop functionality for rescheduling runs on the training calendar
 - @dnd-kit/core and @dnd-kit/utilities dependencies for accessible drag-and-drop
 - DraggableRunBadge component wrapping run badges with drag capability
