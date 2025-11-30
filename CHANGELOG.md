@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Weather Effect Orchestrator (`WeatherEffectLayer`) for dynamic weather effect display based on conditions
+- `parseCondition()` and `parseConditions()` utility functions in `lib/weather-effects.ts` for condition string parsing
+- `getIntensityFromPrecipitation()` function for calculating effect intensity from precipitation percentage
+- Support for compound conditions (e.g., "Partly Cloudy" displays both cloud and sun effects)
+- Intensity adjustment based on condition modifiers ("Light", "Heavy", "Moderate") or precipitation percentage
+- Graceful handling of unknown weather conditions (no effect rendered)
+- Integration of WeatherEffectLayer into HomePage, activating effects when forecast days are selected
+- 85 new tests for weather effect orchestrator with 100% coverage on parsing utilities
 - Weather effect components for immersive weather animations (`components/weather-effects/`)
 - `RainEffect` component rendering diagonal rain streaks with configurable intensity (30/60/100 particles)
 - `SnowEffect` component rendering drifting snowflakes with horizontal movement (25/50/80 particles)
