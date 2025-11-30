@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Training progress metrics showing real performance indicators instead of week-based progress
+- `TrainingProgress` component displaying longest run distance vs 21.1 km target and best long run pace vs target pace
+- `runs.getProgressStats` tRPC procedure returning longest completed run distance and best long run pace
+- Helper functions: `parseTimeToMinutes`, `formatPace`, `calculateTargetPace`, `calculateDistanceProgress`, `calculatePaceProgress`
+- Target pace calculated dynamically from user's target finish time (e.g., 2:00:00 → 5:41/km)
+- Progress bars for both distance and pace metrics with smooth animations
+- 35 new tests for training progress functionality with full coverage
 - Race countdown widget displaying days until race day (May 17, 2026)
 - `RaceCountdown` component with prominent countdown number, race name, and date display
 - `calculateDaysUntil()` utility function with date normalization for accurate day counting

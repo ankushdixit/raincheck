@@ -4,12 +4,18 @@ import { RaceCountdown, calculateDaysUntil, formatRaceDate } from "../RaceCountd
 // Mock the tRPC api
 const mockRefetch = jest.fn();
 const mockUseQuery = jest.fn();
+const mockProgressStatsQuery = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
     settings: {
       get: {
         useQuery: () => mockUseQuery(),
+      },
+    },
+    runs: {
+      getProgressStats: {
+        useQuery: () => mockProgressStatsQuery(),
       },
     },
   },
@@ -103,6 +109,14 @@ describe("RaceCountdown", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRefetch.mockResolvedValue({ data: mockSettingsData });
+    // Default mock for TrainingProgress component's API call
+    mockProgressStatsQuery.mockReturnValue({
+      data: {
+        longestRunDistance: 16.5,
+        bestLongRunPace: "6:30",
+      },
+      isLoading: false,
+    });
   });
 
   describe("loading state", () => {

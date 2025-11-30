@@ -221,4 +221,60 @@ export const runsRouter = createTRPCRouter({
         data: { completed: input.completed },
       });
     }),
+
+  /**
+   * Get progress statistics for training
+   *
+   * Returns:
+   * - longestRunDistance: The longest distance covered in any completed run
+   * - bestLongRunPace: The fastest pace achieved on a completed long run
+   *
+   * Public - anyone can view progress stats
+   */
+  getProgressStats: publicProcedure.query(async ({ ctx }) => {
+    // Get all completed runs
+    const completedRuns = await ctx.db.run.findMany({
+      where: { completed: true },
+      orderBy: { distance: "desc" },
+    });
+
+    // Get all completed long runs for pace comparison
+    const completedLongRuns = await ctx.db.run.findMany({
+      where: {
+        completed: true,
+        type: RunType.LONG_RUN,
+      },
+    });
+
+    // Find longest distance
+    const longestRun = completedRuns[0];
+    const longestRunDistance = longestRun?.distance ?? null;
+
+    // Find best (fastest) pace on long runs
+    // Pace format is "M:SS" or "MM:SS" - lower is faster
+    let bestLongRunPace: string | null = null;
+
+    if (completedLongRuns.length > 0) {
+      // Convert pace strings to seconds for comparison
+      const paceToSeconds = (pace: string): number => {
+        const [minutes, seconds] = pace.split(":").map(Number);
+        return (minutes ?? 0) * 60 + (seconds ?? 0);
+      };
+
+      // Find the run with the lowest (fastest) pace
+      let bestPaceSeconds = Infinity;
+      for (const run of completedLongRuns) {
+        const paceSeconds = paceToSeconds(run.pace);
+        if (paceSeconds < bestPaceSeconds) {
+          bestPaceSeconds = paceSeconds;
+          bestLongRunPace = run.pace;
+        }
+      }
+    }
+
+    return {
+      longestRunDistance,
+      bestLongRunPace,
+    };
+  }),
 });
