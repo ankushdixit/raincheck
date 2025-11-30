@@ -572,4 +572,118 @@ describe("Runs Router", () => {
       });
     });
   });
+
+  describe("getProgressStats (public)", () => {
+    const mockLongRuns = [
+      {
+        ...mockRun,
+        id: "run-1",
+        distance: 16,
+        pace: "6:30",
+        type: RunType.LONG_RUN,
+        completed: true,
+      },
+      {
+        ...mockRun,
+        id: "run-2",
+        distance: 18,
+        pace: "6:45",
+        type: RunType.LONG_RUN,
+        completed: true,
+      },
+      {
+        ...mockRun,
+        id: "run-3",
+        distance: 14,
+        pace: "6:15",
+        type: RunType.LONG_RUN,
+        completed: true,
+      },
+    ];
+
+    const mockAllCompletedRuns = [
+      { ...mockRun, id: "run-1", distance: 18, completed: true },
+      { ...mockRun, id: "run-2", distance: 16, completed: true },
+      { ...mockRun, id: "run-3", distance: 10, completed: true },
+    ];
+
+    it("returns longest run distance", async () => {
+      mockFindMany
+        .mockResolvedValueOnce(mockAllCompletedRuns) // completed runs
+        .mockResolvedValueOnce(mockLongRuns); // completed long runs
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getProgressStats();
+
+      expect(result.longestRunDistance).toBe(18);
+    });
+
+    it("returns best (fastest) long run pace", async () => {
+      mockFindMany
+        .mockResolvedValueOnce(mockAllCompletedRuns) // completed runs
+        .mockResolvedValueOnce(mockLongRuns); // completed long runs
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getProgressStats();
+
+      // 6:15 is the fastest pace among long runs
+      expect(result.bestLongRunPace).toBe("6:15");
+    });
+
+    it("returns null when no completed runs exist", async () => {
+      mockFindMany
+        .mockResolvedValueOnce([]) // no completed runs
+        .mockResolvedValueOnce([]); // no completed long runs
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getProgressStats();
+
+      expect(result.longestRunDistance).toBeNull();
+      expect(result.bestLongRunPace).toBeNull();
+    });
+
+    it("returns null for pace when no completed long runs exist", async () => {
+      const easyRuns = [
+        { ...mockRun, id: "run-1", distance: 10, type: RunType.EASY_RUN, completed: true },
+      ];
+
+      mockFindMany
+        .mockResolvedValueOnce(easyRuns) // completed runs (only easy)
+        .mockResolvedValueOnce([]); // no completed long runs
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getProgressStats();
+
+      expect(result.longestRunDistance).toBe(10);
+      expect(result.bestLongRunPace).toBeNull();
+    });
+
+    it("works without authentication (public procedure)", async () => {
+      mockAuth.mockResolvedValue(null); // Not authenticated
+      mockFindMany.mockResolvedValueOnce(mockAllCompletedRuns).mockResolvedValueOnce(mockLongRuns);
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getProgressStats();
+
+      expect(result.longestRunDistance).toBe(18);
+      expect(result.bestLongRunPace).toBe("6:15");
+    });
+
+    it("only considers completed runs", async () => {
+      const mixedRuns = [
+        { ...mockRun, id: "run-1", distance: 20, completed: false }, // Not completed - should be ignored
+        { ...mockRun, id: "run-2", distance: 15, completed: true }, // Completed
+      ];
+
+      // Query for completed runs (ordered by distance desc)
+      mockFindMany
+        .mockResolvedValueOnce([mixedRuns[1]]) // Only the completed run
+        .mockResolvedValueOnce([]); // No long runs
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getProgressStats();
+
+      expect(result.longestRunDistance).toBe(15); // Not 20 (incomplete run)
+    });
+  });
 });

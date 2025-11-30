@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/lib/api";
+import { TrainingProgress } from "./TrainingProgress";
 
 /**
  * Calculate the number of days between two dates.
@@ -46,6 +47,11 @@ function CountdownSkeleton() {
         <div className="h-5 w-64 rounded bg-forest-deep/50" />
         {/* Race date placeholder */}
         <div className="h-4 w-32 rounded bg-forest-deep/50" />
+        {/* Progress bar placeholder */}
+        <div className="w-full mt-4 pt-4 border-t border-amber-600/30">
+          <div className="h-4 w-24 rounded bg-forest-deep/50 mb-2" />
+          <div className="h-2 w-full rounded-full bg-forest-deep/50" />
+        </div>
       </div>
     </div>
   );
@@ -148,6 +154,11 @@ export function RaceCountdown() {
             Target: {settings.targetTime}
           </p>
         )}
+
+        {/* Training Progress Bar */}
+        <div className="w-full mt-4 pt-4 border-t border-amber-600/30">
+          <TrainingProgress />
+        </div>
       </div>
     </div>
   );
