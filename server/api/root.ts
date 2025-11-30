@@ -4,6 +4,7 @@ import { weatherRouter } from "@/server/api/routers/weather";
 import { settingsRouter } from "@/server/api/routers/settings";
 import { planningRouter } from "@/server/api/routers/planning";
 import { runsRouter } from "@/server/api/routers/runs";
+import { statsRouter } from "@/server/api/routers/stats";
 
 /**
  * This is the primary router for your server.
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
   settings: settingsRouter,
   planning: planningRouter,
   runs: runsRouter,
+  stats: statsRouter,
 });
 
 // export type definition of API
