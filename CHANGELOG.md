@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Current phase badge displaying training phase (Base Building, Base Extension, Speed Development, Peak & Taper)
+- `PhaseBadge` component with color-coded phase display (Blue, Green, Orange, Amber)
+- `formatPhaseName` utility for converting enum values to human-readable format
+- `getPhaseColor` utility for mapping phases to their respective colors
+- `planning.getCurrentPhase` tRPC procedure returning current phase and week number
+- 26 new tests for PhaseBadge component and getCurrentPhase procedure
 - Training progress metrics showing real performance indicators instead of week-based progress
 - `TrainingProgress` component displaying longest run distance vs 21.1 km target and best long run pace vs target pace
 - `runs.getProgressStats` tRPC procedure returning longest completed run distance and best long run pace

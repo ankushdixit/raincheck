@@ -2,6 +2,7 @@
 
 import { api } from "@/lib/api";
 import { TrainingProgress } from "./TrainingProgress";
+import { PhaseBadge } from "./PhaseBadge";
 
 /**
  * Calculate the number of days between two dates.
@@ -154,6 +155,11 @@ export function RaceCountdown() {
             Target: {settings.targetTime}
           </p>
         )}
+
+        {/* Current Phase Badge */}
+        <div className="mt-3" data-testid="phase-badge-container">
+          <PhaseBadge />
+        </div>
 
         {/* Training Progress Bar */}
         <div className="w-full mt-4 pt-4 border-t border-amber-600/30">
