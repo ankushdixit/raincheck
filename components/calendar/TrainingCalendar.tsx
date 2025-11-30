@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import type { Run, RunType } from "@prisma/client";
 import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { api } from "@/lib/api";
-import { useIsAuthenticated } from "@/hooks";
+import { useIsAuthenticated, useTouchDevice } from "@/hooks";
 import { DroppableCalendarCell } from "./DroppableCalendarCell";
 import { RunBadgeOverlay } from "./DraggableRunBadge";
-import { isValidDropTarget } from "@/lib/calendar-utils";
+import { MoveInstructions } from "./MoveInstructions";
+import { isValidDropTarget, isSameDay } from "@/lib/calendar-utils";
 
 /**
  * Color mapping for run types
@@ -59,20 +60,6 @@ function getDayOfWeek(date: Date): number {
  */
 function getDaysInMonth(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-}
-
-/**
- * Format date to YYYY-MM-DD for comparison
- */
-function formatDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-/**
- * Check if two dates are the same day
- */
-function isSameDay(date1: Date, date2: Date): boolean {
-  return formatDateKey(date1) === formatDateKey(date2);
 }
 
 /**
@@ -208,16 +195,21 @@ function EmptyState() {
  * Displays a monthly calendar with scheduled runs color-coded by type.
  * Supports navigation between months with Previous/Next buttons and a Today button.
  * Authenticated users can drag and drop runs to reschedule them.
+ * Touch device users can tap to select a run, then tap a destination to move it.
  */
 export function TrainingCalendar() {
   const today = new Date();
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
+  const { isTouchDevice } = useTouchDevice();
 
   // Track the currently displayed month (defaults to current month)
   const [displayedMonth, setDisplayedMonth] = useState<Date>(() => new Date(today));
 
-  // Track the currently dragged run for the overlay
+  // Track the currently dragged run for the overlay (drag-drop mode)
   const [activeRun, setActiveRun] = useState<Run | null>(null);
+
+  // Track the selected run for tap-to-move mode
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   // Navigation handlers
   const goToPreviousMonth = useCallback(() => {
@@ -313,8 +305,80 @@ export function TrainingCalendar() {
     setActiveRun(null);
   }, []);
 
+  // Tap-to-move handlers
+  const handleRunTap = useCallback(
+    (run: Run) => {
+      // If tapping the same run, deselect it
+      if (selectedRunId === run.id) {
+        setSelectedRunId(null);
+      } else {
+        // Select the tapped run
+        setSelectedRunId(run.id);
+      }
+    },
+    [selectedRunId]
+  );
+
+  const handleCellTap = useCallback(
+    (targetDate: Date) => {
+      if (!selectedRunId || !runs) {
+        return;
+      }
+
+      // Find the selected run
+      const selectedRun = runs.find((r) => r.id === selectedRunId);
+      if (!selectedRun) {
+        setSelectedRunId(null);
+        return;
+      }
+
+      // Check if dropping on the same day
+      if (isSameDay(new Date(selectedRun.date), targetDate)) {
+        setSelectedRunId(null);
+        return;
+      }
+
+      // Validate the target (reuse same validation as drag-drop)
+      if (!isValidDropTarget(targetDate, runs, selectedRunId)) {
+        // Invalid target - don't update
+        return;
+      }
+
+      // Update the run's date
+      updateRunMutation.mutate({
+        id: selectedRunId,
+        data: { date: targetDate },
+      });
+
+      // Clear selection after successful move
+      setSelectedRunId(null);
+    },
+    [selectedRunId, runs, updateRunMutation]
+  );
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectedRunId(null);
+  }, []);
+
+  // Handle Escape key to cancel selection
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && selectedRunId !== null) {
+        setSelectedRunId(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedRunId]);
+
   // Disable dragging for unauthenticated users or while auth is loading
   const isDragDisabled = !isAuthenticated || authLoading;
+
+  // Enable tap-to-move for touch devices when authenticated
+  const isTapToMoveEnabled = isTouchDevice && isAuthenticated && !authLoading;
 
   if (isLoading) {
     return <TrainingCalendarSkeleton />;
@@ -398,6 +462,9 @@ export function TrainingCalendar() {
           </button>
         </div>
 
+        {/* Move instructions for tap-to-move mode */}
+        <MoveInstructions isVisible={selectedRunId !== null} onCancel={handleCancelSelection} />
+
         {/* Day headers */}
         <div
           className="grid grid-cols-7 border-b border-white/10"
@@ -428,8 +495,17 @@ export function TrainingCalendar() {
                     isDragDisabled={isDragDisabled}
                     isDragging={activeRun !== null}
                     isValidTarget={
-                      cell.isCurrentMonth && isValidDropTarget(cell.date, runs, activeRun?.id)
+                      cell.isCurrentMonth &&
+                      isValidDropTarget(
+                        cell.date,
+                        runs,
+                        activeRun?.id ?? selectedRunId ?? undefined
+                      )
                     }
+                    selectedRunId={selectedRunId}
+                    onRunTap={handleRunTap}
+                    onCellTap={handleCellTap}
+                    isTapToMoveEnabled={isTapToMoveEnabled}
                   />
                 ))}
               </div>

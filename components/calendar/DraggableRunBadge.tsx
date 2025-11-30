@@ -55,19 +55,39 @@ function CheckmarkIcon() {
 export interface DraggableRunBadgeProps {
   run: Run;
   isDragDisabled?: boolean;
+  /** Whether this run is selected in tap-to-move mode */
+  isSelected?: boolean;
+  /** Callback when run is tapped (for tap-to-move mode) */
+  onTap?: (_run: Run) => void;
+  /** Whether tap-to-move mode is enabled */
+  isTapToMoveEnabled?: boolean;
 }
 
 /**
  * Draggable run badge component
  *
  * Wraps a run badge with drag functionality using @dnd-kit.
+ * Also supports tap-to-move mode for touch devices.
+ *
  * Dragging is disabled when:
  * - isDragDisabled is true (e.g., for unauthenticated users)
  * - The run is already completed (completed runs cannot be rescheduled)
+ *
+ * Tap-to-move is enabled when:
+ * - isTapToMoveEnabled is true (touch device detected)
+ * - The run is not completed
+ * - User is authenticated (isDragDisabled is false)
  */
-export function DraggableRunBadge({ run, isDragDisabled = false }: DraggableRunBadgeProps) {
-  // Completed runs should not be draggable - they've already been done
+export function DraggableRunBadge({
+  run,
+  isDragDisabled = false,
+  isSelected = false,
+  onTap,
+  isTapToMoveEnabled = false,
+}: DraggableRunBadgeProps) {
+  // Completed runs should not be draggable or tappable - they've already been done
   const isActuallyDragDisabled = isDragDisabled || run.completed;
+  const canTapToMove = isTapToMoveEnabled && !isActuallyDragDisabled && !!onTap;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: run.id,
@@ -78,22 +98,42 @@ export function DraggableRunBadge({ run, isDragDisabled = false }: DraggableRunB
   const color = RUN_TYPE_COLORS[run.type];
   const label = RUN_TYPE_LABELS[run.type];
 
+  const handleClick = () => {
+    if (canTapToMove) {
+      onTap(run);
+    }
+  };
+
+  // Build class list for selected state
+  const classNames = [
+    "rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center touch-none",
+    "min-h-[44px] min-w-[44px]", // 44px minimum touch target for accessibility
+    isSelected ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-105" : "",
+    isSelected ? "animate-pulse" : "",
+    canTapToMove ? "cursor-pointer" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const style = {
     backgroundColor: color,
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    cursor: isActuallyDragDisabled ? "default" : "grab",
+    cursor: isActuallyDragDisabled ? "default" : canTapToMove ? "pointer" : "grab",
   };
 
   return (
     <div
       ref={setNodeRef}
-      className="rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center touch-none"
+      className={classNames}
       style={style}
       data-testid="run-badge"
       data-run-type={run.type}
       data-completed={run.completed}
       data-draggable={!isActuallyDragDisabled}
+      data-selected={isSelected}
+      data-tap-to-move={canTapToMove}
+      onClick={handleClick}
       {...(isActuallyDragDisabled ? {} : { ...attributes, ...listeners })}
     >
       <span className="truncate">
