@@ -73,10 +73,6 @@ export const statsRouter = createTRPCRouter({
         orderBy: { weekNumber: "asc" },
       });
 
-      if (trainingPlans.length === 0) {
-        return [];
-      }
-
       // Get all completed runs
       const runs = await ctx.db.run.findMany({
         where: { completed: true },
@@ -87,16 +83,27 @@ export const statsRouter = createTRPCRouter({
         return [];
       }
 
-      // Group runs by training week
-      const trainingStart = trainingPlans[0]!.weekStart;
+      // Determine the reference start date
+      // Use training plan start if available, otherwise use earliest run date aligned to Sunday
+      let trainingStart: Date;
+      if (trainingPlans.length > 0) {
+        trainingStart = trainingPlans[0]!.weekStart;
+      } else {
+        // Align earliest run to the previous Sunday
+        const earliestRun = runs[0]!.date;
+        trainingStart = new Date(earliestRun);
+        const dayOfWeek = trainingStart.getDay();
+        trainingStart.setDate(trainingStart.getDate() - dayOfWeek);
+        trainingStart.setHours(0, 0, 0, 0);
+      }
+
+      // Group runs by week number (can be negative for pre-training weeks)
       const runsByWeek = new Map<number, number>();
 
       for (const run of runs) {
         const weekNum = getWeekNumberForDate(run.date, trainingStart);
-        if (weekNum >= 1) {
-          const currentMileage = runsByWeek.get(weekNum) ?? 0;
-          runsByWeek.set(weekNum, currentMileage + run.distance);
-        }
+        const currentMileage = runsByWeek.get(weekNum) ?? 0;
+        runsByWeek.set(weekNum, currentMileage + run.distance);
       }
 
       // Build result for each week that has data or a training plan
@@ -130,8 +137,11 @@ export const statsRouter = createTRPCRouter({
         const plan = trainingPlans.find((p) => p.weekNumber === weekNum);
         const mileage = runsByWeek.get(weekNum) ?? 0;
 
+        // Label pre-training weeks differently
+        const weekLabel = weekNum < 1 ? `Pre ${1 - weekNum}` : `Week ${weekNum}`;
+
         result.push({
-          week: `Week ${weekNum}`,
+          week: weekLabel,
           weekStart:
             plan?.weekStart ??
             new Date(trainingStart.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000),

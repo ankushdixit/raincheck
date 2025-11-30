@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Weekly Mileage Chart component with Recharts line chart visualization
+- `WeeklyMileageChart` component displaying actual vs target mileage trends
+- Amber line for actual mileage, dashed gray line for target mileage
+- Current week highlighting with glowing amber dot effect
+- Responsive chart heights (250px mobile, 300px tablet, 350px desktop)
+- Loading skeleton, empty state, and error state handling
+- Pre-training weeks support showing historical runs before training plan start
+- Pre-training weeks labeled as "Pre 1", "Pre 2", etc. with zero targets
+- 11 unit tests for WeeklyMileageChart component
 - Stats tRPC router with five aggregation endpoints for training analytics
 - `stats.getWeeklyMileage` returning weekly totals with targets for last N weeks
 - `stats.getPaceProgression` returning pace data points with dates and run types

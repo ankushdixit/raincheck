@@ -6,6 +6,7 @@ import { CurrentWeather, WeatherForecast } from "@/components/weather";
 import { RunSuggestions } from "@/components/suggestions";
 import { TrainingCalendar } from "@/components/calendar";
 import { RaceCountdown } from "@/components/countdown";
+import { WeeklyMileageChart } from "@/components/stats";
 import { useIsAuthenticated } from "@/hooks";
 
 /** Selected day data for background coordination */
@@ -129,6 +130,14 @@ export function HomePage() {
         <div className="mt-12 w-full max-w-4xl">
           <h2 className="text-2xl font-bold text-text-primary mb-4">Training Calendar</h2>
           <TrainingCalendar />
+        </div>
+
+        {/* Weekly Mileage Chart Section */}
+        <div className="mt-12 w-full max-w-4xl">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Weekly Mileage</h2>
+          <div className="bg-surface/80 backdrop-blur-sm rounded-lg p-4">
+            <WeeklyMileageChart />
+          </div>
         </div>
       </div>
     </main>
