@@ -1,4 +1,11 @@
-export { RaceCountdown, calculateDaysUntil, formatRaceDate } from "./RaceCountdown";
+export {
+  RaceCountdown,
+  calculateDaysUntil,
+  formatRaceDate,
+  isRaceWeek,
+  shouldShowRaceWeather,
+  getTaperReminder,
+} from "./RaceCountdown";
 export {
   TrainingProgress,
   parseTimeToMinutes,
