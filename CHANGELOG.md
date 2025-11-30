@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Stats Dashboard Page at `/stats` displaying all training analytics in a comprehensive layout
+- `StatsSummaryCard` component showing Total Runs, Total Distance, Average Pace, and Current Streak
+- `CompletionRateCard` component with circular progress indicator for completion rate visualization
+- Navigation link "View All Stats" on main page linking to stats dashboard
+- Back navigation from stats page to main dashboard
+- Responsive grid layout for stats page (single column mobile, multi-column desktop)
+- 31 new tests for stats page and components with 100% coverage
+- `lucide-react` dependency for icon components (ArrowLeft, BarChart3, Route, Timer, Flame, Trophy)
 - Weekly Mileage Chart component with Recharts line chart visualization
 - `WeeklyMileageChart` component displaying actual vs target mileage trends
 - Amber line for actual mileage, dashed gray line for target mileage
