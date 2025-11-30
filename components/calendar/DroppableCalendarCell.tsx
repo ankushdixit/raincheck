@@ -3,20 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { Run } from "@prisma/client";
 import { DraggableRunBadge } from "./DraggableRunBadge";
-
-/**
- * Format date to YYYY-MM-DD for comparison
- */
-function formatDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-/**
- * Check if two dates are the same day
- */
-function isSameDay(date1: Date, date2: Date): boolean {
-  return formatDateKey(date1) === formatDateKey(date2);
-}
+import { formatDateKey, isSameDay } from "@/lib/calendar-utils";
 
 export interface DroppableCalendarCellProps {
   cellDate: Date;
@@ -24,6 +11,10 @@ export interface DroppableCalendarCellProps {
   isToday: boolean;
   isCurrentMonth: boolean;
   isDragDisabled?: boolean;
+  /** Whether this cell is a valid drop target during active drag */
+  isValidTarget?: boolean;
+  /** Whether a drag operation is currently active */
+  isDragging?: boolean;
 }
 
 /**
@@ -39,6 +30,8 @@ export function DroppableCalendarCell({
   isToday,
   isCurrentMonth,
   isDragDisabled = false,
+  isValidTarget,
+  isDragging = false,
 }: DroppableCalendarCellProps) {
   const dateKey = formatDateKey(cellDate);
   const { setNodeRef, isOver, active } = useDroppable({
@@ -48,8 +41,8 @@ export function DroppableCalendarCell({
 
   const dayRuns = runs.filter((run) => isSameDay(new Date(run.date), cellDate));
 
-  // Determine if this is a valid drop target (only current month cells)
-  const isValidDropTarget = isCurrentMonth && active !== null;
+  // Use provided validity or fall back to basic check (for backward compatibility)
+  const isActuallyValid = isValidTarget !== undefined ? isValidTarget : isCurrentMonth;
 
   // Determine styling based on current month, today status, and drop state
   const cellClasses = [
@@ -59,7 +52,16 @@ export function DroppableCalendarCell({
     "transition-colors duration-150", // Smooth transition for highlight
     isToday && isCurrentMonth ? "bg-white/10" : "",
     !isCurrentMonth ? "bg-white/[0.02]" : "",
-    isOver && isValidDropTarget ? "bg-amber-500/20 ring-2 ring-amber-400/50 ring-inset" : "",
+    // Valid target hover styling (green highlight)
+    isOver && active !== null && isActuallyValid
+      ? "bg-green-500/20 ring-2 ring-green-400/50 ring-inset"
+      : "",
+    // Invalid target hover styling (red highlight)
+    isOver && active !== null && !isActuallyValid
+      ? "bg-red-500/10 ring-2 ring-red-400/30 ring-inset"
+      : "",
+    // During drag, show invalid targets as dimmed
+    isDragging && !isActuallyValid && !isOver ? "opacity-50" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -83,7 +85,8 @@ export function DroppableCalendarCell({
       data-testid={isCurrentMonth ? "calendar-cell" : "calendar-cell-adjacent"}
       data-date={dateKey}
       data-current-month={isCurrentMonth}
-      data-is-over={isOver && isValidDropTarget}
+      data-is-over={isOver && active !== null}
+      data-valid-target={isActuallyValid}
     >
       <div className={dateClasses}>{cellDate.getDate()}</div>
       {isCurrentMonth && (

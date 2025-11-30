@@ -366,6 +366,142 @@ describe("DroppableCalendarCell", () => {
       const cell = screen.getByTestId("calendar-cell");
       expect(cell).toHaveAttribute("data-is-over", "false");
     });
+
+    it("has data-valid-target attribute", () => {
+      const cellDate = getDateInCurrentMonth(15);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={cellDate}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={true}
+            isValidTarget={true}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell");
+      expect(cell).toHaveAttribute("data-valid-target", "true");
+    });
+
+    it("shows invalid target attribute when isValidTarget is false", () => {
+      const cellDate = getDateInCurrentMonth(15);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={cellDate}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={true}
+            isValidTarget={false}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell");
+      expect(cell).toHaveAttribute("data-valid-target", "false");
+    });
+
+    it("applies dimmed styling for invalid targets during drag", () => {
+      const cellDate = getDateInCurrentMonth(15);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={cellDate}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={true}
+            isValidTarget={false}
+            isDragging={true}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell");
+      expect(cell).toHaveClass("opacity-50");
+    });
+
+    it("does not apply dimmed styling for valid targets during drag", () => {
+      const cellDate = getDateInCurrentMonth(15);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={cellDate}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={true}
+            isValidTarget={true}
+            isDragging={true}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell");
+      expect(cell).not.toHaveClass("opacity-50");
+    });
+
+    it("does not apply dimmed styling when not dragging", () => {
+      const cellDate = getDateInCurrentMonth(15);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={cellDate}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={true}
+            isValidTarget={false}
+            isDragging={false}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell");
+      expect(cell).not.toHaveClass("opacity-50");
+    });
+
+    it("falls back to isCurrentMonth for validity when isValidTarget not provided", () => {
+      const cellDate = getDateInCurrentMonth(15);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={cellDate}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={true}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell");
+      // Default validity based on isCurrentMonth=true
+      expect(cell).toHaveAttribute("data-valid-target", "true");
+    });
+
+    it("falls back to false validity for adjacent month cells", () => {
+      const now = new Date();
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 28);
+
+      render(
+        <DndWrapper>
+          <DroppableCalendarCell
+            cellDate={prevMonth}
+            runs={[]}
+            isToday={false}
+            isCurrentMonth={false}
+          />
+        </DndWrapper>
+      );
+
+      const cell = screen.getByTestId("calendar-cell-adjacent");
+      expect(cell).toHaveAttribute("data-valid-target", "false");
+    });
   });
 
   describe("responsive design", () => {

@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useIsAuthenticated } from "@/hooks";
 import { DroppableCalendarCell } from "./DroppableCalendarCell";
 import { RunBadgeOverlay } from "./DraggableRunBadge";
+import { isValidDropTarget } from "@/lib/calendar-utils";
 
 /**
  * Color mapping for run types
@@ -293,13 +294,19 @@ export function TrainingCalendar() {
         return;
       }
 
+      // Validate the drop target
+      if (!isValidDropTarget(targetDate, runs ?? [], run.id)) {
+        // Invalid drop - don't update
+        return;
+      }
+
       // Update the run's date
       updateRunMutation.mutate({
         id: run.id,
         data: { date: targetDate },
       });
     },
-    [updateRunMutation]
+    [updateRunMutation, runs]
   );
 
   const handleDragCancel = useCallback(() => {
@@ -419,6 +426,10 @@ export function TrainingCalendar() {
                     isToday={isSameDay(cell.date, today)}
                     isCurrentMonth={cell.isCurrentMonth}
                     isDragDisabled={isDragDisabled}
+                    isDragging={activeRun !== null}
+                    isValidTarget={
+                      cell.isCurrentMonth && isValidDropTarget(cell.date, runs, activeRun?.id)
+                    }
                   />
                 ))}
               </div>
