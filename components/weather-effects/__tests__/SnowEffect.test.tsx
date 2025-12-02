@@ -67,4 +67,24 @@ describe("SnowEffect", () => {
     const container = document.querySelector(".snow-effect");
     expect(container).toHaveStyle({ position: "fixed" });
   });
+
+  describe("particleMultiplier", () => {
+    it("reduces particle count by 50% when multiplier is 0.5", () => {
+      render(<SnowEffect intensity="moderate" particleMultiplier={0.5} />);
+      const flakes = document.querySelectorAll(".snowflake");
+      expect(flakes.length).toBe(25); // 50 * 0.5 = 25
+    });
+
+    it("reduces particle count by 75% when multiplier is 0.25", () => {
+      render(<SnowEffect intensity="moderate" particleMultiplier={0.25} />);
+      const flakes = document.querySelectorAll(".snowflake");
+      expect(flakes.length).toBe(13); // 50 * 0.25 = 12.5, rounded to 13
+    });
+
+    it("defaults to full particle count when no multiplier provided", () => {
+      render(<SnowEffect intensity="heavy" />);
+      const flakes = document.querySelectorAll(".snowflake");
+      expect(flakes.length).toBe(80);
+    });
+  });
 });

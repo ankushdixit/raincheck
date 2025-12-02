@@ -5,6 +5,8 @@ import type { Intensity } from "./RainEffect";
 
 interface CloudEffectProps {
   intensity?: Intensity;
+  /** Multiplier for particle count (0-1), used for mobile optimization */
+  particleMultiplier?: number;
 }
 
 const CLOUD_COUNTS: Record<Intensity, number> = {
@@ -28,9 +30,10 @@ interface Cloud {
  * CloudEffect renders drifting cloud shapes across the top of the screen.
  * Uses CSS animations with GPU acceleration for smooth performance.
  */
-export function CloudEffect({ intensity = "moderate" }: CloudEffectProps) {
+export function CloudEffect({ intensity = "moderate", particleMultiplier = 1 }: CloudEffectProps) {
   const clouds = useMemo(() => {
-    const count = CLOUD_COUNTS[intensity] || CLOUD_COUNTS.moderate;
+    const baseCount = CLOUD_COUNTS[intensity] || CLOUD_COUNTS.moderate;
+    const count = Math.max(1, Math.round(baseCount * Math.max(0, Math.min(1, particleMultiplier))));
     const cloudList: Cloud[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -47,7 +50,7 @@ export function CloudEffect({ intensity = "moderate" }: CloudEffectProps) {
     }
 
     return cloudList;
-  }, [intensity]);
+  }, [intensity, particleMultiplier]);
 
   return (
     <div

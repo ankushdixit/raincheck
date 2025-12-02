@@ -46,11 +46,31 @@ jest.mock("@/components/stats", () => ({
   WeeklyMileageChart: () => <div data-testid="weekly-mileage-chart-mock">Weekly Mileage Chart</div>,
 }));
 
-// Mock the useIsAuthenticated hook
+// Mock the hooks
 jest.mock("@/hooks", () => ({
   useIsAuthenticated: () => ({
     isAuthenticated: true,
     isLoading: false,
+  }),
+  useDeviceCapabilities: () => ({
+    isMobile: false,
+    prefersReducedMotion: false,
+    hardwareConcurrency: 8,
+    tier: "high",
+    isLoading: false,
+  }),
+  useFPSMonitor: () => ({
+    fps: 60,
+    isLowFPS: false,
+    start: jest.fn(),
+    stop: jest.fn(),
+    isMonitoring: true,
+  }),
+  useEffectsPreference: () => ({
+    effectsEnabled: true,
+    toggleEffects: jest.fn(),
+    setEffectsEnabled: jest.fn(),
+    isLoaded: true,
   }),
 }));
 

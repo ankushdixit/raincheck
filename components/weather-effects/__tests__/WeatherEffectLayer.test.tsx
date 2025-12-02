@@ -1,7 +1,47 @@
 import { render } from "@testing-library/react";
 import { WeatherEffectLayer } from "../WeatherEffectLayer";
 
+// Mock the hooks
+const mockUseDeviceCapabilities = jest.fn();
+const mockUseFPSMonitor = jest.fn();
+const mockUseEffectsPreference = jest.fn();
+
+jest.mock("@/hooks", () => ({
+  useDeviceCapabilities: () => mockUseDeviceCapabilities(),
+  useFPSMonitor: (_callback: () => void, _config: unknown) => mockUseFPSMonitor(),
+  useEffectsPreference: () => mockUseEffectsPreference(),
+}));
+
 describe("WeatherEffectLayer", () => {
+  beforeEach(() => {
+    // Default mocks for desktop with effects enabled
+    mockUseDeviceCapabilities.mockReturnValue({
+      isMobile: false,
+      prefersReducedMotion: false,
+      hardwareConcurrency: 8,
+      tier: "high",
+      isLoading: false,
+    });
+
+    mockUseFPSMonitor.mockReturnValue({
+      fps: 60,
+      isLowFPS: false,
+      start: jest.fn(),
+      stop: jest.fn(),
+      isMonitoring: true,
+    });
+
+    mockUseEffectsPreference.mockReturnValue({
+      effectsEnabled: true,
+      toggleEffects: jest.fn(),
+      setEffectsEnabled: jest.fn(),
+      isLoaded: true,
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
   describe("rain conditions", () => {
     it('renders RainEffect for "Light Rain" condition', () => {
       render(<WeatherEffectLayer condition="Light Rain" />);
@@ -203,6 +243,113 @@ describe("WeatherEffectLayer", () => {
       render(<WeatherEffectLayer condition="HeavY sNoW" />);
       const snowEffect = document.querySelector(".snow-effect");
       expect(snowEffect).toBeInTheDocument();
+    });
+  });
+
+  describe("performance optimization", () => {
+    it("renders nothing when effects are disabled", () => {
+      mockUseEffectsPreference.mockReturnValue({
+        effectsEnabled: false,
+        toggleEffects: jest.fn(),
+        setEffectsEnabled: jest.fn(),
+        isLoaded: true,
+      });
+
+      const { container } = render(<WeatherEffectLayer condition="Rain" />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("renders nothing when user prefers reduced motion", () => {
+      mockUseDeviceCapabilities.mockReturnValue({
+        isMobile: false,
+        prefersReducedMotion: true,
+        hardwareConcurrency: 8,
+        tier: "high",
+        isLoading: false,
+      });
+
+      const { container } = render(<WeatherEffectLayer condition="Rain" />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("renders nothing while loading capabilities", () => {
+      mockUseDeviceCapabilities.mockReturnValue({
+        isMobile: false,
+        prefersReducedMotion: false,
+        hardwareConcurrency: 8,
+        tier: "high",
+        isLoading: true,
+      });
+
+      const { container } = render(<WeatherEffectLayer condition="Rain" />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("renders nothing while preference is loading", () => {
+      mockUseEffectsPreference.mockReturnValue({
+        effectsEnabled: true,
+        toggleEffects: jest.fn(),
+        setEffectsEnabled: jest.fn(),
+        isLoaded: false,
+      });
+
+      const { container } = render(<WeatherEffectLayer condition="Rain" />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("reduces particles on medium tier devices", () => {
+      mockUseDeviceCapabilities.mockReturnValue({
+        isMobile: true,
+        prefersReducedMotion: false,
+        hardwareConcurrency: 4,
+        tier: "medium",
+        isLoading: false,
+      });
+
+      render(<WeatherEffectLayer condition="Rain" />);
+      // Moderate rain = 60 particles, medium tier = 50% = 30 particles
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(30);
+    });
+
+    it("heavily reduces particles on low tier devices", () => {
+      mockUseDeviceCapabilities.mockReturnValue({
+        isMobile: true,
+        prefersReducedMotion: false,
+        hardwareConcurrency: 2,
+        tier: "low",
+        isLoading: false,
+      });
+
+      render(<WeatherEffectLayer condition="Rain" />);
+      // Moderate rain = 60 particles, low tier = 25% = 15 particles
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(15);
+    });
+
+    it("uses full particles on high tier devices", () => {
+      mockUseDeviceCapabilities.mockReturnValue({
+        isMobile: false,
+        prefersReducedMotion: false,
+        hardwareConcurrency: 8,
+        tier: "high",
+        isLoading: false,
+      });
+
+      render(<WeatherEffectLayer condition="Rain" />);
+      // Moderate rain = 60 particles, high tier = 100%
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(60);
+    });
+
+    it("accepts onAutoDisable callback prop", () => {
+      const onAutoDisable = jest.fn();
+
+      // Just verify the component accepts and uses the prop without crashing
+      render(<WeatherEffectLayer condition="Rain" onAutoDisable={onAutoDisable} />);
+
+      const rainEffect = document.querySelector(".rain-effect");
+      expect(rainEffect).toBeInTheDocument();
     });
   });
 });

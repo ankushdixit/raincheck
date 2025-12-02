@@ -5,6 +5,8 @@ import type { Intensity } from "./RainEffect";
 
 interface SnowEffectProps {
   intensity?: Intensity;
+  /** Multiplier for particle count (0-1), used for mobile optimization */
+  particleMultiplier?: number;
 }
 
 const PARTICLE_COUNTS: Record<Intensity, number> = {
@@ -27,9 +29,10 @@ interface Snowflake {
  * SnowEffect renders animated snowflakes drifting down with gentle horizontal movement.
  * Uses CSS animations with GPU acceleration for smooth performance.
  */
-export function SnowEffect({ intensity = "moderate" }: SnowEffectProps) {
+export function SnowEffect({ intensity = "moderate", particleMultiplier = 1 }: SnowEffectProps) {
   const snowflakes = useMemo(() => {
-    const count = PARTICLE_COUNTS[intensity] || PARTICLE_COUNTS.moderate;
+    const baseCount = PARTICLE_COUNTS[intensity] || PARTICLE_COUNTS.moderate;
+    const count = Math.round(baseCount * Math.max(0, Math.min(1, particleMultiplier)));
     const flakes: Snowflake[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -45,7 +48,7 @@ export function SnowEffect({ intensity = "moderate" }: SnowEffectProps) {
     }
 
     return flakes;
-  }, [intensity]);
+  }, [intensity, particleMultiplier]);
 
   return (
     <div

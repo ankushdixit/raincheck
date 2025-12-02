@@ -6,6 +6,8 @@ export type Intensity = "light" | "moderate" | "heavy";
 
 interface RainEffectProps {
   intensity?: Intensity;
+  /** Multiplier for particle count (0-1), used for mobile optimization */
+  particleMultiplier?: number;
 }
 
 const PARTICLE_COUNTS: Record<Intensity, number> = {
@@ -26,9 +28,10 @@ interface RainDrop {
  * RainEffect renders animated diagonal rain streaks falling across the screen.
  * Uses CSS animations with GPU acceleration for smooth 60fps performance.
  */
-export function RainEffect({ intensity = "moderate" }: RainEffectProps) {
+export function RainEffect({ intensity = "moderate", particleMultiplier = 1 }: RainEffectProps) {
   const drops = useMemo(() => {
-    const count = PARTICLE_COUNTS[intensity] || PARTICLE_COUNTS.moderate;
+    const baseCount = PARTICLE_COUNTS[intensity] || PARTICLE_COUNTS.moderate;
+    const count = Math.round(baseCount * Math.max(0, Math.min(1, particleMultiplier)));
     const rainDrops: RainDrop[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -42,7 +45,7 @@ export function RainEffect({ intensity = "moderate" }: RainEffectProps) {
     }
 
     return rainDrops;
-  }, [intensity]);
+  }, [intensity, particleMultiplier]);
 
   return (
     <div

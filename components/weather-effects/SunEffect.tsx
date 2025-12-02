@@ -4,6 +4,8 @@ import type { Intensity } from "./RainEffect";
 
 interface SunEffectProps {
   intensity?: Intensity;
+  /** Multiplier for ray count (0-1), used for mobile optimization */
+  particleMultiplier?: number;
 }
 
 const BRIGHTNESS_MAP: Record<Intensity, number> = {
@@ -22,9 +24,13 @@ const RAY_COUNTS: Record<Intensity, number> = {
  * SunEffect renders warm light rays emanating from the top-right corner.
  * Creates a lens flare / sun ray effect with GPU-accelerated animations.
  */
-export function SunEffect({ intensity = "moderate" }: SunEffectProps) {
+export function SunEffect({ intensity = "moderate", particleMultiplier = 1 }: SunEffectProps) {
   const brightness = BRIGHTNESS_MAP[intensity] || BRIGHTNESS_MAP.moderate;
-  const rayCount = RAY_COUNTS[intensity] || RAY_COUNTS.moderate;
+  const baseRayCount = RAY_COUNTS[intensity] || RAY_COUNTS.moderate;
+  const rayCount = Math.max(
+    2,
+    Math.round(baseRayCount * Math.max(0, Math.min(1, particleMultiplier)))
+  );
 
   return (
     <div
