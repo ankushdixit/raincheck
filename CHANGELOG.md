@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mobile Performance Optimization for weather effects
+- `useDeviceCapabilities` hook for detecting mobile devices, reduced motion preference, and hardware concurrency
+- `useFPSMonitor` hook for real-time frame rate monitoring with configurable thresholds
+- `useEffectsPreference` hook for persisting user effects toggle to localStorage
+- `EffectsToggle` component for manual enable/disable of weather effects with 44px touch targets
+- Device tier classification (high/medium/low) for adaptive particle rendering
+- Particle count reduction on mobile: 50% on medium tier, 75% on low tier devices
+- Auto-disable effects when FPS drops below 20 for 3+ seconds with toast notification
+- `particleMultiplier` prop on RainEffect, SnowEffect, CloudEffect, and SunEffect components
+- Respect for `prefers-reduced-motion` OS preference (renders no effects when enabled)
+- 95 new tests for performance optimization hooks and components
 - Weather Effect Orchestrator (`WeatherEffectLayer`) for dynamic weather effect display based on conditions
 - `parseCondition()` and `parseConditions()` utility functions in `lib/weather-effects.ts` for condition string parsing
 - `getIntensityFromPrecipitation()` function for calculating effect intensity from precipitation percentage

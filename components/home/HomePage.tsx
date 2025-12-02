@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BarChart3 } from "lucide-react";
 import { getTrailImage, getTintColor } from "@/components/trail";
 import { CurrentWeather, WeatherForecast } from "@/components/weather";
-import { WeatherEffectLayer } from "@/components/weather-effects";
+import { WeatherEffectLayer, EffectsToggle } from "@/components/weather-effects";
 import { RunSuggestions } from "@/components/suggestions";
 import { TrainingCalendar } from "@/components/calendar";
 import { RaceCountdown } from "@/components/countdown";
@@ -49,8 +49,18 @@ export function HomePage() {
   // Track current weather condition for weather effects
   const [currentCondition, setCurrentCondition] = useState<string>("");
 
+  // Track auto-disable notification
+  const [showAutoDisableToast, setShowAutoDisableToast] = useState(false);
+
   // Use ref to track active layer in callback without causing re-renders
   const activeLayerRef = useRef<0 | 1>(0);
+
+  // Handle effects auto-disable due to low FPS
+  const handleEffectsAutoDisable = useCallback(() => {
+    setShowAutoDisableToast(true);
+    // Auto-hide toast after 5 seconds
+    setTimeout(() => setShowAutoDisableToast(false), 5000);
+  }, []);
 
   // Memoize callback that handles day selection and background transition
   const handleDaySelect = useCallback((day: SelectedDay) => {
@@ -108,7 +118,29 @@ export function HomePage() {
       />
 
       {/* Weather Effects Layer */}
-      {currentCondition && <WeatherEffectLayer condition={currentCondition} />}
+      {currentCondition && (
+        <WeatherEffectLayer condition={currentCondition} onAutoDisable={handleEffectsAutoDisable} />
+      )}
+
+      {/* Effects Toggle Button */}
+      <div className="fixed top-4 right-4 z-20">
+        <EffectsToggle />
+      </div>
+
+      {/* Auto-disable Toast Notification */}
+      {showAutoDisableToast && (
+        <div
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50
+            px-4 py-3 bg-surface/95 backdrop-blur-sm rounded-lg
+            border border-amber-400/30 shadow-lg
+            text-sm text-text-primary
+            animate-in fade-in slide-in-from-bottom-4 duration-300"
+          role="alert"
+          aria-live="polite"
+        >
+          <span className="text-amber-400">Effects disabled</span> for better performance
+        </div>
+      )}
 
       {/* Content Layer */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6 py-16 text-center">

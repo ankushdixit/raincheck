@@ -67,4 +67,36 @@ describe("RainEffect", () => {
     const drop = document.querySelector(".rain-drop") as HTMLElement;
     expect(drop.style.transform).toContain("rotate(15deg)");
   });
+
+  describe("particleMultiplier", () => {
+    it("reduces particle count by 50% when multiplier is 0.5", () => {
+      render(<RainEffect intensity="moderate" particleMultiplier={0.5} />);
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(30); // 60 * 0.5 = 30
+    });
+
+    it("reduces particle count by 75% when multiplier is 0.25", () => {
+      render(<RainEffect intensity="moderate" particleMultiplier={0.25} />);
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(15); // 60 * 0.25 = 15
+    });
+
+    it("defaults to full particle count when no multiplier provided", () => {
+      render(<RainEffect intensity="heavy" />);
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(100);
+    });
+
+    it("clamps multiplier above 1 to 1", () => {
+      render(<RainEffect intensity="moderate" particleMultiplier={1.5} />);
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(60); // Should not exceed 100%
+    });
+
+    it("clamps multiplier below 0 to 0", () => {
+      render(<RainEffect intensity="moderate" particleMultiplier={-0.5} />);
+      const drops = document.querySelectorAll(".rain-drop");
+      expect(drops.length).toBe(0); // Should floor to 0
+    });
+  });
 });
