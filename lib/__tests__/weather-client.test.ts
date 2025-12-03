@@ -1,10 +1,10 @@
 /**
- * Unit tests for Weather API Client
+ * Unit tests for Weather API Client (Open-Meteo)
  *
  * Tests cover:
+ * - Geocoding
  * - Response parsing
  * - Error handling
- * - Rate limiting
  * - Retry logic
  */
 
@@ -13,8 +13,7 @@ import {
   fetchForecast,
   fetchFromOpenMeteo,
   fetchHybridForecast,
-  getRateLimitStatus,
-  resetRateLimit,
+  geocodeLocation,
 } from "../weather-client";
 import { WeatherAPIError } from "@/types/weather";
 
@@ -22,401 +21,414 @@ import { WeatherAPIError } from "@/types/weather";
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// Sample successful API response
-const mockSuccessResponse = {
-  location: {
-    name: "Balbriggan",
-    region: "Leinster",
-    country: "Ireland",
-    lat: 53.61,
-    lon: -6.18,
-    localtime: "2025-11-28 14:30",
-  },
-  current: {
-    temp_c: 12.5,
-    feelslike_c: 10.2,
-    humidity: 75,
-    wind_kph: 15.3,
-    wind_degree: 180,
-    condition: {
-      text: "Partly cloudy",
+// Sample geocoding response
+const mockGeocodingResponse = {
+  results: [
+    {
+      id: 2964180,
+      name: "Balbriggan",
+      latitude: 53.6108,
+      longitude: -6.1817,
+      country: "Ireland",
+      country_code: "IE",
+      admin1: "Leinster",
     },
+  ],
+};
+
+// Sample Open-Meteo forecast response
+const mockOpenMeteoResponse = {
+  latitude: 53.61,
+  longitude: -6.18,
+  timezone: "Europe/Dublin",
+  current: {
+    time: "2025-11-28T14:30",
+    temperature_2m: 12.5,
+    apparent_temperature: 10.2,
+    precipitation: 0,
+    weather_code: 2,
+    wind_speed_10m: 15.3,
+    wind_direction_10m: 180,
+    relative_humidity_2m: 75,
+    is_day: 1,
   },
-  forecast: {
-    forecastday: [
-      {
-        day: {
-          daily_chance_of_rain: 30,
-        },
-      },
-    ],
+  hourly: {
+    time: Array.from({ length: 24 }, (_, i) => {
+      const date = new Date("2025-11-28T00:00:00");
+      date.setHours(i);
+      return date.toISOString().slice(0, 16);
+    }),
+    temperature_2m: Array.from({ length: 24 }, () => 10),
+    apparent_temperature: Array.from({ length: 24 }, () => 8),
+    precipitation_probability: Array.from({ length: 24 }, () => 20),
+    precipitation: Array.from({ length: 24 }, () => 0),
+    weather_code: Array.from({ length: 24 }, () => 2), // Partly Cloudy
+    wind_speed_10m: Array.from({ length: 24 }, () => 15),
+    wind_direction_10m: Array.from({ length: 24 }, () => 180),
+    is_day: Array.from({ length: 24 }, (_, i) => (i >= 8 && i < 17 ? 1 : 0)),
+    relative_humidity_2m: Array.from({ length: 24 }, () => 75),
   },
 };
 
-// Sample 7-day forecast response
-const mockForecastResponse = {
-  location: {
-    name: "Balbriggan",
-    region: "Leinster",
-    country: "Ireland",
-    lat: 53.61,
-    lon: -6.18,
-    localtime: "2025-11-28 14:30",
-  },
-  current: {
-    temp_c: 12.5,
-    feelslike_c: 10.2,
-    humidity: 75,
-    wind_kph: 15.3,
-    wind_degree: 180,
-    condition: {
-      text: "Partly cloudy",
-    },
-  },
-  forecast: {
-    forecastday: [
-      {
-        date: "2025-11-28",
-        day: {
-          maxtemp_c: 14.0,
-          mintemp_c: 8.0,
-          avgtemp_c: 11.0,
-          daily_chance_of_rain: 20,
-          avghumidity: 75,
-          maxwind_kph: 20.0,
-          condition: { text: "Partly cloudy" },
-        },
-      },
-      {
-        date: "2025-11-29",
-        day: {
-          maxtemp_c: 12.0,
-          mintemp_c: 6.0,
-          avgtemp_c: 9.0,
-          daily_chance_of_rain: 40,
-          avghumidity: 80,
-          maxwind_kph: 25.0,
-          condition: { text: "Light rain" },
-        },
-      },
-      {
-        date: "2025-11-30",
-        day: {
-          maxtemp_c: 10.0,
-          mintemp_c: 4.0,
-          avgtemp_c: 7.0,
-          daily_chance_of_rain: 60,
-          avghumidity: 85,
-          maxwind_kph: 30.0,
-          condition: { text: "Rain" },
-        },
-      },
-      {
-        date: "2025-12-01",
-        day: {
-          maxtemp_c: 11.0,
-          mintemp_c: 5.0,
-          avgtemp_c: 8.0,
-          daily_chance_of_rain: 30,
-          avghumidity: 78,
-          maxwind_kph: 22.0,
-          condition: { text: "Cloudy" },
-        },
-      },
-      {
-        date: "2025-12-02",
-        day: {
-          maxtemp_c: 13.0,
-          mintemp_c: 7.0,
-          avgtemp_c: 10.0,
-          daily_chance_of_rain: 15,
-          avghumidity: 70,
-          maxwind_kph: 18.0,
-          condition: { text: "Sunny" },
-        },
-      },
-      {
-        date: "2025-12-03",
-        day: {
-          maxtemp_c: 14.0,
-          mintemp_c: 8.0,
-          avgtemp_c: 11.0,
-          daily_chance_of_rain: 10,
-          avghumidity: 65,
-          maxwind_kph: 15.0,
-          condition: { text: "Clear" },
-        },
-      },
-      {
-        date: "2025-12-04",
-        day: {
-          maxtemp_c: 12.0,
-          mintemp_c: 6.0,
-          avgtemp_c: 9.0,
-          daily_chance_of_rain: 25,
-          avghumidity: 72,
-          maxwind_kph: 20.0,
-          condition: { text: "Overcast" },
-        },
-      },
-    ],
+// Sample multi-day forecast response
+const mockMultiDayResponse = {
+  latitude: 53.61,
+  longitude: -6.18,
+  timezone: "Europe/Dublin",
+  hourly: {
+    time: Array.from({ length: 7 * 24 }, (_, i) => {
+      const date = new Date("2025-11-28T00:00:00");
+      date.setHours(i);
+      return date.toISOString().slice(0, 16);
+    }),
+    temperature_2m: Array.from({ length: 7 * 24 }, () => 10),
+    apparent_temperature: Array.from({ length: 7 * 24 }, () => 8),
+    precipitation_probability: Array.from({ length: 7 * 24 }, (_, i) =>
+      Math.floor(i / 24) === 2 ? 60 : 20
+    ), // Day 3 has higher precip
+    precipitation: Array.from({ length: 7 * 24 }, () => 0),
+    weather_code: Array.from({ length: 7 * 24 }, (_, i) => (Math.floor(i / 24) === 2 ? 63 : 2)), // Day 3 has rain
+    wind_speed_10m: Array.from({ length: 7 * 24 }, () => 15),
+    wind_direction_10m: Array.from({ length: 7 * 24 }, () => 180),
+    is_day: Array.from({ length: 7 * 24 }, (_, i) => (i % 24 >= 8 && i % 24 < 17 ? 1 : 0)),
+    relative_humidity_2m: Array.from({ length: 7 * 24 }, () => 75),
   },
 };
 
-describe("Weather Client", () => {
+describe("Weather Client (Open-Meteo)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    resetRateLimit();
-    // Set up API key for tests
-    process.env.WEATHER_API_KEY = "test-api-key";
   });
 
-  afterEach(() => {
-    delete process.env.WEATHER_API_KEY;
+  describe("geocodeLocation", () => {
+    it("geocodes a location name to coordinates", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+
+      const result = await geocodeLocation("Balbriggan, IE");
+
+      expect(result.coords).toEqual({
+        latitude: 53.6108,
+        longitude: -6.1817,
+      });
+      expect(result.name).toBe("Balbriggan, Leinster, Ireland");
+    });
+
+    it("parses coordinate strings directly", async () => {
+      const result = await geocodeLocation("53.6108,-6.1817");
+
+      expect(result.coords).toEqual({
+        latitude: 53.6108,
+        longitude: -6.1817,
+      });
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("throws error when location not found", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ results: [] }),
+      });
+
+      await expect(geocodeLocation("InvalidLocation123")).rejects.toThrow("Location not found");
+    });
+
+    it("constructs correct geocoding URL", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+
+      await geocodeLocation("Balbriggan");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("geocoding-api.open-meteo.com")
+      );
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("name=Balbriggan"));
+    });
   });
 
   describe("fetchCurrentWeather", () => {
-    it("parses weather response correctly", async () => {
+    it("fetches and parses current weather correctly", async () => {
+      // First call: geocoding
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockSuccessResponse),
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      // Second call: weather
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoResponse),
       });
 
       const result = await fetchCurrentWeather("Balbriggan, IE");
 
-      expect(result).toEqual({
-        location: "Balbriggan, Ireland",
+      expect(result).toMatchObject({
+        location: "Balbriggan, Leinster, Ireland",
         latitude: 53.61,
         longitude: -6.18,
-        datetime: new Date("2025-11-28 14:30"),
-        condition: "Partly cloudy",
-        description: "Partly cloudy",
+        condition: "Partly Cloudy",
         temperature: 12.5,
         feelsLike: 10.2,
-        precipitation: 30,
         humidity: 75,
         windSpeed: 15.3,
         windDirection: 180,
       });
     });
 
-    it("handles response without forecast data", async () => {
-      const responseWithoutForecast = {
-        ...mockSuccessResponse,
-        forecast: undefined,
-      };
-
+    it("uses Open-Meteo API URL", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(responseWithoutForecast),
+        json: () => Promise.resolve(mockGeocodingResponse),
       });
-
-      const result = await fetchCurrentWeather("Balbriggan, IE");
-
-      expect(result.precipitation).toBe(0);
-    });
-
-    it("constructs correct API URL", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockSuccessResponse),
+        json: () => Promise.resolve(mockOpenMeteoResponse),
       });
 
       await fetchCurrentWeather("Balbriggan, IE");
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("https://api.weatherapi.com/v1/forecast.json")
+      // Second call should be to Open-Meteo
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining("api.open-meteo.com/v1/forecast")
       );
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("key=test-api-key"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("q=Balbriggan"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("days=1"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("aqi=no"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("alerts=no"));
     });
 
-    it("uses custom API key when provided", async () => {
+    it("does not require API key", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockSuccessResponse),
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockOpenMeteoResponse),
       });
 
-      await fetchCurrentWeather("Balbriggan, IE", "custom-key");
+      // Should work without any API key
+      const result = await fetchCurrentWeather("Balbriggan, IE");
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("key=custom-key"));
+      expect(result).toBeDefined();
+      expect(result.temperature).toBe(12.5);
+    });
+  });
+
+  describe("fetchForecast", () => {
+    it("fetches and parses multi-day forecast correctly", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      const result = await fetchForecast("Balbriggan, IE", 7);
+
+      expect(result).toHaveLength(7);
+      expect(result[0]).toMatchObject({
+        location: "Balbriggan, Leinster, Ireland",
+        latitude: 53.61,
+        longitude: -6.18,
+      });
+    });
+
+    it("includes hourly data for each day", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      const result = await fetchForecast("Balbriggan, IE", 7);
+
+      expect(result[0]?.hourly).toBeDefined();
+      expect(result[0]?.hourly).toHaveLength(24);
+    });
+
+    it("parses weather conditions correctly", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      const result = await fetchForecast("Balbriggan, IE", 7);
+
+      // Day 1 and 2 should be Partly Cloudy (code 2)
+      expect(result[0]?.condition).toBe("Partly Cloudy");
+      // Day 3 should be Moderate Rain (code 63)
+      expect(result[2]?.condition).toBe("Moderate Rain");
+    });
+
+    it("constructs correct API URL with days parameter", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      await fetchForecast("Balbriggan, IE", 7);
+
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("forecast_days=7"));
+    });
+
+    it("clamps days to maximum of 16", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      await fetchForecast("Balbriggan, IE", 20);
+
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("forecast_days=16"));
+    });
+
+    it("clamps days to minimum of 1", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      await fetchForecast("Balbriggan, IE", 0);
+
+      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("forecast_days=1"));
+    });
+  });
+
+  describe("fetchFromOpenMeteo", () => {
+    it("fetches forecast using coordinates directly", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      const result = await fetchFromOpenMeteo(
+        { latitude: 53.61, longitude: -6.18 },
+        "Test Location",
+        7
+      );
+
+      expect(result).toHaveLength(7);
+      expect(result[0]?.location).toBe("Test Location");
+      // Should only make one call (no geocoding)
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("constructs correct URL with coordinates", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      await fetchFromOpenMeteo({ latitude: 53.61, longitude: -6.18 }, "Test Location", 7);
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("latitude=53.61"));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("longitude=-6.18"));
+    });
+  });
+
+  describe("fetchHybridForecast", () => {
+    it("is an alias for fetchForecast", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockMultiDayResponse),
+      });
+
+      const result = await fetchHybridForecast("Balbriggan, IE", 14);
+
+      expect(result).toHaveLength(7); // Based on mock data
+      // Should only call Open-Meteo (no separate WeatherAPI call)
+      expect(mockFetch).toHaveBeenCalledTimes(2); // geocoding + weather
     });
   });
 
   describe("Error handling", () => {
-    it("throws WeatherAPIError when API key is missing", async () => {
-      delete process.env.WEATHER_API_KEY;
-
-      await expect(fetchCurrentWeather("Balbriggan, IE")).rejects.toThrow(WeatherAPIError);
-      await expect(fetchCurrentWeather("Balbriggan, IE")).rejects.toThrow(
-        "Weather API key invalid"
-      );
-    });
-
-    it("throws WeatherAPIError for invalid API key (401)", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: () =>
-          Promise.resolve({
-            error: { code: 2006, message: "API key is invalid" },
-          }),
+    it("throws WeatherAPIError for location not found", async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ results: [] }),
       });
 
-      await expect(fetchCurrentWeather("Balbriggan, IE")).rejects.toThrow(
-        "Weather API key invalid"
-      );
-    });
+      await expect(fetchCurrentWeather("InvalidLocation123")).rejects.toThrow(WeatherAPIError);
 
-    it("throws WeatherAPIError for location not found (1006)", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: {
-              code: 1006,
-              message: "No matching location found.",
-            },
-          }),
+      // Reset and mock again for second call
+      mockFetch.mockClear();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ results: [] }),
       });
 
       await expect(fetchCurrentWeather("InvalidLocation123")).rejects.toThrow("Location not found");
     });
 
-    it("throws WeatherAPIError for server error", async () => {
+    it("throws WeatherAPIError for API failure", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
-        json: () => Promise.reject(new Error("Parse error")),
+        statusText: "Internal Server Error",
       });
 
-      await expect(fetchCurrentWeather("Balbriggan, IE")).rejects.toThrow(
-        "Weather service unavailable"
-      );
+      await expect(fetchCurrentWeather("Balbriggan, IE")).rejects.toThrow(WeatherAPIError);
     });
 
     it("includes status code in WeatherAPIError", async () => {
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockGeocodingResponse),
+      });
+      mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: { code: 1006, message: "No matching location found." },
-          }),
+        status: 503,
+        statusText: "Service Unavailable",
       });
 
       try {
-        await fetchCurrentWeather("InvalidLocation");
+        await fetchCurrentWeather("Balbriggan, IE");
       } catch (error) {
         expect(error).toBeInstanceOf(WeatherAPIError);
-        expect((error as WeatherAPIError).statusCode).toBe(400);
+        expect((error as WeatherAPIError).statusCode).toBe(503);
       }
-    });
-  });
-
-  describe("Rate limiting", () => {
-    it("tracks API calls", async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockSuccessResponse),
-      });
-
-      const initialStatus = getRateLimitStatus();
-      expect(initialStatus.count).toBe(0);
-
-      await fetchCurrentWeather("Balbriggan, IE");
-
-      const afterStatus = getRateLimitStatus();
-      expect(afterStatus.count).toBe(1);
-    });
-
-    it("verifies rate limit is configured correctly", async () => {
-      // With 1000 call limit, we verify the configuration is correct
-      // rather than making 1000 actual calls
-      const status = getRateLimitStatus();
-      expect(status.limit).toBe(1000);
-      expect(status.count).toBeGreaterThanOrEqual(0);
-      expect(status.count).toBeLessThanOrEqual(status.limit);
-    });
-
-    it("resets counter on new day", async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockSuccessResponse),
-      });
-
-      // Make a call
-      await fetchCurrentWeather("Balbriggan, IE");
-
-      // Manually reset (simulates new day)
-      resetRateLimit();
-
-      const status = getRateLimitStatus();
-      expect(status.count).toBe(0);
-    });
-
-    it("reports correct limit value", () => {
-      const status = getRateLimitStatus();
-      expect(status.limit).toBe(1000);
     });
   });
 
   describe("Retry logic", () => {
     it("does not retry on client error (4xx)", async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: { code: 1006, message: "No matching location found." },
-          }),
+        ok: true,
+        json: () => Promise.resolve({ results: [] }), // Location not found
       });
 
       await expect(fetchCurrentWeather("InvalidLocation")).rejects.toThrow("Location not found");
 
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-    });
-
-    it("does not retry on unauthorized error (401)", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: () =>
-          Promise.resolve({
-            error: { code: 2006, message: "API key invalid" },
-          }),
-      });
-
-      await expect(fetchCurrentWeather("Balbriggan, IE")).rejects.toThrow(
-        "Weather API key invalid"
-      );
-
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-    });
-
-    it("retries are configured with max 3 attempts", async () => {
-      // This test verifies the retry configuration exists
-      // Full retry behavior with timing is tested via integration tests
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: { code: 1006, message: "No matching location found." },
-          }),
-      });
-
-      try {
-        await fetchCurrentWeather("InvalidLocation");
-      } catch {
-        // Error expected
-      }
-
-      // Client errors (4xx) should not retry
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
@@ -436,408 +448,6 @@ describe("Weather Client", () => {
     it("handles undefined status code", () => {
       const error = new WeatherAPIError("Test error");
       expect(error.statusCode).toBeUndefined();
-    });
-  });
-
-  describe("fetchForecast", () => {
-    it("parses 7-day forecast response correctly", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      const result = await fetchForecast("Balbriggan, IE", 7);
-
-      expect(result).toHaveLength(7);
-      expect(result[0]).toEqual({
-        location: "Balbriggan, Ireland",
-        latitude: 53.61,
-        longitude: -6.18,
-        datetime: new Date("2025-11-28"),
-        condition: "Partly cloudy",
-        description: "Partly cloudy",
-        temperature: 11.0,
-        feelsLike: 11.0,
-        precipitation: 20,
-        humidity: 75,
-        windSpeed: 20.0,
-        windDirection: 0,
-      });
-    });
-
-    it("returns correct number of days", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      const result = await fetchForecast("Balbriggan, IE", 7);
-
-      expect(result).toHaveLength(7);
-    });
-
-    it("parses all days with correct data", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      const result = await fetchForecast("Balbriggan, IE", 7);
-
-      // Verify each day has all required fields
-      result.forEach((day) => {
-        expect(day).toHaveProperty("location");
-        expect(day).toHaveProperty("latitude");
-        expect(day).toHaveProperty("longitude");
-        expect(day).toHaveProperty("datetime");
-        expect(day).toHaveProperty("condition");
-        expect(day).toHaveProperty("description");
-        expect(day).toHaveProperty("temperature");
-        expect(day).toHaveProperty("feelsLike");
-        expect(day).toHaveProperty("precipitation");
-        expect(day).toHaveProperty("humidity");
-        expect(day).toHaveProperty("windSpeed");
-        expect(day).toHaveProperty("windDirection");
-      });
-
-      // Verify specific day data
-      expect(result[1]?.condition).toBe("Light rain");
-      expect(result[2]?.precipitation).toBe(60);
-      expect(result[4]?.condition).toBe("Sunny");
-    });
-
-    it("constructs correct API URL with days parameter", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      await fetchForecast("Balbriggan, IE", 7);
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("https://api.weatherapi.com/v1/forecast.json")
-      );
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("days=7"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("q=Balbriggan"));
-    });
-
-    it("uses default 7 days when not specified", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      await fetchForecast("Balbriggan, IE");
-
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("days=7"));
-    });
-
-    it("throws error for invalid days parameter (< 1)", async () => {
-      await expect(fetchForecast("Balbriggan, IE", 0)).rejects.toThrow(
-        "Days must be between 1 and 14"
-      );
-    });
-
-    it("throws error for invalid days parameter (> 14)", async () => {
-      await expect(fetchForecast("Balbriggan, IE", 15)).rejects.toThrow(
-        "Days must be between 1 and 14"
-      );
-    });
-
-    it("throws WeatherAPIError when API key is missing", async () => {
-      delete process.env.WEATHER_API_KEY;
-
-      await expect(fetchForecast("Balbriggan, IE")).rejects.toThrow(WeatherAPIError);
-      await expect(fetchForecast("Balbriggan, IE")).rejects.toThrow("Weather API key invalid");
-    });
-
-    it("handles empty forecast array", async () => {
-      const emptyForecastResponse = {
-        ...mockForecastResponse,
-        forecast: { forecastday: [] },
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(emptyForecastResponse),
-      });
-
-      const result = await fetchForecast("Balbriggan, IE", 7);
-
-      expect(result).toHaveLength(0);
-    });
-
-    it("handles missing forecast data", async () => {
-      const noForecastResponse = {
-        ...mockForecastResponse,
-        forecast: undefined,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(noForecastResponse),
-      });
-
-      const result = await fetchForecast("Balbriggan, IE", 7);
-
-      expect(result).toHaveLength(0);
-    });
-
-    it("throws WeatherAPIError for location not found", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: { code: 1006, message: "No matching location found." },
-          }),
-      });
-
-      await expect(fetchForecast("InvalidLocation123")).rejects.toThrow("Location not found");
-    });
-
-    it("increments rate limit counter", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      const beforeStatus = getRateLimitStatus();
-      await fetchForecast("Balbriggan, IE", 7);
-      const afterStatus = getRateLimitStatus();
-
-      expect(afterStatus.count).toBe(beforeStatus.count + 1);
-    });
-  });
-
-  describe("fetchFromOpenMeteo", () => {
-    const mockOpenMeteoResponse = {
-      latitude: 53.61,
-      longitude: -6.18,
-      timezone: "Europe/Dublin",
-      hourly: {
-        time: Array.from({ length: 48 }, (_, i) => {
-          const date = new Date("2025-11-28T00:00:00");
-          date.setHours(i);
-          return date.toISOString().slice(0, 16);
-        }),
-        temperature_2m: Array.from(
-          { length: 48 },
-          (_, i) => 8 + Math.sin((i / 24) * Math.PI * 2) * 4
-        ),
-        apparent_temperature: Array.from(
-          { length: 48 },
-          (_, i) => 6 + Math.sin((i / 24) * Math.PI * 2) * 4
-        ),
-        precipitation_probability: Array.from({ length: 48 }, () => 20),
-        precipitation: Array.from({ length: 48 }, () => 0.1),
-        weather_code: Array.from({ length: 48 }, () => 2), // Partly Cloudy
-        wind_speed_10m: Array.from({ length: 48 }, () => 15),
-        is_day: Array.from({ length: 48 }, (_, i) => (i >= 8 && i < 17 ? 1 : 0)),
-        relative_humidity_2m: Array.from({ length: 48 }, () => 75),
-      },
-    };
-
-    it("parses Open-Meteo response correctly", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoResponse),
-      });
-
-      const result = await fetchFromOpenMeteo(
-        { latitude: 53.61, longitude: -6.18 },
-        "Balbriggan, Ireland",
-        2
-      );
-
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        location: "Balbriggan, Ireland",
-        latitude: 53.61,
-        longitude: -6.18,
-        condition: "Partly Cloudy",
-      });
-    });
-
-    it("constructs correct Open-Meteo API URL", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoResponse),
-      });
-
-      await fetchFromOpenMeteo({ latitude: 53.61, longitude: -6.18 }, "Test Location", 7);
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("https://api.open-meteo.com/v1/forecast")
-      );
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("latitude=53.61"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("longitude=-6.18"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("forecast_days=7"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("temperature_2m"));
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("precipitation_probability"));
-    });
-
-    it("includes hourly data in response", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoResponse),
-      });
-
-      const result = await fetchFromOpenMeteo(
-        { latitude: 53.61, longitude: -6.18 },
-        "Test Location",
-        2
-      );
-
-      expect(result[0]?.hourly).toBeDefined();
-      expect(result[0]?.hourly).toHaveLength(24);
-      expect(result[0]?.hourly?.[0]).toHaveProperty("time");
-      expect(result[0]?.hourly?.[0]).toHaveProperty("temperature");
-      expect(result[0]?.hourly?.[0]).toHaveProperty("precipitation");
-    });
-
-    it("throws error on API failure", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: "Internal Server Error",
-      });
-
-      await expect(
-        fetchFromOpenMeteo({ latitude: 53.61, longitude: -6.18 }, "Test Location", 7)
-      ).rejects.toThrow(WeatherAPIError);
-    });
-
-    it("clamps days to maximum of 16", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoResponse),
-      });
-
-      await fetchFromOpenMeteo(
-        { latitude: 53.61, longitude: -6.18 },
-        "Test Location",
-        20 // Request 20 days
-      );
-
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("forecast_days=16"));
-    });
-  });
-
-  describe("fetchHybridForecast", () => {
-    const mockOpenMeteoExtended = {
-      latitude: 53.61,
-      longitude: -6.18,
-      timezone: "Europe/Dublin",
-      hourly: {
-        time: Array.from({ length: 14 * 24 }, (_, i) => {
-          const date = new Date("2025-11-28T00:00:00");
-          date.setHours(i);
-          return date.toISOString().slice(0, 16);
-        }),
-        temperature_2m: Array.from({ length: 14 * 24 }, () => 10),
-        apparent_temperature: Array.from({ length: 14 * 24 }, () => 8),
-        precipitation_probability: Array.from({ length: 14 * 24 }, () => 20),
-        precipitation: Array.from({ length: 14 * 24 }, () => 0.1),
-        weather_code: Array.from({ length: 14 * 24 }, () => 2),
-        wind_speed_10m: Array.from({ length: 14 * 24 }, () => 15),
-        is_day: Array.from({ length: 14 * 24 }, (_, i) => (i % 24 >= 8 && i % 24 < 17 ? 1 : 0)),
-        relative_humidity_2m: Array.from({ length: 14 * 24 }, () => 75),
-      },
-    };
-
-    it("fetches only from WeatherAPI when days <= 5", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      const result = await fetchHybridForecast("Balbriggan, IE", 5);
-
-      // Should only call WeatherAPI, not Open-Meteo
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("api.weatherapi.com"));
-      expect(result.length).toBeLessThanOrEqual(7); // MockForecastResponse has 7 days
-    });
-
-    it("combines WeatherAPI and Open-Meteo for days > 5", async () => {
-      // First call: WeatherAPI (5 days)
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      // Second call: Open-Meteo (extended)
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoExtended),
-      });
-
-      const result = await fetchHybridForecast("Balbriggan, IE", 14);
-
-      // Should call both APIs
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(mockFetch).toHaveBeenNthCalledWith(1, expect.stringContaining("api.weatherapi.com"));
-      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("api.open-meteo.com"));
-
-      // Result should have data from both sources
-      expect(result.length).toBeGreaterThan(5);
-    });
-
-    it("falls back to WeatherAPI data if Open-Meteo fails", async () => {
-      // First call: WeatherAPI success
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      // Second call: Open-Meteo fails
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: "Internal Server Error",
-      });
-
-      const result = await fetchHybridForecast("Balbriggan, IE", 14);
-
-      // Should still return WeatherAPI data
-      expect(result.length).toBeGreaterThan(0);
-      expect(result[0]?.location).toBe("Balbriggan, Ireland");
-    });
-
-    it("clamps days to maximum of 16", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoExtended),
-      });
-
-      await fetchHybridForecast("Balbriggan, IE", 20);
-
-      // Open-Meteo call should have forecast_days=16
-      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("forecast_days=16"));
-    });
-
-    it("uses WeatherAPI coordinates for Open-Meteo request", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockForecastResponse),
-      });
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockOpenMeteoExtended),
-      });
-
-      await fetchHybridForecast("Balbriggan, IE", 10);
-
-      // Open-Meteo should use coordinates from WeatherAPI response
-      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("latitude=53.61"));
-      expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("longitude=-6.18"));
     });
   });
 });

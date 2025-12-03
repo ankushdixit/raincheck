@@ -3,7 +3,7 @@
  *
  * Provides weather data with cache-first strategy:
  * 1. Check database cache for fresh data (< 1 hour old)
- * 2. On cache miss or stale data, fetch from WeatherAPI.com
+ * 2. On cache miss or stale data, fetch from Open-Meteo (free, no API key)
  * 3. Store fresh data in cache with 1-hour TTL
  */
 
@@ -125,14 +125,7 @@ export const weatherRouter = createTRPCRouter({
         if (error instanceof WeatherAPIError) {
           const statusCode = error.statusCode ?? 500;
 
-          if (statusCode === 401) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Weather API key invalid",
-            });
-          }
-
-          if (statusCode === 400 || error.message === "Location not found") {
+          if (statusCode === 404 || error.message === "Location not found") {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "Location not found",
@@ -299,14 +292,7 @@ export const weatherRouter = createTRPCRouter({
         if (error instanceof WeatherAPIError) {
           const statusCode = error.statusCode ?? 500;
 
-          if (statusCode === 401) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Weather API key invalid",
-            });
-          }
-
-          if (statusCode === 400 || error.message === "Location not found") {
+          if (statusCode === 404 || error.message === "Location not found") {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "Location not found",

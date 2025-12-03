@@ -20,8 +20,8 @@ const envSchema = z.object({
   // Node Environment
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
-  // Weather API
-  WEATHER_API_KEY: z.string().min(1, "WEATHER_API_KEY is required"),
+  // Weather API (optional - Open-Meteo is used by default and requires no key)
+  WEATHER_API_KEY: z.string().optional(),
 
   // Authentication
   NEXTAUTH_SECRET: z.string().min(32, "NEXTAUTH_SECRET must be at least 32 characters"),

@@ -21,9 +21,9 @@ describe("Environment Validation", () => {
   });
 
   // Helper to set all required env vars
+  // Note: WEATHER_API_KEY is now optional since we use Open-Meteo (free, no key needed)
   const setRequiredEnvVars = () => {
     process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    process.env.WEATHER_API_KEY = "test-weather-api-key";
     process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
     process.env.AUTH_PASSWORD = "test-password-123";
   };
@@ -46,13 +46,25 @@ describe("Environment Validation", () => {
     expect(env.DATABASE_URL).toBe("postgresql://localhost:5432/test");
   });
 
-  it("exports env object with WEATHER_API_KEY", () => {
+  it("exports env object with optional WEATHER_API_KEY when provided", () => {
     setRequiredEnvVars();
+    process.env.WEATHER_API_KEY = "test-weather-api-key";
     setNodeEnv("development");
     jest.resetModules();
 
     const { env } = require("../env");
     expect(env.WEATHER_API_KEY).toBe("test-weather-api-key");
+  });
+
+  it("validates without WEATHER_API_KEY (Open-Meteo is used by default)", () => {
+    setRequiredEnvVars();
+    delete process.env.WEATHER_API_KEY;
+    setNodeEnv("development");
+    jest.resetModules();
+
+    expect(() => {
+      require("../env");
+    }).not.toThrow();
   });
 
   it("exports env object with NODE_ENV", () => {
@@ -114,7 +126,6 @@ describe("Environment Validation", () => {
 
     validUrls.forEach((url) => {
       process.env.DATABASE_URL = url;
-      process.env.WEATHER_API_KEY = "test-api-key";
       process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
       process.env.AUTH_PASSWORD = "test-password-123";
       setNodeEnv("development");
@@ -146,7 +157,6 @@ describe("Environment Validation", () => {
 
   it("throws error when DATABASE_URL is missing", () => {
     delete process.env.DATABASE_URL;
-    process.env.WEATHER_API_KEY = "test-api-key";
     process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
     process.env.AUTH_PASSWORD = "test-password-123";
     setNodeEnv("development");
@@ -164,7 +174,6 @@ describe("Environment Validation", () => {
 
   it("throws error when DATABASE_URL is empty string", () => {
     process.env.DATABASE_URL = "";
-    process.env.WEATHER_API_KEY = "test-api-key";
     process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
     process.env.AUTH_PASSWORD = "test-password-123";
     setNodeEnv("development");
@@ -182,43 +191,6 @@ describe("Environment Validation", () => {
 
   it("throws error when DATABASE_URL is not a valid URL", () => {
     process.env.DATABASE_URL = "not-a-url";
-    process.env.WEATHER_API_KEY = "test-api-key";
-    process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
-    process.env.AUTH_PASSWORD = "test-password-123";
-    setNodeEnv("development");
-
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
-    jest.resetModules();
-
-    expect(() => {
-      require("../env");
-    }).toThrow("Invalid environment variables");
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it("throws error when WEATHER_API_KEY is missing", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    delete process.env.WEATHER_API_KEY;
-    process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
-    process.env.AUTH_PASSWORD = "test-password-123";
-    setNodeEnv("development");
-
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
-    jest.resetModules();
-
-    expect(() => {
-      require("../env");
-    }).toThrow("Invalid environment variables");
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it("throws error when WEATHER_API_KEY is empty string", () => {
-    process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    process.env.WEATHER_API_KEY = "";
     process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
     process.env.AUTH_PASSWORD = "test-password-123";
     setNodeEnv("development");
@@ -260,7 +232,6 @@ describe("Environment Validation", () => {
 
   it("throws error when NEXTAUTH_SECRET is missing", () => {
     process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    process.env.WEATHER_API_KEY = "test-api-key";
     delete process.env.NEXTAUTH_SECRET;
     process.env.AUTH_PASSWORD = "test-password-123";
     setNodeEnv("development");
@@ -278,7 +249,6 @@ describe("Environment Validation", () => {
 
   it("throws error when NEXTAUTH_SECRET is too short", () => {
     process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    process.env.WEATHER_API_KEY = "test-api-key";
     process.env.NEXTAUTH_SECRET = "short"; // Less than 32 characters
     process.env.AUTH_PASSWORD = "test-password-123";
     setNodeEnv("development");
@@ -296,7 +266,6 @@ describe("Environment Validation", () => {
 
   it("throws error when AUTH_PASSWORD is missing", () => {
     process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    process.env.WEATHER_API_KEY = "test-api-key";
     process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
     delete process.env.AUTH_PASSWORD;
     setNodeEnv("development");
@@ -314,7 +283,6 @@ describe("Environment Validation", () => {
 
   it("throws error when AUTH_PASSWORD is too short", () => {
     process.env.DATABASE_URL = "postgresql://localhost:5432/test";
-    process.env.WEATHER_API_KEY = "test-api-key";
     process.env.NEXTAUTH_SECRET = "test-secret-must-be-at-least-32-characters-long";
     process.env.AUTH_PASSWORD = "short"; // Less than 8 characters
     setNodeEnv("development");
