@@ -1,6 +1,11 @@
 import { render, screen, act } from "@testing-library/react";
 import { HomePage } from "../HomePage";
 
+// Mock next-auth/react
+jest.mock("next-auth/react", () => ({
+  signOut: jest.fn(),
+}));
+
 /** Selected day type for callback */
 interface SelectedDay {
   condition: string;

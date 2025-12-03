@@ -21,6 +21,39 @@ jest.mock("next-auth/react", () => ({
   signIn: jest.fn(),
 }));
 
+// Mock next/image
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: (props: { alt: string; src: string }) => <img alt={props.alt} src={props.src} />,
+}));
+
+// Mock trail background utilities
+jest.mock("@/components/trail", () => ({
+  getTrailImage: jest.fn(() => "default-trail.webp"),
+  getTintColor: jest.fn(() => "rgba(10, 15, 10, 0.6)"),
+  getNightTint: jest.fn(() => "transparent"),
+}));
+
+// Mock WeatherEffectLayer
+jest.mock("@/components/weather-effects", () => ({
+  WeatherEffectLayer: () => <div data-testid="weather-effects" />,
+}));
+
+// Mock tRPC api
+jest.mock("@/lib/api", () => ({
+  api: {
+    weather: {
+      getCurrentWeather: {
+        useQuery: jest.fn(() => ({
+          data: { condition: "sunny", temperature: 15, precipitation: 0, windSpeed: 10 },
+          isLoading: false,
+          isError: false,
+        })),
+      },
+    },
+  },
+}));
+
 describe("LoginPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -31,10 +64,10 @@ describe("LoginPage", () => {
       mockUseSession.mockReturnValue({ status: "loading" });
     });
 
-    it("renders loading state", () => {
+    it("renders loading state with spinner", () => {
       render(<LoginPage />);
 
-      // Should render minimal loading state
+      // Should render loading spinner, not the form
       expect(screen.queryByRole("heading")).not.toBeInTheDocument();
       expect(screen.queryByPlaceholderText(/enter password/i)).not.toBeInTheDocument();
     });
@@ -48,15 +81,13 @@ describe("LoginPage", () => {
     it("renders the page title", () => {
       render(<LoginPage />);
 
-      expect(
-        screen.getByRole("heading", { name: /ankush's training tracker/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /welcome back/i })).toBeInTheDocument();
     });
 
     it("renders the subtitle", () => {
       render(<LoginPage />);
 
-      expect(screen.getByText(/sign in to manage your runs/i)).toBeInTheDocument();
+      expect(screen.getByText(/sign in to manage your training/i)).toBeInTheDocument();
     });
 
     it("renders the login form", () => {
@@ -64,6 +95,12 @@ describe("LoginPage", () => {
 
       expect(screen.getByPlaceholderText(/enter password/i)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
+    });
+
+    it("renders the logo", () => {
+      render(<LoginPage />);
+
+      expect(screen.getByAltText(/raincheck/i)).toBeInTheDocument();
     });
 
     it("does not redirect", () => {

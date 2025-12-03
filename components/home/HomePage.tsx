@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { getTrailImage, getTintColor, getNightTint } from "@/components/trail";
 import { WeatherForecast } from "@/components/weather";
-import { WeatherEffectLayer, EffectsToggle } from "@/components/weather-effects";
+import { WeatherEffectLayer } from "@/components/weather-effects";
 import { RunSuggestions } from "@/components/suggestions";
 import { TrainingCalendar } from "@/components/calendar";
 import { useIsAuthenticated } from "@/hooks";
@@ -200,11 +200,6 @@ export function HomePage() {
           aria-hidden="true"
         />
       )}
-
-      {/* Effects Toggle Button - hidden until grid layout is complete */}
-      <div className="hidden">
-        <EffectsToggle />
-      </div>
 
       {/* Auto-disable Toast Notification */}
       {showAutoDisableToast && (
