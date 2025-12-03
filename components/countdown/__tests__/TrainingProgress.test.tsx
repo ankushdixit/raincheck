@@ -116,11 +116,11 @@ describe("calculatePaceProgress", () => {
   });
 
   it("calculates progress between max pace and target", () => {
-    // With 10:00 max and 5:41 target (4.317 range)
-    // 7:50 = 7.833 min, improvement from 10 = 2.167, progress = 50.2%
+    // With 8:00 max and 5:41 target (2.317 range)
+    // 7:50 = 7.833 min, improvement from 8 = 0.167, progress = 7.2%
     const progress = calculatePaceProgress("7:50", "5:41");
-    expect(progress).toBeGreaterThan(40);
-    expect(progress).toBeLessThan(60);
+    expect(progress).toBeGreaterThan(0);
+    expect(progress).toBeLessThan(20);
   });
 
   it("returns 0 for invalid paces", () => {

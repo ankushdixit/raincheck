@@ -495,18 +495,20 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
     );
   });
 
-  // Score all available days
+  // Score all available days and sort by date (chronological order)
+  // This ensures earlier days are scheduled first, avoiding issues where
+  // a later day with slightly better weather blocks an earlier day
   const scoredDays = availableDays
     .map((day) => ({
       day,
       window: findBestTimeWindow(day, preferences, "EASY_RUN"),
     }))
     .filter((item) => item.window !== null)
-    .sort((a, b) => b.window!.score - a.window!.score);
+    .sort((a, b) => a.day.datetime.getTime() - b.day.datetime.getTime());
 
   // Schedule easy runs with 1-day rest between them
   let easyRunsScheduled = 0;
-  const targetEasyRuns = Math.max(runsNeeded.totalEasyRuns, 4); // At least 4 easy runs for 5-6 total
+  const targetEasyRuns = Math.max(runsNeeded.totalEasyRuns, 5); // At least 5 easy runs for 7 total (ensures 6 after filtering today)
 
   for (const { day, window } of scoredDays) {
     if (!window) continue;
@@ -514,8 +516,11 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
 
     const dateKey = formatDateKey(day.datetime);
 
-    // Check if this day is now a rest day (could have been marked by earlier easy run)
+    // Check if this day is a rest day (marked by a previous run)
     if (restDates.has(dateKey)) continue;
+
+    // Check if this day is already used
+    if (usedDates.has(dateKey)) continue;
 
     // Schedule this easy run
     suggestions.push(createSuggestion(window, "EASY_RUN", runsNeeded.easyRunDistance));

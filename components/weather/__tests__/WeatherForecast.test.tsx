@@ -101,12 +101,14 @@ describe("WeatherForecast", () => {
       expect(cards).toHaveLength(7);
     });
 
-    it("first card is selected by default", () => {
+    it("no card is selected by default in uncontrolled mode", () => {
       render(<WeatherForecast />);
 
       const cards = screen.getAllByTestId("weather-day-card");
-      // Background is now set via Tailwind class
-      expect(cards[0]).toHaveClass("bg-forest-deep/75");
+      // In uncontrolled mode with no selectedIndex prop, all cards should have the unselected background
+      cards.forEach((card) => {
+        expect(card).toHaveClass("bg-forest-deep/50");
+      });
     });
 
     it("displays temperatures for all days", () => {
@@ -134,8 +136,8 @@ describe("WeatherForecast", () => {
 
       const cards = screen.getAllByTestId("weather-day-card");
 
-      // Initially first card is selected - backgrounds set via Tailwind classes
-      expect(cards[0]).toHaveClass("bg-forest-deep/75");
+      // Initially no card is selected - all should have unselected background
+      expect(cards[0]).toHaveClass("bg-forest-deep/50");
       expect(cards[1]).toHaveClass("bg-forest-deep/50");
 
       // Click second card
@@ -177,14 +179,17 @@ describe("WeatherForecast", () => {
       const cards = screen.getAllByTestId("weather-day-card");
       fireEvent.click(cards[3]!);
 
-      // Should be called with the weather data for the 4th day
-      expect(onDaySelect).toHaveBeenCalledWith({
-        condition: mockForecastData[3].condition,
-        datetime: mockForecastData[3].datetime,
-      });
+      // Should be called with the weather data for the 4th day and index
+      expect(onDaySelect).toHaveBeenCalledWith(
+        {
+          condition: mockForecastData[3].condition,
+          datetime: mockForecastData[3].datetime,
+        },
+        3
+      );
     });
 
-    it("calls onDaySelect with first day data on initial load", () => {
+    it("does not auto-select on initial load in uncontrolled mode", () => {
       const mockForecastData = createMockForecastData();
       mockUseQuery.mockReturnValue({
         data: mockForecastData,
@@ -197,11 +202,8 @@ describe("WeatherForecast", () => {
       const onDaySelect = jest.fn();
       render(<WeatherForecast onDaySelect={onDaySelect} />);
 
-      // Should be called with the first day's data on initial load
-      expect(onDaySelect).toHaveBeenCalledWith({
-        condition: mockForecastData[0].condition,
-        datetime: mockForecastData[0].datetime,
-      });
+      // Should NOT be called on initial load (no auto-selection in uncontrolled mode)
+      expect(onDaySelect).not.toHaveBeenCalled();
     });
   });
 

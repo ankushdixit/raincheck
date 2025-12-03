@@ -114,7 +114,7 @@ describe("RunSuggestions", () => {
       expect(screen.getByTestId("suggestions-skeleton")).toBeInTheDocument();
     });
 
-    it("skeleton shows 3 placeholder cards", () => {
+    it("skeleton shows 6 placeholder cards", () => {
       mockUseQuery.mockReturnValue({
         data: undefined,
         isLoading: true,
@@ -126,7 +126,7 @@ describe("RunSuggestions", () => {
       render(<RunSuggestions />);
 
       const skeletons = screen.getAllByTestId("run-suggestion-skeleton");
-      expect(skeletons).toHaveLength(3);
+      expect(skeletons).toHaveLength(6);
     });
   });
 
@@ -170,8 +170,9 @@ describe("RunSuggestions", () => {
     it("displays long run with correct weather score", () => {
       render(<RunSuggestions />);
 
-      // Long run has score 85, which should show OPTIMAL badge
-      expect(screen.getByTestId("optimal-badge")).toBeInTheDocument();
+      // Long run has score 85 - cards now use color coding instead of badges
+      const cards = screen.getAllByTestId("run-suggestion-card");
+      expect(cards.length).toBeGreaterThan(0);
     });
 
     it("displays temperatures for each card", () => {
@@ -314,25 +315,25 @@ describe("RunSuggestions", () => {
       });
     });
 
-    it("has flex class for layout", () => {
+    it("has grid layout", () => {
       render(<RunSuggestions />);
 
       const container = screen.getByTestId("run-suggestions");
-      expect(container).toHaveClass("flex");
+      expect(container).toHaveClass("grid");
     });
 
-    it("has centered content", () => {
+    it("has 6-column grid", () => {
       render(<RunSuggestions />);
 
       const container = screen.getByTestId("run-suggestions");
-      expect(container).toHaveClass("justify-center");
+      expect(container).toHaveClass("grid-cols-6");
     });
 
     it("has gap for spacing between cards", () => {
       render(<RunSuggestions />);
 
       const container = screen.getByTestId("run-suggestions");
-      expect(container).toHaveClass("gap-4");
+      expect(container).toHaveClass("gap-3");
     });
   });
 

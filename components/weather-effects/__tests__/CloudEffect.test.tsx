@@ -11,25 +11,25 @@ describe("CloudEffect", () => {
   it("renders correct number of clouds for light intensity", () => {
     render(<CloudEffect intensity="light" />);
     const clouds = document.querySelectorAll(".cloud");
-    expect(clouds.length).toBe(3);
+    expect(clouds.length).toBe(2);
   });
 
   it("renders correct number of clouds for moderate intensity", () => {
     render(<CloudEffect intensity="moderate" />);
     const clouds = document.querySelectorAll(".cloud");
-    expect(clouds.length).toBe(5);
+    expect(clouds.length).toBe(4);
   });
 
   it("renders correct number of clouds for heavy intensity", () => {
     render(<CloudEffect intensity="heavy" />);
     const clouds = document.querySelectorAll(".cloud");
-    expect(clouds.length).toBe(8);
+    expect(clouds.length).toBe(6);
   });
 
   it("defaults to moderate intensity when no prop provided", () => {
     render(<CloudEffect />);
     const clouds = document.querySelectorAll(".cloud");
-    expect(clouds.length).toBe(5);
+    expect(clouds.length).toBe(4);
   });
 
   it("has pointer-events none to not block interactions", () => {
@@ -65,7 +65,7 @@ describe("CloudEffect", () => {
   it("renders cloud body elements", () => {
     render(<CloudEffect intensity="light" />);
     const bodies = document.querySelectorAll(".cloud-body");
-    expect(bodies.length).toBe(3);
+    expect(bodies.length).toBe(2);
   });
 
   it("clouds are positioned in upper portion of screen", () => {

@@ -10,24 +10,49 @@ interface CloudEffectProps {
 }
 
 const CLOUD_COUNTS: Record<Intensity, number> = {
-  light: 3,
-  moderate: 5,
-  heavy: 8,
+  light: 2,
+  moderate: 4,
+  heavy: 6,
 };
 
 interface Cloud {
   id: number;
   top: number;
   left: number;
-  width: number;
-  height: number;
+  scale: number;
   opacity: number;
   duration: number;
   delay: number;
 }
 
+/** Puff configuration for building fluffy clouds */
+interface CloudPuff {
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+  opacityMult: number;
+}
+
+/** Base puffs that make up a fluffy cloud shape */
+const CLOUD_PUFFS: CloudPuff[] = [
+  // Bottom layer - wide base
+  { left: "5%", top: "55%", width: "35%", height: "50%", opacityMult: 0.7 },
+  { left: "25%", top: "50%", width: "40%", height: "55%", opacityMult: 0.8 },
+  { left: "50%", top: "55%", width: "35%", height: "50%", opacityMult: 0.7 },
+  { left: "70%", top: "60%", width: "25%", height: "40%", opacityMult: 0.6 },
+  // Middle layer - main body
+  { left: "10%", top: "35%", width: "30%", height: "50%", opacityMult: 0.85 },
+  { left: "30%", top: "25%", width: "35%", height: "60%", opacityMult: 0.9 },
+  { left: "55%", top: "30%", width: "30%", height: "55%", opacityMult: 0.85 },
+  // Top layer - fluffy peaks
+  { left: "20%", top: "15%", width: "25%", height: "45%", opacityMult: 1 },
+  { left: "40%", top: "10%", width: "28%", height: "50%", opacityMult: 1 },
+  { left: "60%", top: "20%", width: "22%", height: "40%", opacityMult: 0.95 },
+];
+
 /**
- * CloudEffect renders drifting cloud shapes across the top of the screen.
+ * CloudEffect renders large, fluffy drifting clouds across the screen.
  * Uses CSS animations with GPU acceleration for smooth performance.
  */
 export function CloudEffect({ intensity = "moderate", particleMultiplier = 1 }: CloudEffectProps) {
@@ -39,13 +64,12 @@ export function CloudEffect({ intensity = "moderate", particleMultiplier = 1 }: 
     for (let i = 0; i < count; i++) {
       cloudList.push({
         id: i,
-        top: 5 + Math.random() * 25,
-        left: -30 + Math.random() * 130,
-        width: 100 + Math.random() * 150,
-        height: 40 + Math.random() * 40,
-        opacity: 0.4 + Math.random() * 0.3,
-        duration: 30 + Math.random() * 30,
-        delay: Math.random() * 20,
+        top: -5 + Math.random() * 35, // Spread across upper portion
+        left: -40 + Math.random() * 140, // Start off-screen for seamless loop
+        scale: 0.8 + Math.random() * 0.6, // Vary sizes (0.8x to 1.4x)
+        opacity: 0.5 + Math.random() * 0.35, // 0.5 to 0.85 opacity
+        duration: 60 + Math.random() * 40, // Slower drift (60-100s)
+        delay: Math.random() * 30,
       });
     }
 
@@ -72,14 +96,15 @@ export function CloudEffect({ intensity = "moderate", particleMultiplier = 1 }: 
             position: "absolute",
             top: `${cloud.top}%`,
             left: `${cloud.left}%`,
-            width: `${cloud.width}px`,
-            height: `${cloud.height}px`,
+            width: "400px", // Large base size
+            height: "200px",
+            transform: `scale(${cloud.scale})`,
             animation: `cloud-drift ${cloud.duration}s linear infinite`,
             animationDelay: `${cloud.delay}s`,
             willChange: "transform",
           }}
         >
-          {/* Cloud body made of multiple circles */}
+          {/* Cloud body made of multiple overlapping puffs */}
           <div
             className="cloud-body"
             style={{
@@ -88,42 +113,21 @@ export function CloudEffect({ intensity = "moderate", particleMultiplier = 1 }: 
               height: "100%",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                left: "10%",
-                top: "30%",
-                width: "50%",
-                height: "70%",
-                background: `rgba(255, 255, 255, ${cloud.opacity})`,
-                borderRadius: "50%",
-                filter: "blur(8px)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: "30%",
-                top: "10%",
-                width: "45%",
-                height: "80%",
-                background: `rgba(255, 255, 255, ${cloud.opacity * 0.9})`,
-                borderRadius: "50%",
-                filter: "blur(8px)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "25%",
-                width: "40%",
-                height: "65%",
-                background: `rgba(255, 255, 255, ${cloud.opacity * 0.8})`,
-                borderRadius: "50%",
-                filter: "blur(8px)",
-              }}
-            />
+            {CLOUD_PUFFS.map((puff, idx) => (
+              <div
+                key={idx}
+                style={{
+                  position: "absolute",
+                  left: puff.left,
+                  top: puff.top,
+                  width: puff.width,
+                  height: puff.height,
+                  background: `rgba(255, 255, 255, ${cloud.opacity * puff.opacityMult})`,
+                  borderRadius: "50%",
+                  filter: "blur(20px)",
+                }}
+              />
+            ))}
           </div>
         </div>
       ))}

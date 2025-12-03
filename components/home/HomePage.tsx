@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import Link from "next/link";
-import { BarChart3 } from "lucide-react";
-import { getTrailImage, getTintColor } from "@/components/trail";
-import { CurrentWeather, WeatherForecast } from "@/components/weather";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { getTrailImage, getTintColor, getNightTint } from "@/components/trail";
+import { WeatherForecast } from "@/components/weather";
 import { WeatherEffectLayer, EffectsToggle } from "@/components/weather-effects";
 import { RunSuggestions } from "@/components/suggestions";
 import { TrainingCalendar } from "@/components/calendar";
-import { RaceCountdown } from "@/components/countdown";
-import { WeeklyMileageChart } from "@/components/stats";
 import { useIsAuthenticated } from "@/hooks";
+import { api } from "@/lib/api";
+import { Header } from "./Header";
+import { InfoBoxes } from "./InfoBoxes";
+import { StoryCard } from "./StoryCard";
 
 /** Selected day data for background coordination */
 interface SelectedDay {
@@ -24,30 +24,42 @@ interface BackgroundLayer {
   tint: string;
 }
 
+/** Duration to show selected day preview before reverting to current weather */
+const PREVIEW_DURATION_MS = 10000;
+
 /**
  * HomePage component that coordinates the weather-reactive background
  * with the weather display components.
- * Background changes based on the selected forecast day with smooth cross-fade.
+ * - Default background based on current weather + time of day (night overlay)
+ * - Clicking a forecast day shows preview for 10 seconds, then reverts
  */
 export function HomePage() {
   // Get authentication state
   const { isAuthenticated } = useIsAuthenticated();
 
-  // Default background configuration
-  const defaultImage = getTrailImage("default");
-  const defaultTint = getTintColor("default");
+  // Fetch current weather for default background
+  const { data: currentWeather } = api.weather.getCurrentWeather.useQuery({});
+
+  // Get current condition (from current weather, updated on load)
+  const currentConditionRef = useRef<string>("");
 
   // Two background layers for cross-fade effect
   const [layers, setLayers] = useState<[BackgroundLayer, BackgroundLayer]>([
-    { image: defaultImage, tint: defaultTint },
-    { image: defaultImage, tint: defaultTint },
+    { image: getTrailImage("default"), tint: getTintColor("default") },
+    { image: getTrailImage("default"), tint: getTintColor("default") },
   ]);
 
   // Track which layer is currently visible (0 or 1)
   const [activeLayer, setActiveLayer] = useState<0 | 1>(0);
 
-  // Track current weather condition for weather effects
-  const [currentCondition, setCurrentCondition] = useState<string>("");
+  // Track displayed weather condition for weather effects
+  const [displayedCondition, setDisplayedCondition] = useState<string>("");
+
+  // Track selected forecast day index (null = showing current weather)
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+
+  // Timer ref for auto-clearing selection
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track auto-disable notification
   const [showAutoDisableToast, setShowAutoDisableToast] = useState(false);
@@ -55,21 +67,23 @@ export function HomePage() {
   // Use ref to track active layer in callback without causing re-renders
   const activeLayerRef = useRef<0 | 1>(0);
 
-  // Handle effects auto-disable due to low FPS
-  const handleEffectsAutoDisable = useCallback(() => {
-    setShowAutoDisableToast(true);
-    // Auto-hide toast after 5 seconds
-    setTimeout(() => setShowAutoDisableToast(false), 5000);
+  // Night overlay state (updates every minute)
+  const [nightTint, setNightTint] = useState<string>(getNightTint());
+
+  // Update night overlay every minute
+  useEffect(() => {
+    const updateNightTint = () => setNightTint(getNightTint());
+    const interval = setInterval(updateNightTint, 60000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Memoize callback that handles day selection and background transition
-  const handleDaySelect = useCallback((day: SelectedDay) => {
-    const condition = day.condition;
+  // Update background helper function
+  const updateBackground = useCallback((condition: string) => {
     const newImage = getTrailImage(condition);
     const newTint = getTintColor(condition);
 
     // Update weather condition for effects layer
-    setCurrentCondition(condition);
+    setDisplayedCondition(condition);
 
     // Determine which layer to update (the inactive one)
     const currentActive = activeLayerRef.current;
@@ -87,9 +101,61 @@ export function HomePage() {
     setActiveLayer(inactiveLayer);
   }, []);
 
+  // Set default background based on current weather when it loads
+  useEffect(() => {
+    if (currentWeather && selectedDayIndex === null) {
+      const condition = currentWeather.condition;
+      currentConditionRef.current = condition;
+      updateBackground(condition);
+    }
+  }, [currentWeather, selectedDayIndex, updateBackground]);
+
+  // Revert to current weather
+  const revertToCurrentWeather = useCallback(() => {
+    setSelectedDayIndex(null);
+    if (currentConditionRef.current) {
+      updateBackground(currentConditionRef.current);
+    }
+  }, [updateBackground]);
+
+  // Handle effects auto-disable due to low FPS
+  const handleEffectsAutoDisable = useCallback(() => {
+    setShowAutoDisableToast(true);
+    setTimeout(() => setShowAutoDisableToast(false), 5000);
+  }, []);
+
+  // Handle day selection with 10-second preview
+  const handleDaySelect = useCallback(
+    (day: SelectedDay, index: number) => {
+      // Clear any existing timer
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+      }
+
+      // Update selection and background
+      setSelectedDayIndex(index);
+      updateBackground(day.condition);
+
+      // Set timer to revert after 10 seconds
+      previewTimerRef.current = setTimeout(() => {
+        revertToCurrentWeather();
+      }, PREVIEW_DURATION_MS);
+    },
+    [updateBackground, revertToCurrentWeather]
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <main
-      className="relative flex min-h-screen flex-col items-center justify-center"
+      className="relative h-screen w-screen overflow-hidden"
       data-testid="trail-background"
       data-active-layer={activeLayer}
       data-layer0-image={layers[0].image}
@@ -118,12 +184,25 @@ export function HomePage() {
       />
 
       {/* Weather Effects Layer */}
-      {currentCondition && (
-        <WeatherEffectLayer condition={currentCondition} onAutoDisable={handleEffectsAutoDisable} />
+      {displayedCondition && (
+        <WeatherEffectLayer
+          condition={displayedCondition}
+          onAutoDisable={handleEffectsAutoDisable}
+        />
       )}
 
-      {/* Effects Toggle Button */}
-      <div className="fixed top-4 right-4 z-20">
+      {/* Night Overlay Layer - on top of weather effects to dim them (only when not previewing a day) */}
+      {nightTint !== "transparent" && selectedDayIndex === null && (
+        <div
+          className="absolute top-0 left-0 w-full h-full z-[5] pointer-events-none transition-opacity duration-1000"
+          style={{ backgroundColor: nightTint }}
+          data-testid="night-overlay"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Effects Toggle Button - hidden until grid layout is complete */}
+      <div className="hidden">
         <EffectsToggle />
       </div>
 
@@ -142,54 +221,46 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Content Layer */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-16 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-text-primary sm:text-[4rem]">
-          RainCheck
-        </h1>
-        <p className="mt-4 text-lg text-text-primary/80 sm:text-xl">
-          Weather-aware half-marathon training
-        </p>
+      {/* Content Layer - Full viewport, no scroll */}
+      <div className="relative z-10 flex h-screen w-full flex-col overflow-hidden">
+        {/* Header */}
+        <Header />
 
-        {/* Race Countdown Widget */}
-        <div className="mt-8">
-          <RaceCountdown />
+        {/* Story Section - Top area */}
+        <div className="px-10 mt-6 mb-8">
+          <StoryCard />
         </div>
 
-        <div className="mt-8">
-          <CurrentWeather />
-        </div>
+        {/* Info Boxes Row: Phase, Progress, Countdown */}
+        <InfoBoxes />
 
-        <div className="mt-8 w-full max-w-4xl">
-          <WeatherForecast onDaySelect={handleDaySelect} />
-        </div>
+        {/* Main content area - Two column grid layout */}
+        <div className="flex gap-5 px-10 mt-5 pb-6 overflow-hidden">
+          {/* Left Column: Weather + Suggested Runs (~65%) */}
+          <div className="flex-[2] flex flex-col gap-8 overflow-y-auto">
+            {/* Weather Section */}
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-4">
+                Weather
+              </h3>
+              <WeatherForecast onDaySelect={handleDaySelect} selectedIndex={selectedDayIndex} />
+            </div>
 
-        {/* Run Suggestions Section */}
-        <div className="mt-12 w-full max-w-4xl">
-          <h2 className="text-2xl font-bold text-text-primary mb-4">Suggested Runs</h2>
-          <RunSuggestions isAuthenticated={isAuthenticated} />
-        </div>
-
-        {/* Training Calendar Section */}
-        <div className="mt-12 w-full max-w-4xl">
-          <h2 className="text-2xl font-bold text-text-primary mb-4">Training Calendar</h2>
-          <TrainingCalendar />
-        </div>
-
-        {/* Weekly Mileage Chart Section */}
-        <div className="mt-12 w-full max-w-4xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-text-primary">Weekly Mileage</h2>
-            <Link
-              href="/stats"
-              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors text-sm font-medium"
-            >
-              <BarChart3 className="h-4 w-4" />
-              View All Stats
-            </Link>
+            {/* Suggested Runs Section */}
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-4">
+                Suggested Runs
+              </h3>
+              <RunSuggestions isAuthenticated={isAuthenticated} />
+            </div>
           </div>
-          <div className="bg-surface/80 backdrop-blur-sm rounded-lg p-4">
-            <WeeklyMileageChart />
+
+          {/* Right Column: Calendar (~35%) */}
+          <div className="flex-[1] overflow-y-auto">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-4">
+              Calendar
+            </h3>
+            <TrainingCalendar />
           </div>
         </div>
       </div>

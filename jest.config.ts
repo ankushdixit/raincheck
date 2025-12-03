@@ -19,4 +19,11 @@ const config: Config = {
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-export default createJestConfig(config);
+// We need to override transformIgnorePatterns after next/jest processes the config
+export default async () => {
+  const jestConfig = await createJestConfig(config)();
+  return {
+    ...jestConfig,
+    transformIgnorePatterns: ["/node_modules/(?!superjson)"],
+  };
+};

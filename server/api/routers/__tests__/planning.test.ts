@@ -427,7 +427,7 @@ describe("Planning Router", () => {
         await expect(caller.planning.generateSuggestions({ days: 0 })).rejects.toThrow();
       });
 
-      it("rejects days greater than 14", async () => {
+      it("rejects days greater than 21", async () => {
         const mockDb = {
           userSettings: { findFirst: jest.fn() },
           trainingPlan: { findFirst: jest.fn() },
@@ -441,7 +441,7 @@ describe("Planning Router", () => {
           session: null,
         });
 
-        await expect(caller.planning.generateSuggestions({ days: 15 })).rejects.toThrow();
+        await expect(caller.planning.generateSuggestions({ days: 22 })).rejects.toThrow();
       });
     });
 
@@ -1037,6 +1037,7 @@ describe("Planning Router", () => {
         const mockDb = {
           trainingPlan: {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
+            findMany: jest.fn().mockResolvedValue([]),
           },
         };
 
@@ -1051,6 +1052,9 @@ describe("Planning Router", () => {
         expect(result).toEqual({
           phase: Phase.BASE_BUILDING,
           weekNumber: 1,
+          nextPhases: [],
+          nextPhaseStart: null,
+          nextPhase: null,
         });
       });
 
@@ -1065,6 +1069,7 @@ describe("Planning Router", () => {
         const mockDb = {
           trainingPlan: {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
+            findMany: jest.fn().mockResolvedValue([]),
           },
         };
 
@@ -1079,6 +1084,9 @@ describe("Planning Router", () => {
         expect(result).toEqual({
           phase: Phase.BASE_EXTENSION,
           weekNumber: 10,
+          nextPhases: [],
+          nextPhaseStart: null,
+          nextPhase: null,
         });
       });
 
@@ -1093,6 +1101,7 @@ describe("Planning Router", () => {
         const mockDb = {
           trainingPlan: {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
+            findMany: jest.fn().mockResolvedValue([]),
           },
         };
 
@@ -1107,6 +1116,9 @@ describe("Planning Router", () => {
         expect(result).toEqual({
           phase: Phase.SPEED_DEVELOPMENT,
           weekNumber: 18,
+          nextPhases: [],
+          nextPhaseStart: null,
+          nextPhase: null,
         });
       });
 
@@ -1121,6 +1133,7 @@ describe("Planning Router", () => {
         const mockDb = {
           trainingPlan: {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
+            findMany: jest.fn().mockResolvedValue([]),
           },
         };
 
@@ -1135,6 +1148,9 @@ describe("Planning Router", () => {
         expect(result).toEqual({
           phase: Phase.PEAK_TAPER,
           weekNumber: 24,
+          nextPhases: [],
+          nextPhaseStart: null,
+          nextPhase: null,
         });
       });
     });
@@ -1195,6 +1211,7 @@ describe("Planning Router", () => {
         const mockDb = {
           trainingPlan: {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
+            findMany: jest.fn().mockResolvedValue([]),
           },
         };
 
