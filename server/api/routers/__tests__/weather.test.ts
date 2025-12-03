@@ -277,32 +277,7 @@ describe("Weather Router", () => {
     });
 
     describe("error handling", () => {
-      it("throws UNAUTHORIZED for invalid API key", async () => {
-        mockFetchCurrentWeather.mockRejectedValue(
-          new WeatherAPIError("Weather API key invalid", 401)
-        );
-
-        const mockDb = {
-          userSettings: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-          weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-        };
-
-        const caller = createCaller({
-          db: mockDb as never,
-          headers: new Headers(),
-          session: null,
-        });
-
-        await expect(caller.weather.getCurrentWeather({})).rejects.toThrow(TRPCError);
-        await expect(caller.weather.getCurrentWeather({})).rejects.toMatchObject({
-          code: "UNAUTHORIZED",
-          message: "Weather API key invalid",
-        });
-      });
+      // Note: API key tests removed since Open-Meteo doesn't require authentication
 
       it("throws BAD_REQUEST for location not found", async () => {
         mockFetchCurrentWeather.mockRejectedValue(new WeatherAPIError("Location not found", 400));
@@ -768,30 +743,7 @@ describe("Weather Router", () => {
     });
 
     describe("error handling", () => {
-      it("throws UNAUTHORIZED for invalid API key", async () => {
-        mockFetchForecast.mockRejectedValue(new WeatherAPIError("Weather API key invalid", 401));
-
-        const mockDb = {
-          userSettings: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-          weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-        };
-
-        const caller = createCaller({
-          db: mockDb as never,
-          headers: new Headers(),
-          session: null,
-        });
-
-        await expect(caller.weather.getForecast({})).rejects.toThrow(TRPCError);
-        await expect(caller.weather.getForecast({})).rejects.toMatchObject({
-          code: "UNAUTHORIZED",
-          message: "Weather API key invalid",
-        });
-      });
+      // Note: API key tests removed since Open-Meteo doesn't require authentication
 
       it("throws BAD_REQUEST for location not found", async () => {
         mockFetchForecast.mockRejectedValue(new WeatherAPIError("Location not found", 400));
