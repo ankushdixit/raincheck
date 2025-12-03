@@ -14,11 +14,11 @@ interface SummaryCardProps {
  */
 function SummaryCard({ label, value, icon }: SummaryCardProps) {
   return (
-    <div className="bg-[#1a2e1a] border border-[#2a4a2a] rounded-lg p-4 flex items-center gap-4">
+    <div className="bg-forest-dark border border-forest-medium rounded-lg p-4 flex items-center gap-4">
       <div className="text-amber-500">{icon}</div>
       <div>
-        <p className="text-gray-400 text-sm">{label}</p>
-        <p className="text-[#f5f5f5] text-xl font-bold">{value}</p>
+        <p className="text-text-secondary text-sm">{label}</p>
+        <p className="text-text-primary text-xl font-bold">{value}</p>
       </div>
     </div>
   );
@@ -31,12 +31,15 @@ function SummaryCardsSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="summary-skeleton">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="bg-[#1a2e1a] border border-[#2a4a2a] rounded-lg p-4 animate-pulse">
+        <div
+          key={i}
+          className="bg-forest-dark border border-forest-medium rounded-lg p-4 animate-pulse"
+        >
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 bg-green-900/30 rounded" />
+            <div className="w-8 h-8 bg-forest-deep/50 rounded" />
             <div className="flex-1">
-              <div className="h-4 bg-green-900/30 rounded w-16 mb-2" />
-              <div className="h-6 bg-green-900/30 rounded w-20" />
+              <div className="h-4 bg-forest-deep/50 rounded w-16 mb-2" />
+              <div className="h-6 bg-forest-deep/50 rounded w-20" />
             </div>
           </div>
         </div>
@@ -51,10 +54,10 @@ function SummaryCardsSkeleton() {
 function EmptyState() {
   return (
     <div
-      className="bg-[#1a2e1a] border border-[#2a4a2a] rounded-lg p-6 text-center"
+      className="bg-forest-dark border border-forest-medium rounded-lg p-6 text-center"
       data-testid="summary-empty-state"
     >
-      <p className="text-gray-400">
+      <p className="text-text-secondary">
         No training data available yet. Complete some runs to see your stats!
       </p>
     </div>
@@ -85,10 +88,10 @@ export function StatsSummaryCard() {
   if (error) {
     return (
       <div
-        className="bg-red-900/20 border border-red-800/30 rounded-lg p-4"
+        className="bg-error/20 border border-error/30 rounded-lg p-4"
         data-testid="summary-error-state"
       >
-        <p className="text-red-400 text-sm">Failed to load summary statistics</p>
+        <p className="text-error text-sm">Failed to load summary statistics</p>
       </div>
     );
   }

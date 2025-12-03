@@ -105,7 +105,8 @@ describe("WeatherForecast", () => {
       render(<WeatherForecast />);
 
       const cards = screen.getAllByTestId("weather-day-card");
-      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
+      // Background is now set via Tailwind class
+      expect(cards[0]).toHaveClass("bg-forest-deep/75");
     });
 
     it("displays temperatures for all days", () => {
@@ -133,16 +134,16 @@ describe("WeatherForecast", () => {
 
       const cards = screen.getAllByTestId("weather-day-card");
 
-      // Initially first card is selected
-      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
-      expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+      // Initially first card is selected - backgrounds set via Tailwind classes
+      expect(cards[0]).toHaveClass("bg-forest-deep/75");
+      expect(cards[1]).toHaveClass("bg-forest-deep/50");
 
       // Click second card
       fireEvent.click(cards[1]!);
 
       // Now second card should be selected
-      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
-      expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
+      expect(cards[0]).toHaveClass("bg-forest-deep/50");
+      expect(cards[1]).toHaveClass("bg-forest-deep/75");
     });
 
     it("only one card can be selected at a time", () => {
@@ -153,11 +154,11 @@ describe("WeatherForecast", () => {
       // Click third card
       fireEvent.click(cards[2]!);
 
-      // Third card should be selected
-      expect(cards[2]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
+      // Third card should be selected - backgrounds set via Tailwind classes
+      expect(cards[2]).toHaveClass("bg-forest-deep/75");
       // Others should not be selected
-      expect(cards[0]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
-      expect(cards[1]).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+      expect(cards[0]).toHaveClass("bg-forest-deep/50");
+      expect(cards[1]).toHaveClass("bg-forest-deep/50");
     });
 
     it("calls onDaySelect callback when card is clicked", () => {

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export interface LoginFormProps {
   /** URL to redirect to after successful login */
@@ -67,31 +68,18 @@ export function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         disabled={isLoading}
-        className="box-border w-full text-text-primary placeholder-text-primary/40 disabled:opacity-50 transition-all"
-        style={{
-          backgroundColor: "rgba(255, 255, 255, 0.08)",
-          padding: "14px 16px",
-          borderRadius: "8px",
-          border: "2px solid transparent",
-          outline: "none",
-          caretColor: "white",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = "rgba(255, 255, 255, 0.4)")}
-        onBlur={(e) => (e.target.style.borderColor = "transparent")}
+        className={cn(
+          "box-border w-full text-text-primary placeholder:text-text-primary/40",
+          "disabled:opacity-50 transition-all",
+          "bg-white/[0.08] py-3.5 px-4 rounded-lg",
+          "border-2 border-transparent outline-none caret-white",
+          "focus:border-white/40"
+        )}
         placeholder="Enter password"
       />
 
       {error && (
-        <div
-          role="alert"
-          className="text-sm text-red-200"
-          style={{
-            backgroundColor: "rgba(239, 68, 68, 0.15)",
-            padding: "14px 16px",
-            borderRadius: "8px",
-            marginTop: "16px",
-          }}
-        >
+        <div role="alert" className="text-sm text-red-200 bg-error/15 py-3.5 px-4 rounded-lg mt-4">
           {error}
         </div>
       )}
@@ -99,26 +87,20 @@ export function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="box-border w-full font-semibold text-white transition-all hover:opacity-90 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        style={{
-          backgroundColor: "rgba(5, 150, 105, 0.8)",
-          padding: "14px 16px",
-          borderRadius: "8px",
-          border: "none",
-          marginTop: "16px",
-        }}
+        className={cn(
+          "box-border w-full font-semibold text-white transition-all",
+          "hover:opacity-90 focus:outline-none",
+          "disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+          "bg-emerald-600/80 py-3.5 px-4 rounded-lg border-none mt-4"
+        )}
       >
         {isLoading ? "Signing in..." : "Sign in"}
       </button>
 
-      <div className="text-center" style={{ marginTop: "16px" }}>
+      <div className="text-center mt-4">
         <Link
           href="/"
-          style={{
-            color: "rgba(245, 245, 245, 0.6)",
-            fontSize: "14px",
-            textDecoration: "none",
-          }}
+          className="text-text-primary/60 text-sm no-underline hover:text-text-primary transition-colors"
         >
           Back to home
         </Link>

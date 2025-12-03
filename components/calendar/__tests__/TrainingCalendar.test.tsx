@@ -550,7 +550,8 @@ describe("TrainingCalendar", () => {
       render(<TrainingCalendar />);
 
       const calendar = screen.getByTestId("training-calendar");
-      expect(calendar).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+      // Background is now set via Tailwind class bg-forest-deep/50
+      expect(calendar).toHaveClass("bg-forest-deep/50");
     });
   });
 
@@ -1240,7 +1241,8 @@ describe("TrainingCalendarSkeleton", () => {
     render(<TrainingCalendarSkeleton />);
 
     const skeleton = screen.getByTestId("calendar-skeleton");
-    expect(skeleton).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+    // Background is now set via Tailwind class bg-forest-deep/50
+    expect(skeleton).toHaveClass("bg-forest-deep/50");
   });
 
   it("displays day headers", () => {

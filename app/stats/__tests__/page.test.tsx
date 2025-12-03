@@ -150,7 +150,8 @@ describe("StatsPage", () => {
 
       const main = screen.getByRole("main");
       expect(main).toHaveClass("min-h-screen");
-      expect(main).toHaveClass("bg-[#0a0f0a]");
+      // Background is now set via Tailwind theme class
+      expect(main).toHaveClass("bg-forest-deep");
     });
 
     it("header is sticky", () => {

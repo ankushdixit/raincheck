@@ -25,7 +25,7 @@ function CircularProgress({ percentage, size = 120, strokeWidth = 8 }: CircularP
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#2a4a2a"
+          className="stroke-forest-medium"
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -34,15 +34,14 @@ function CircularProgress({ percentage, size = 120, strokeWidth = 8 }: CircularP
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#ffa726"
+          className="stroke-amber-500 transition-all duration-500 ease-out"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="transition-all duration-500 ease-out"
         />
       </svg>
-      <span className="absolute text-2xl font-bold text-[#f5f5f5]">{percentage}%</span>
+      <span className="absolute text-2xl font-bold text-text-primary">{percentage}%</span>
     </div>
   );
 }
@@ -53,13 +52,13 @@ function CircularProgress({ percentage, size = 120, strokeWidth = 8 }: CircularP
 function CompletionRateSkeleton() {
   return (
     <div
-      className="bg-[#1a2e1a] border border-[#2a4a2a] rounded-lg p-6 animate-pulse"
+      className="bg-forest-dark border border-forest-medium rounded-lg p-6 animate-pulse"
       data-testid="completion-skeleton"
     >
       <div className="flex flex-col items-center gap-4">
-        <div className="w-[120px] h-[120px] bg-green-900/30 rounded-full" />
-        <div className="h-6 bg-green-900/30 rounded w-32" />
-        <div className="h-4 bg-green-900/30 rounded w-24" />
+        <div className="w-[120px] h-[120px] bg-forest-deep/50 rounded-full" />
+        <div className="h-6 bg-forest-deep/50 rounded w-32" />
+        <div className="h-4 bg-forest-deep/50 rounded w-24" />
       </div>
     </div>
   );
@@ -71,10 +70,10 @@ function CompletionRateSkeleton() {
 function EmptyState() {
   return (
     <div
-      className="bg-[#1a2e1a] border border-[#2a4a2a] rounded-lg p-6 text-center"
+      className="bg-forest-dark border border-forest-medium rounded-lg p-6 text-center"
       data-testid="completion-empty-state"
     >
-      <p className="text-gray-400">No runs scheduled yet. Start planning your training!</p>
+      <p className="text-text-secondary">No runs scheduled yet. Start planning your training!</p>
     </div>
   );
 }
@@ -95,10 +94,10 @@ export function CompletionRateCard() {
   if (error) {
     return (
       <div
-        className="bg-red-900/20 border border-red-800/30 rounded-lg p-6"
+        className="bg-error/20 border border-error/30 rounded-lg p-6"
         data-testid="completion-error-state"
       >
-        <p className="text-red-400 text-sm text-center">Failed to load completion rate</p>
+        <p className="text-error text-sm text-center">Failed to load completion rate</p>
       </div>
     );
   }
@@ -109,14 +108,14 @@ export function CompletionRateCard() {
 
   return (
     <div
-      className="bg-[#1a2e1a] border border-[#2a4a2a] rounded-lg p-6"
+      className="bg-forest-dark border border-forest-medium rounded-lg p-6"
       data-testid="completion-rate-card"
     >
       <div className="flex flex-col items-center gap-4">
         <CircularProgress percentage={data.rate} />
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-[#f5f5f5]">Completion Rate</h3>
-          <p className="text-gray-400 text-sm">
+          <h3 className="text-lg font-semibold text-text-primary">Completion Rate</h3>
+          <p className="text-text-secondary text-sm">
             {data.completed} of {data.total} runs completed
           </p>
         </div>

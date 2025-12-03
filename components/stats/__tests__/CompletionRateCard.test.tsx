@@ -152,10 +152,10 @@ describe("CompletionRateCard", () => {
       const { container } = render(<CompletionRateCard />);
 
       const circles = container.querySelectorAll("circle");
-      // Background circle
-      expect(circles[0]).toHaveAttribute("stroke", "#2a4a2a");
-      // Progress circle
-      expect(circles[1]).toHaveAttribute("stroke", "#ffa726");
+      // Background circle - now uses Tailwind class
+      expect(circles[0]).toHaveClass("stroke-forest-medium");
+      // Progress circle - now uses Tailwind class
+      expect(circles[1]).toHaveClass("stroke-amber-500");
     });
 
     it("progress circle has transition class", () => {

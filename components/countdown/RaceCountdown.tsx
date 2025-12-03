@@ -251,8 +251,7 @@ export function RaceCountdown() {
 
         {/* Days countdown number with subtle glow animation */}
         <p
-          className="text-6xl sm:text-7xl font-bold text-amber-500 animate-pulse"
-          style={{ animationDuration: "3s" }}
+          className="text-6xl sm:text-7xl font-bold text-amber-500 animate-pulse [animation-duration:3s]"
           data-testid="countdown-days"
         >
           {daysUntil === 0 ? "🏃" : displayDays}

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Comprehensive design system with Tailwind CSS v4 theme (`@theme` directive in globals.css)
+- Design tokens for colors (forest palette, surface, text, state, border), border radius, and shadows
+- Style utility file (`lib/styles.ts`) with common component style patterns
+- Autoprefixer for vendor prefixing support
 - Mobile Performance Optimization for weather effects
 - `useDeviceCapabilities` hook for detecting mobile devices, reduced motion preference, and hardware concurrency
 - `useFPSMonitor` hook for real-time frame rate monitoring with configurable thresholds
@@ -278,11 +282,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Migrated Tailwind CSS configuration from v3 format (`tailwind.config.ts`) to v4 CSS-based `@theme` directive
+- Refactored inline styles to Tailwind classes across 12+ component files
+- Replaced hardcoded hex values with semantic theme classes in stats page and components
+- Updated tests to use class-based assertions instead of style-based assertions
 - Increased internal rate limit from 50 to 1000 calls/day for paid WeatherAPI plans
 - Updated seed test to handle non-empty WeatherCache table
 
+### Removed
+
+- `tailwind.config.ts` file (migrated to CSS-based configuration)
+
 ### Fixed
 
+- Tailwind v4 configuration incompatibility causing theme colors not to apply
+- Missing `bg-surface` and `text-text-secondary` classes (now properly defined in theme)
 - Seed tests now resilient to user-accepted run suggestions (using minimum counts and date filters)
-
-### Removed

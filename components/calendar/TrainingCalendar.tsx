@@ -134,8 +134,7 @@ export function TrainingCalendarSkeleton() {
 
   return (
     <div
-      className="backdrop-blur-md rounded-lg overflow-hidden"
-      style={{ backgroundColor: "rgba(10,15,10,0.5)" }}
+      className="backdrop-blur-md rounded-lg overflow-hidden bg-forest-deep/50"
       data-testid="calendar-skeleton"
     >
       {/* Month header skeleton */}
@@ -393,8 +392,7 @@ export function TrainingCalendar() {
       onDragCancel={handleDragCancel}
     >
       <div
-        className="backdrop-blur-md rounded-lg overflow-hidden"
-        style={{ backgroundColor: "rgba(10,15,10,0.5)" }}
+        className="backdrop-blur-md rounded-lg overflow-hidden bg-forest-deep/50"
         data-testid="training-calendar"
       >
         {/* Month header with navigation */}
