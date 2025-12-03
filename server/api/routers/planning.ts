@@ -165,7 +165,7 @@ export const planningRouter = createTRPCRouter({
   /**
    * Get the current training phase based on today's date.
    *
-   * @returns Current phase info or null if no training plan exists for today
+   * @returns Current phase info including next two phases with dates, or null if no training plan exists for today
    */
   getCurrentPhase: publicProcedure.query(async ({ ctx }) => {
     const today = new Date();
@@ -182,9 +182,46 @@ export const planningRouter = createTRPCRouter({
       return null;
     }
 
+    // Find all future phases (distinct phases after current plan)
+    const futurePlans = await ctx.db.trainingPlan.findMany({
+      where: {
+        weekStart: { gt: currentPlan.weekEnd },
+      },
+      orderBy: {
+        weekStart: "asc",
+      },
+    });
+
+    // Group by phase to get start/end dates for each phase
+    const phaseMap = new Map<string, { start: Date; end: Date }>();
+    for (const plan of futurePlans) {
+      const existing = phaseMap.get(plan.phase);
+      if (!existing) {
+        phaseMap.set(plan.phase, { start: plan.weekStart, end: plan.weekEnd });
+      } else {
+        // Extend the end date if this week is later
+        if (plan.weekEnd > existing.end) {
+          existing.end = plan.weekEnd;
+        }
+      }
+    }
+
+    // Convert to array and take first two distinct phases
+    const nextPhases = Array.from(phaseMap.entries())
+      .slice(0, 2)
+      .map(([phase, dates]) => ({
+        phase,
+        startDate: dates.start,
+        endDate: dates.end,
+      }));
+
     return {
       phase: currentPlan.phase,
       weekNumber: currentPlan.weekNumber,
+      nextPhases,
+      // Keep legacy fields for backward compatibility
+      nextPhaseStart: nextPhases[0]?.startDate ?? null,
+      nextPhase: nextPhases[0]?.phase ?? null,
     };
   }),
 
@@ -198,14 +235,14 @@ export const planningRouter = createTRPCRouter({
    * 4. Calling the planning algorithm
    * 5. Returning formatted suggestions
    *
-   * @param days - Number of days to plan (1-14, default 7)
+   * @param days - Number of days to plan (1-21, default 7)
    * @param location - Location for weather forecast (defaults to user settings)
    * @returns Array of run suggestions
    */
   generateSuggestions: publicProcedure
     .input(
       z.object({
-        days: z.number().min(1).max(14).default(7),
+        days: z.number().min(1).max(21).default(7),
         location: z.string().optional(),
       })
     )

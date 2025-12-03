@@ -64,9 +64,8 @@ export function calculatePaceProgress(currentPace: string, targetPace: string): 
   // If current pace is already at or faster than target
   if (currentMinutes <= targetMinutes) return 100;
 
-  // Calculate how close to target (assuming starting pace might be ~8:00/km)
-  // We'll use a reasonable upper bound for progress calculation
-  const maxPace = 10; // 10:00/km as starting point
+  // Calculate how close to target (assuming starting pace of 8:00/km)
+  const maxPace = 8; // 8:00/km as starting point
   const range = maxPace - targetMinutes;
   const improvement = maxPace - currentMinutes;
 

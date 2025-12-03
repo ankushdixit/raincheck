@@ -1,1 +1,1 @@
-export { getTrailImage, getTintColor } from "./TrailBackground";
+export { getTrailImage, getTintColor, isNightTime, getNightTint } from "./TrailBackground";

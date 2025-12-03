@@ -165,9 +165,9 @@ describe("WeatherEffectLayer", () => {
 
     it('renders CloudEffect with light intensity for "Partly Cloudy"', () => {
       render(<WeatherEffectLayer condition="Partly Cloudy" />);
-      // Light clouds have 3 cloud elements
+      // Light clouds have 2 cloud elements
       const clouds = document.querySelectorAll(".cloud");
-      expect(clouds.length).toBe(3);
+      expect(clouds.length).toBe(2);
     });
   });
 

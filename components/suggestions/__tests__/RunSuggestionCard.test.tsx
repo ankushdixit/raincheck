@@ -104,8 +104,10 @@ describe("RunSuggestionCard", () => {
       render(<RunSuggestionCard {...props} />);
 
       const badge = screen.getByTestId("score-badge");
-      // Color is now set via Tailwind class
-      expect(badge).toHaveClass("text-success");
+      const card = screen.getByTestId("run-suggestion-card");
+      // Score text uses text-green-400, card bg uses bg-green-500/30
+      expect(badge).toHaveClass("text-green-400");
+      expect(card).toHaveClass("bg-green-500/30");
     });
 
     it("shows yellow color for scores 60-79 (good)", () => {
@@ -115,8 +117,10 @@ describe("RunSuggestionCard", () => {
       render(<RunSuggestionCard {...props} />);
 
       const badge = screen.getByTestId("score-badge");
-      // Color is now set via Tailwind class
-      expect(badge).toHaveClass("text-warning");
+      const card = screen.getByTestId("run-suggestion-card");
+      // Score text uses text-yellow-400, card bg uses bg-yellow-500/30
+      expect(badge).toHaveClass("text-yellow-400");
+      expect(card).toHaveClass("bg-yellow-500/30");
     });
 
     it("shows orange color for scores 40-59 (fair)", () => {
@@ -126,8 +130,10 @@ describe("RunSuggestionCard", () => {
       render(<RunSuggestionCard {...props} />);
 
       const badge = screen.getByTestId("score-badge");
-      // Color is now set via Tailwind class
+      const card = screen.getByTestId("run-suggestion-card");
+      // Score text uses text-orange-400, card bg uses bg-orange-500/30
       expect(badge).toHaveClass("text-orange-400");
+      expect(card).toHaveClass("bg-orange-500/30");
     });
 
     it("shows red color for scores < 40 (poor)", () => {
@@ -137,29 +143,33 @@ describe("RunSuggestionCard", () => {
       render(<RunSuggestionCard {...props} />);
 
       const badge = screen.getByTestId("score-badge");
-      // Color is now set via Tailwind class
-      expect(badge).toHaveClass("text-error");
+      const card = screen.getByTestId("run-suggestion-card");
+      // Score text uses text-red-400, card bg uses bg-red-500/30
+      expect(badge).toHaveClass("text-red-400");
+      expect(card).toHaveClass("bg-red-500/30");
     });
   });
 
-  describe("optimal badge", () => {
-    it("shows OPTIMAL badge when isOptimal is true", () => {
-      const props = {
-        suggestion: createMockSuggestion({ weatherScore: 85, isOptimal: true }),
-      };
-      render(<RunSuggestionCard {...props} />);
+  describe("info icon for reasoning", () => {
+    it("displays info icon for showing reasoning tooltip", () => {
+      render(<RunSuggestionCard {...defaultProps} />);
 
-      expect(screen.getByTestId("optimal-badge")).toBeInTheDocument();
-      expect(screen.getByTestId("optimal-badge")).toHaveTextContent("OPTIMAL");
+      expect(screen.getByTestId("info-icon")).toBeInTheDocument();
     });
 
-    it("does not show OPTIMAL badge when isOptimal is false", () => {
-      const props = {
-        suggestion: createMockSuggestion({ weatherScore: 75, isOptimal: false }),
-      };
-      render(<RunSuggestionCard {...props} />);
+    it("shows tooltip with reasoning on hover", () => {
+      render(<RunSuggestionCard {...defaultProps} />);
 
-      expect(screen.queryByTestId("optimal-badge")).not.toBeInTheDocument();
+      const infoIcon = screen.getByTestId("info-icon");
+
+      // Hover over the icon using fireEvent
+      fireEvent.mouseEnter(infoIcon);
+
+      // Tooltip should appear with the reason text (rendered via portal to document.body)
+      expect(screen.getByTestId("reason-tooltip")).toBeInTheDocument();
+      expect(screen.getByTestId("reason-tooltip")).toHaveTextContent(
+        defaultProps.suggestion.reason
+      );
     });
   });
 
@@ -217,27 +227,27 @@ describe("RunSuggestionCard", () => {
     });
   });
 
-  describe("long run styling", () => {
-    it("has amber border for long runs", () => {
+  describe("card background styling", () => {
+    it("card background color is based on weather score, not run type", () => {
+      // Long run with high score should have green background
+      const props = {
+        suggestion: createMockSuggestion({ runType: "LONG_RUN", weatherScore: 85 }),
+      };
+      render(<RunSuggestionCard {...props} />);
+
+      const card = screen.getByTestId("run-suggestion-card");
+      // Background is determined by score (85 >= 80), not run type
+      expect(card).toHaveClass("bg-green-500/30");
+    });
+
+    it("run type is stored in data attribute", () => {
       const props = {
         suggestion: createMockSuggestion({ runType: "LONG_RUN" }),
       };
       render(<RunSuggestionCard {...props} />);
 
       const card = screen.getByTestId("run-suggestion-card");
-      // Border is now set via Tailwind class
-      expect(card).toHaveClass("border-warning/50");
-    });
-
-    it("has transparent border for non-long runs", () => {
-      const props = {
-        suggestion: createMockSuggestion({ runType: "EASY_RUN" }),
-      };
-      render(<RunSuggestionCard {...props} />);
-
-      const card = screen.getByTestId("run-suggestion-card");
-      // Border is now set via Tailwind class
-      expect(card).toHaveClass("border-transparent");
+      expect(card).toHaveAttribute("data-run-type", "LONG_RUN");
     });
   });
 
@@ -361,7 +371,7 @@ describe("RunSuggestionCard", () => {
       expect(screen.queryByTestId("accept-error")).not.toBeInTheDocument();
     });
 
-    it("has green background when accepted", () => {
+    it("has darker green background when accepted", () => {
       const onAccept = jest.fn();
       render(
         <RunSuggestionCard
@@ -373,38 +383,22 @@ describe("RunSuggestionCard", () => {
       );
 
       const button = screen.getByTestId("accept-button");
-      // Background is now set via Tailwind class
-      expect(button).toHaveClass("bg-green-500/80");
-    });
-  });
-
-  describe("card dimming when accepted", () => {
-    it("dims card to 60% opacity when accepted", () => {
-      const onAccept = jest.fn();
-      render(
-        <RunSuggestionCard
-          {...defaultProps}
-          isAuthenticated={true}
-          onAccept={onAccept}
-          acceptState="success"
-        />
-      );
-
-      const card = screen.getByTestId("run-suggestion-card");
-      // Opacity is now set via Tailwind class
-      expect(card).toHaveClass("opacity-60");
+      // When accepted, button has bg-green-500/60
+      expect(button).toHaveClass("bg-green-500/60");
     });
 
-    it("has full opacity when not accepted", () => {
+    it("has lighter green background when not accepted", () => {
       const onAccept = jest.fn();
       render(<RunSuggestionCard {...defaultProps} isAuthenticated={true} onAccept={onAccept} />);
 
-      const card = screen.getByTestId("run-suggestion-card");
-      // No opacity class when not accepted
-      expect(card).not.toHaveClass("opacity-60");
+      const button = screen.getByTestId("accept-button");
+      // When not accepted, button has bg-green-500/30
+      expect(button).toHaveClass("bg-green-500/30");
     });
+  });
 
-    it("sets data-accepted attribute when accepted", () => {
+  describe("accepted state tracking", () => {
+    it("sets data-accepted attribute to true when accepted", () => {
       const onAccept = jest.fn();
       render(
         <RunSuggestionCard
@@ -417,6 +411,14 @@ describe("RunSuggestionCard", () => {
 
       const card = screen.getByTestId("run-suggestion-card");
       expect(card).toHaveAttribute("data-accepted", "true");
+    });
+
+    it("sets data-accepted attribute to false when not accepted", () => {
+      const onAccept = jest.fn();
+      render(<RunSuggestionCard {...defaultProps} isAuthenticated={true} onAccept={onAccept} />);
+
+      const card = screen.getByTestId("run-suggestion-card");
+      expect(card).toHaveAttribute("data-accepted", "false");
     });
   });
 
@@ -472,20 +474,12 @@ describe("RunSuggestionCard", () => {
       expect(card).toHaveClass("backdrop-blur-md");
     });
 
-    it("has dark background", () => {
+    it("has score-based background color", () => {
       render(<RunSuggestionCard {...defaultProps} />);
 
       const card = screen.getByTestId("run-suggestion-card");
-      // Background is now set via Tailwind class
-      expect(card).toHaveClass("bg-forest-deep/50");
-    });
-
-    it("has min-width for consistent sizing", () => {
-      render(<RunSuggestionCard {...defaultProps} />);
-
-      const card = screen.getByTestId("run-suggestion-card");
-      // Min-width is now set via Tailwind class
-      expect(card).toHaveClass("min-w-[130px]");
+      // Background is score-based (75 is yellow range)
+      expect(card).toHaveClass("bg-yellow-500/30");
     });
 
     it("has centered content", () => {
@@ -493,6 +487,13 @@ describe("RunSuggestionCard", () => {
 
       const card = screen.getByTestId("run-suggestion-card");
       expect(card).toHaveClass("items-center");
+    });
+
+    it("has rounded corners", () => {
+      render(<RunSuggestionCard {...defaultProps} />);
+
+      const card = screen.getByTestId("run-suggestion-card");
+      expect(card).toHaveClass("rounded-lg");
     });
   });
 });
@@ -511,19 +512,18 @@ describe("RunSuggestionCardSkeleton", () => {
     expect(skeleton).toHaveClass("animate-pulse");
   });
 
-  it("has matching background color", () => {
+  it("has semi-transparent white background", () => {
     render(<RunSuggestionCardSkeleton />);
 
     const skeleton = screen.getByTestId("run-suggestion-skeleton");
-    // Background is now set via Tailwind class
-    expect(skeleton).toHaveClass("bg-forest-deep/50");
+    // Background uses bg-white/10
+    expect(skeleton).toHaveClass("bg-white/10");
   });
 
-  it("has min-width matching the card", () => {
+  it("has rounded corners matching the card", () => {
     render(<RunSuggestionCardSkeleton />);
 
     const skeleton = screen.getByTestId("run-suggestion-skeleton");
-    // Min-width is now set via Tailwind class
-    expect(skeleton).toHaveClass("min-w-[130px]");
+    expect(skeleton).toHaveClass("rounded-lg");
   });
 });

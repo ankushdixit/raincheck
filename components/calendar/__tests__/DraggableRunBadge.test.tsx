@@ -214,7 +214,7 @@ describe("DraggableRunBadge", () => {
       expect(badge).toHaveClass("touch-none");
     });
 
-    it("checkmark icon is aria-hidden", () => {
+    it("checkmark icon SVG is aria-hidden", () => {
       const run = createMockRun({ completed: true });
 
       render(
@@ -224,7 +224,8 @@ describe("DraggableRunBadge", () => {
       );
 
       const checkmark = screen.getByTestId("checkmark-icon");
-      expect(checkmark).toHaveAttribute("aria-hidden", "true");
+      const svg = checkmark.querySelector("svg");
+      expect(svg).toHaveAttribute("aria-hidden", "true");
     });
   });
 });

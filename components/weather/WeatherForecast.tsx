@@ -11,7 +11,7 @@ import { WeatherDayCard } from "./WeatherDayCard";
 function ForecastSkeleton() {
   return (
     <div
-      className="flex gap-4 overflow-x-auto py-2 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
+      className="flex gap-4 overflow-x-auto md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
       data-testid="forecast-skeleton"
     >
       {Array.from({ length: 7 }).map((_, index) => (
@@ -78,18 +78,28 @@ function ForecastEmpty() {
 }
 
 interface WeatherForecastProps {
-  /** Callback when a day is selected, receives the weather data for that day */
+  /** Callback when a day is selected, receives the weather data and index for that day */
   // eslint-disable-next-line no-unused-vars
-  onDaySelect?: (day: { condition: string; datetime: Date }) => void;
+  onDaySelect?: (day: { condition: string; datetime: Date }, index: number) => void;
+  /** Externally controlled selection index (null = no selection highlight) */
+  selectedIndex?: number | null;
 }
 
 /**
  * Weather forecast component displaying 7-day forecast
  * Grid layout on desktop, horizontal scroll on mobile
- * Manages selection state and fetches data via tRPC
+ * Supports both controlled and uncontrolled selection
  */
-export function WeatherForecast({ onDaySelect }: WeatherForecastProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+export function WeatherForecast({
+  onDaySelect,
+  selectedIndex: controlledIndex,
+}: WeatherForecastProps) {
+  // Internal state for uncontrolled mode
+  const [internalIndex, setInternalIndex] = useState<number | null>(null);
+
+  // Use controlled index if provided, otherwise use internal state
+  const isControlled = controlledIndex !== undefined;
+  const selectedIndex = isControlled ? controlledIndex : internalIndex;
 
   const {
     data: forecast,
@@ -100,18 +110,24 @@ export function WeatherForecast({ onDaySelect }: WeatherForecastProps) {
   } = api.weather.getForecast.useQuery({ days: 7 });
 
   const handleSelect = (index: number) => {
-    setSelectedIndex(index);
+    if (!isControlled) {
+      setInternalIndex(index);
+    }
     if (forecast && forecast[index]) {
-      onDaySelect?.({ condition: forecast[index].condition, datetime: forecast[index].datetime });
+      onDaySelect?.(
+        { condition: forecast[index].condition, datetime: forecast[index].datetime },
+        index
+      );
     }
   };
 
-  // Notify parent of initial selection when forecast loads
+  // No auto-selection on load - let parent control initial state
   useEffect(() => {
-    if (forecast && forecast.length > 0 && onDaySelect) {
-      onDaySelect({ condition: forecast[0].condition, datetime: forecast[0].datetime });
+    // Only auto-select in uncontrolled mode if nothing selected
+    if (!isControlled && internalIndex === null && forecast && forecast.length > 0) {
+      // Don't auto-select, leave as null so no card is highlighted initially
     }
-  }, [forecast, onDaySelect]);
+  }, [forecast, isControlled, internalIndex]);
 
   // Show skeleton during initial load
   if (isLoading) {
@@ -130,7 +146,7 @@ export function WeatherForecast({ onDaySelect }: WeatherForecastProps) {
 
   return (
     <div
-      className="flex gap-4 overflow-x-auto py-2 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
+      className="flex gap-4 overflow-x-auto md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
       data-testid="weather-forecast"
     >
       {forecast.map((day, index) => (
@@ -141,7 +157,7 @@ export function WeatherForecast({ onDaySelect }: WeatherForecastProps) {
           temperature={day.temperature}
           precipitation={day.precipitation}
           windSpeed={day.windSpeed}
-          isSelected={selectedIndex === index}
+          isSelected={selectedIndex !== null && selectedIndex === index}
           onSelect={() => handleSelect(index)}
         />
       ))}

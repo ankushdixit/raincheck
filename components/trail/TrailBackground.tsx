@@ -20,6 +20,52 @@ const conditionMap: Record<string, TrailConfig> = {
 };
 
 /**
+ * Check if current time is night (4pm - 8am)
+ */
+export function isNightTime(date: Date = new Date()): boolean {
+  const hour = date.getHours();
+  return hour >= 16 || hour < 8;
+}
+
+/**
+ * Get night overlay opacity based on time
+ * - Daytime (8am - 4pm): no overlay
+ * - Evening twilight (4pm - 6pm): gradual darkening 0 to 0.75
+ * - Night (6pm - 6am): full darkness at 0.75
+ * - Morning twilight (6am - 8am): gradual lightening 0.75 to 0
+ */
+export function getNightOverlayOpacity(date: Date = new Date()): number {
+  const hour = date.getHours();
+
+  // Daytime (8am - 4pm) - no overlay
+  if (hour >= 8 && hour < 16) {
+    return 0;
+  }
+
+  // Evening twilight (4pm - 6pm) - gradual darkening
+  if (hour >= 16 && hour < 18) {
+    return (hour - 16) * 0.425; // 0 at 4pm, 0.375 at 5pm, 0.75 at 6pm
+  }
+
+  // Night (6pm - 6am) - full darkness
+  if (hour >= 18 || hour < 6) {
+    return 0.85;
+  }
+
+  // Morning twilight (6am - 8am) - gradual lightening
+  return 0.75 - (hour - 6) * 0.425; // 0.75 at 6am, 0.375 at 7am, 0 at 8am
+}
+
+/**
+ * Get the night tint overlay color (dark blue overlay)
+ */
+export function getNightTint(date: Date = new Date()): string {
+  const opacity = getNightOverlayOpacity(date);
+  if (opacity === 0) return "transparent";
+  return `rgba(15, 23, 42, ${opacity})`; // Dark blue-black
+}
+
+/**
  * Get the trail image filename for a weather condition
  */
 export function getTrailImage(condition: string): string {

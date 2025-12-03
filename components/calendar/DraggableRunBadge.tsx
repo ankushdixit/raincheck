@@ -29,25 +29,29 @@ const RUN_TYPE_LABELS: Record<RunType, string> = {
 };
 
 /**
- * Checkmark icon component for completed runs
+ * Checkmark icon component for completed runs - positioned in top-right corner
  */
 function CheckmarkIcon() {
   return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden="true"
+    <div
+      className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm"
       data-testid="checkmark-icon"
-      className="inline-block ml-1 flex-shrink-0 min-w-3 min-h-3"
     >
-      <path
-        fillRule="evenodd"
-        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-        clipRule="evenodd"
-      />
-    </svg>
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+        className="text-green-600"
+      >
+        <path
+          fillRule="evenodd"
+          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -105,7 +109,7 @@ export function DraggableRunBadge({
 
   // Build class list for selected state
   const classNames = [
-    "rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center touch-none",
+    "relative rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center touch-none",
     "min-h-[44px] min-w-[44px]", // 44px minimum touch target for accessibility
     isSelected ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-105" : "",
     isSelected ? "animate-pulse" : "",
@@ -154,7 +158,7 @@ export function RunBadgeOverlay({ run }: { run: Run }) {
 
   return (
     <div
-      className="rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center shadow-lg"
+      className="relative rounded px-1.5 py-0.5 text-white text-xs font-medium flex items-center shadow-lg"
       style={{ backgroundColor: color }}
       data-testid="run-badge-overlay"
     >

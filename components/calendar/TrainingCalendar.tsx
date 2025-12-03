@@ -158,10 +158,7 @@ export function TrainingCalendarSkeleton() {
       {[0, 1, 2, 3, 4].map((row) => (
         <div key={row} className="grid grid-cols-7">
           {[0, 1, 2, 3, 4, 5, 6].map((col) => (
-            <div
-              key={col}
-              className="min-h-[60px] sm:min-h-[80px] p-1 border-r border-b border-white/10"
-            >
+            <div key={col} className="min-h-[60px] sm:min-h-[80px] p-1">
               <div className="h-3 w-4 bg-white/20 rounded animate-pulse mb-1" />
               {Math.random() > 0.7 && (
                 <div className="h-5 w-full bg-white/10 rounded animate-pulse" />
@@ -170,20 +167,6 @@ export function TrainingCalendarSkeleton() {
           ))}
         </div>
       ))}
-    </div>
-  );
-}
-
-/**
- * Empty state component
- */
-function EmptyState() {
-  return (
-    <div className="text-center py-12" data-testid="calendar-empty">
-      <p className="text-white/60 text-lg">No runs scheduled this month</p>
-      <p className="text-white/40 text-sm mt-2">
-        Accept suggested runs to add them to your calendar
-      </p>
     </div>
   );
 }
@@ -201,6 +184,10 @@ export function TrainingCalendar() {
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
   const { isTouchDevice } = useTouchDevice();
 
+  // Fetch race date from settings
+  const { data: settings } = api.settings.get.useQuery();
+  const raceDate = settings ? new Date(settings.raceDate) : null;
+
   // Track the currently displayed month (defaults to current month)
   const [displayedMonth, setDisplayedMonth] = useState<Date>(() => new Date(today));
 
@@ -210,14 +197,32 @@ export function TrainingCalendar() {
   // Track the selected run for tap-to-move mode
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
+  // Minimum date: September 2025
+  const minDate = new Date(2025, 8, 1); // Month is 0-indexed, so 8 = September
+
+  // Check if we can navigate to previous/next month
+  const canGoPrevious =
+    displayedMonth.getFullYear() > minDate.getFullYear() ||
+    (displayedMonth.getFullYear() === minDate.getFullYear() &&
+      displayedMonth.getMonth() > minDate.getMonth());
+  const canGoNext = raceDate
+    ? displayedMonth.getFullYear() < raceDate.getFullYear() ||
+      (displayedMonth.getFullYear() === raceDate.getFullYear() &&
+        displayedMonth.getMonth() < raceDate.getMonth())
+    : true;
+
   // Navigation handlers
   const goToPreviousMonth = useCallback(() => {
-    setDisplayedMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1));
-  }, []);
+    if (canGoPrevious) {
+      setDisplayedMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1));
+    }
+  }, [canGoPrevious]);
 
   const goToNextMonth = useCallback(() => {
-    setDisplayedMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1));
-  }, []);
+    if (canGoNext) {
+      setDisplayedMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1));
+    }
+  }, [canGoNext]);
 
   const goToToday = useCallback(() => {
     setDisplayedMonth(new Date());
@@ -383,8 +388,6 @@ export function TrainingCalendar() {
     return <TrainingCalendarSkeleton />;
   }
 
-  const hasRuns = runs && runs.length > 0;
-
   return (
     <DndContext
       onDragStart={handleDragStart}
@@ -400,7 +403,12 @@ export function TrainingCalendar() {
           {/* Previous month button - 44px minimum touch target */}
           <button
             onClick={goToPreviousMonth}
-            className="min-w-[44px] min-h-[44px] p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            disabled={!canGoPrevious}
+            className={`min-w-[44px] min-h-[44px] p-2 rounded-lg transition-colors flex items-center justify-center ${
+              canGoPrevious
+                ? "hover:bg-white/10 text-white/70 hover:text-white"
+                : "text-white/20 cursor-not-allowed"
+            }`}
             aria-label="Previous month"
             data-testid="calendar-prev"
           >
@@ -441,7 +449,12 @@ export function TrainingCalendar() {
           {/* Next month button - 44px minimum touch target */}
           <button
             onClick={goToNextMonth}
-            className="min-w-[44px] min-h-[44px] p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            disabled={!canGoNext}
+            className={`min-w-[44px] min-h-[44px] p-2 rounded-lg transition-colors flex items-center justify-center ${
+              canGoNext
+                ? "hover:bg-white/10 text-white/70 hover:text-white"
+                : "text-white/20 cursor-not-allowed"
+            }`}
             aria-label="Next month"
             data-testid="calendar-next"
           >
@@ -464,10 +477,7 @@ export function TrainingCalendar() {
         <MoveInstructions isVisible={selectedRunId !== null} onCancel={handleCancelSelection} />
 
         {/* Day headers */}
-        <div
-          className="grid grid-cols-7 border-b border-white/10"
-          data-testid="calendar-day-headers"
-        >
+        <div className="grid grid-cols-7" data-testid="calendar-day-headers">
           {weekDays.map((day) => (
             <div
               key={day}
@@ -478,25 +488,27 @@ export function TrainingCalendar() {
           ))}
         </div>
 
-        {/* Calendar grid */}
-        {hasRuns ? (
-          <div data-testid="calendar-grid">
-            {grid.map((week, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7">
-                {week.map((cell, dayIndex) => (
+        {/* Calendar grid - always show */}
+        <div data-testid="calendar-grid">
+          {grid.map((week, weekIndex) => (
+            <div key={weekIndex} className="grid grid-cols-7">
+              {week.map((cell, dayIndex) => {
+                const isRaceDay = raceDate ? isSameDay(cell.date, raceDate) : false;
+                return (
                   <DroppableCalendarCell
                     key={dayIndex}
                     cellDate={cell.date}
-                    runs={runs}
+                    runs={runs ?? []}
                     isToday={isSameDay(cell.date, today)}
                     isCurrentMonth={cell.isCurrentMonth}
                     isDragDisabled={isDragDisabled}
                     isDragging={activeRun !== null}
                     isValidTarget={
                       cell.isCurrentMonth &&
+                      !isRaceDay &&
                       isValidDropTarget(
                         cell.date,
-                        runs,
+                        runs ?? [],
                         activeRun?.id ?? selectedRunId ?? undefined
                       )
                     }
@@ -504,34 +516,29 @@ export function TrainingCalendar() {
                     onRunTap={handleRunTap}
                     onCellTap={handleCellTap}
                     isTapToMoveEnabled={isTapToMoveEnabled}
+                    isRaceDay={isRaceDay}
                   />
-                ))}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState />
-        )}
+                );
+              })}
+            </div>
+          ))}
+        </div>
 
-        {/* Legend */}
-        {hasRuns && (
-          <div
-            className="p-2 sm:p-3 border-t border-white/10 flex flex-wrap gap-2 sm:gap-3 justify-center"
-            data-testid="calendar-legend"
-          >
-            {(Object.keys(RUN_TYPE_COLORS) as RunType[]).map((type) => (
-              <div key={type} className="flex items-center gap-1 sm:gap-1.5">
-                <div
-                  className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded"
-                  style={{ backgroundColor: RUN_TYPE_COLORS[type] }}
-                />
-                <span className="text-[10px] sm:text-xs text-white/60">
-                  {RUN_TYPE_LABELS[type]}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Legend - always show */}
+        <div
+          className="p-2 sm:p-3 flex flex-wrap gap-2 sm:gap-3 justify-center"
+          data-testid="calendar-legend"
+        >
+          {(Object.keys(RUN_TYPE_COLORS) as RunType[]).map((type) => (
+            <div key={type} className="flex items-center gap-1 sm:gap-1.5">
+              <div
+                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded"
+                style={{ backgroundColor: RUN_TYPE_COLORS[type] }}
+              />
+              <span className="text-[10px] sm:text-xs text-white/60">{RUN_TYPE_LABELS[type]}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Drag overlay - shows the dragged run badge */}

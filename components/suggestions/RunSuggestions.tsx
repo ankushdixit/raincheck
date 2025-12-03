@@ -55,15 +55,12 @@ function SuggestionsError({ onRetry, isRetrying }: { onRetry: () => void; isRetr
 
 /**
  * Loading skeleton showing multiple placeholder cards.
- * Matches the horizontal scroll layout of WeatherForecast.
+ * Uses 6-column grid to match weather forecast width.
  */
 function SuggestionsSkeleton() {
   return (
-    <div
-      className="flex gap-4 overflow-x-auto py-2 justify-center"
-      data-testid="suggestions-skeleton"
-    >
-      {Array.from({ length: 3 }).map((_, index) => (
+    <div className="grid grid-cols-6 gap-3" data-testid="suggestions-skeleton">
+      {Array.from({ length: 6 }).map((_, index) => (
         <RunSuggestionCardSkeleton key={index} />
       ))}
     </div>
@@ -131,7 +128,7 @@ export function RunSuggestions({ isAuthenticated = false }: RunSuggestionsProps)
     isError,
     refetch,
     isFetching,
-  } = api.planning.generateSuggestions.useQuery({ days: 14 });
+  } = api.planning.generateSuggestions.useQuery({ days: 21 });
 
   // Fetch existing scheduled runs to check which suggestions are already accepted
   const { data: existingRuns } = api.runs.getAll.useQuery({ completed: false });
@@ -229,16 +226,26 @@ export function RunSuggestions({ isAuthenticated = false }: RunSuggestionsProps)
     return <NoSuggestionsState />;
   }
 
-  // Sort suggestions by date
-  const sortedSuggestions = [...suggestions].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // Filter out today's suggestions, sort by date, and take first 6
+  // Use date string comparison (YYYY-MM-DD) to avoid timezone issues
+  const today = new Date();
+  const todayString = today.toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+  const sortedSuggestions = [...suggestions]
+    .filter((s) => {
+      const suggestionDateString = new Date(s.date).toISOString().split("T")[0];
+      return suggestionDateString > todayString;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 6);
+
+  // Show empty state if no future suggestions
+  if (sortedSuggestions.length === 0) {
+    return <NoSuggestionsState />;
+  }
 
   return (
-    <div
-      className="flex gap-4 overflow-x-auto py-2 justify-center flex-wrap"
-      data-testid="run-suggestions"
-    >
+    <div className="grid grid-cols-6 gap-3" data-testid="run-suggestions">
       {sortedSuggestions.map((suggestion) => {
         const suggestionDate = new Date(suggestion.date);
         const dateKey = suggestionDate.toISOString();

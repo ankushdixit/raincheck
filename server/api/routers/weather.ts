@@ -165,7 +165,7 @@ export const weatherRouter = createTRPCRouter({
     .input(
       z.object({
         location: z.string().optional(),
-        days: z.number().min(1).max(14).default(7),
+        days: z.number().min(1).max(21).default(7),
       })
     )
     .query(async ({ ctx, input }): Promise<WeatherData[]> => {

@@ -45,11 +45,11 @@ export function WeatherDayCard({
     <button
       onClick={onSelect}
       className={cn(
-        "flex flex-col items-center backdrop-blur-md border-2 shadow-none transition-all duration-200 ease-out focus:outline-none",
+        "flex flex-col items-center backdrop-blur-md shadow-none transition-all duration-200 ease-out focus:outline-none",
         "min-w-[130px] py-5 px-4 rounded-lg mx-1",
         isSelected
-          ? "bg-forest-deep/75 border-transparent shadow-[inset_0_0_0_2px_rgba(255,255,255,0.4)]"
-          : "bg-forest-deep/50 border-transparent hover:bg-forest-deep/65 hover:border-white/20"
+          ? "bg-forest-deep/75 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.4)]"
+          : "bg-forest-deep/50 hover:bg-forest-deep/65"
       )}
       data-testid="weather-day-card"
       aria-pressed={isSelected}

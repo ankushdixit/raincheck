@@ -167,7 +167,6 @@ describe("WeatherDayCard", () => {
       const card = screen.getByTestId("weather-day-card");
       // Hover effects are now handled via Tailwind hover: variants
       expect(card).toHaveClass("hover:bg-forest-deep/65");
-      expect(card).toHaveClass("hover:border-white/20");
     });
 
     it("has base background class that persists after hover", () => {
@@ -226,12 +225,12 @@ describe("WeatherDayCard", () => {
       expect(card).toHaveClass("py-5", "px-4");
     });
 
-    it("has transparent border for hover effect", () => {
-      render(<WeatherDayCard {...defaultProps} />);
+    it("uses shadow inset for selected state", () => {
+      render(<WeatherDayCard {...defaultProps} isSelected={true} />);
 
       const card = screen.getByTestId("weather-day-card");
-      // Border is now set via Tailwind class border-2 border-transparent
-      expect(card).toHaveClass("border-2");
+      // Selected state uses shadow inset instead of border
+      expect(card).toHaveClass("shadow-[inset_0_0_0_2px_rgba(255,255,255,0.4)]");
     });
   });
 

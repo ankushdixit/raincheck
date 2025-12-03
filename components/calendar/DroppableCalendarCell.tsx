@@ -23,6 +23,8 @@ export interface DroppableCalendarCellProps {
   onCellTap?: (_date: Date) => void;
   /** Whether tap-to-move mode is enabled */
   isTapToMoveEnabled?: boolean;
+  /** Whether this is the race day */
+  isRaceDay?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export function DroppableCalendarCell({
   onRunTap,
   onCellTap,
   isTapToMoveEnabled = false,
+  isRaceDay = false,
 }: DroppableCalendarCellProps) {
   const dateKey = formatDateKey(cellDate);
   const { setNodeRef, isOver, active } = useDroppable({
@@ -71,22 +74,24 @@ export function DroppableCalendarCell({
   const cellClasses = [
     "min-h-[60px] sm:min-h-[80px]", // Responsive height
     "p-1 sm:p-1.5", // Responsive padding
-    "border-r border-b border-white/10",
     "transition-colors duration-150", // Smooth transition for highlight
-    isToday && isCurrentMonth ? "bg-white/10" : "",
+    // Race day styling (gold background)
+    isRaceDay && isCurrentMonth ? "bg-amber-500/30 ring-2 ring-amber-400/50 ring-inset" : "",
+    // Today styling (only if not race day)
+    isToday && isCurrentMonth && !isRaceDay ? "bg-white/10" : "",
     !isCurrentMonth ? "bg-white/[0.02]" : "",
     // Valid target hover styling (green highlight) - for drag-drop
-    isOver && active !== null && isActuallyValid
+    isOver && active !== null && isActuallyValid && !isRaceDay
       ? "bg-green-500/20 ring-2 ring-green-400/50 ring-inset"
       : "",
     // Invalid target hover styling (red highlight) - for drag-drop
     isOver && active !== null && !isActuallyValid
       ? "bg-red-500/10 ring-2 ring-red-400/30 ring-inset"
       : "",
-    // During drag, show invalid targets as dimmed
+    // During drag, show invalid targets as dimmed (including race day)
     isDragging && !isActuallyValid && !isOver ? "opacity-50" : "",
-    // Tap-to-move mode: highlight valid targets when run is selected
-    isInMoveMode && isActuallyValid && isCurrentMonth && !isDragging
+    // Tap-to-move mode: highlight valid targets when run is selected (not race day)
+    isInMoveMode && isActuallyValid && isCurrentMonth && !isDragging && !isRaceDay
       ? "bg-green-500/10 cursor-pointer"
       : "",
     // Tap-to-move mode: dim invalid targets when run is selected
@@ -101,8 +106,15 @@ export function DroppableCalendarCell({
     "flex items-center justify-center sm:justify-start", // Center on mobile, left-align on larger
     "w-6 h-6 sm:w-auto sm:h-auto", // Fixed size on mobile for touch
     "rounded-full sm:rounded-none", // Circular on mobile for better touch
-    isToday && isCurrentMonth ? "text-amber-400 sm:bg-transparent bg-amber-500/20" : "",
-    isCurrentMonth ? "text-white/80" : "text-white/30", // Muted for adjacent months
+    // Race day date styling (gold)
+    isRaceDay && isCurrentMonth ? "text-amber-400 font-bold" : "",
+    // Today styling (only if not race day)
+    isToday && isCurrentMonth && !isRaceDay
+      ? "text-amber-400 sm:bg-transparent bg-amber-500/20"
+      : "",
+    // Normal day styling
+    !isRaceDay && !isToday && isCurrentMonth ? "text-white/80" : "",
+    !isCurrentMonth ? "text-white/30" : "", // Muted for adjacent months
   ]
     .filter(Boolean)
     .join(" ");
@@ -122,14 +134,21 @@ export function DroppableCalendarCell({
       <div className={dateClasses}>{cellDate.getDate()}</div>
       {isCurrentMonth && (
         <div className="space-y-0.5 sm:space-y-1">
+          {/* Race day marker */}
+          {isRaceDay && (
+            <div className="text-[8px] sm:text-[10px] font-bold text-amber-400 bg-amber-500/20 rounded px-1 py-0.5 text-center">
+              RACE
+            </div>
+          )}
+          {/* Scheduled runs */}
           {dayRuns.map((run) => (
             <DraggableRunBadge
               key={run.id}
               run={run}
-              isDragDisabled={isDragDisabled}
+              isDragDisabled={isDragDisabled || isRaceDay}
               isSelected={selectedRunId === run.id}
               onTap={onRunTap}
-              isTapToMoveEnabled={isTapToMoveEnabled}
+              isTapToMoveEnabled={isTapToMoveEnabled && !isRaceDay}
             />
           ))}
         </div>

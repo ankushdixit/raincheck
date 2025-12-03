@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <!-- Option 1: Horizontal layout - Logo left, text right -->
+  <defs>
+    <linearGradient id="dropGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A9EF5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563EB;stop-opacity:1" />
+    </linearGradient>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;400&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Raindrop logo -->
+  <g transform="translate(10, 10) scale(0.8)">
+    <path
+      d="M50 8 C50 8 20 45 20 62 C20 78.5 33.5 92 50 92 C66.5 92 80 78.5 80 62 C80 45 50 8 50 8 Z"
+      fill="url(#dropGradient)"
+    />
+    <path
+      d="M32 58 L43 70 L65 45"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-width="8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <!-- Brand name -->
+  <text x="100" y="52" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="36" font-weight="600" fill="#1E293B">
+    Rain<tspan fill="#2563EB">Check</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="100" y="75" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="400" fill="#64748B" letter-spacing="0.5">
+    Weather-aware Marathon Training
+  </text>
+</svg>

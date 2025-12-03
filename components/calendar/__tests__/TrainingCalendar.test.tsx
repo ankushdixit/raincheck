@@ -7,6 +7,9 @@ const mockUseQuery = jest.fn();
 const mockMutate = jest.fn();
 const mockInvalidate = jest.fn();
 
+// Mock the settings query
+const mockSettingsQuery = jest.fn();
+
 jest.mock("@/lib/api", () => ({
   api: {
     runs: {
@@ -18,6 +21,11 @@ jest.mock("@/lib/api", () => ({
           mutate: mockMutate,
           isLoading: false,
         }),
+      },
+    },
+    settings: {
+      get: {
+        useQuery: () => mockSettingsQuery(),
       },
     },
     useUtils: () => ({
@@ -75,6 +83,13 @@ describe("TrainingCalendar", () => {
       isTouchDevice: false,
       isLoading: false,
     });
+    // Default settings mock with a race date 3 months from now
+    const futureDate = new Date();
+    futureDate.setMonth(futureDate.getMonth() + 3);
+    mockSettingsQuery.mockReturnValue({
+      data: { raceDate: futureDate },
+      isLoading: false,
+    });
   });
 
   describe("loading state", () => {
@@ -101,8 +116,8 @@ describe("TrainingCalendar", () => {
     });
   });
 
-  describe("empty state", () => {
-    it("displays empty state when no runs are scheduled", () => {
+  describe("empty calendar", () => {
+    it("renders calendar grid even when no runs are scheduled", () => {
       mockUseQuery.mockReturnValue({
         data: [],
         isLoading: false,
@@ -110,11 +125,12 @@ describe("TrainingCalendar", () => {
 
       render(<TrainingCalendar />);
 
-      expect(screen.getByTestId("calendar-empty")).toBeInTheDocument();
-      expect(screen.getByText("No runs scheduled this month")).toBeInTheDocument();
+      // Calendar still renders with empty grid
+      expect(screen.getByTestId("training-calendar")).toBeInTheDocument();
+      expect(screen.getByTestId("calendar-grid")).toBeInTheDocument();
     });
 
-    it("displays helpful message in empty state", () => {
+    it("displays month header when no runs are scheduled", () => {
       mockUseQuery.mockReturnValue({
         data: [],
         isLoading: false,
@@ -122,9 +138,8 @@ describe("TrainingCalendar", () => {
 
       render(<TrainingCalendar />);
 
-      expect(
-        screen.getByText("Accept suggested runs to add them to your calendar")
-      ).toBeInTheDocument();
+      const monthHeader = screen.getByTestId("calendar-month");
+      expect(monthHeader).toBeInTheDocument();
     });
   });
 
@@ -317,7 +332,7 @@ describe("TrainingCalendar", () => {
       expect(checkmarks).toHaveLength(2);
     });
 
-    it("checkmark icon has aria-hidden for accessibility", () => {
+    it("checkmark SVG has aria-hidden for accessibility", () => {
       mockUseQuery.mockReturnValue({
         data: [createMockRun({ date: getDateInCurrentMonth(15), completed: true })],
         isLoading: false,
@@ -326,7 +341,8 @@ describe("TrainingCalendar", () => {
       render(<TrainingCalendar />);
 
       const checkmark = screen.getByTestId("checkmark-icon");
-      expect(checkmark).toHaveAttribute("aria-hidden", "true");
+      const svg = checkmark.querySelector("svg");
+      expect(svg).toHaveAttribute("aria-hidden", "true");
     });
 
     it("checkmark renders on all run type backgrounds", () => {
@@ -474,7 +490,7 @@ describe("TrainingCalendar", () => {
       expect(screen.getByTestId("calendar-legend")).toBeInTheDocument();
     });
 
-    it("does not display legend when no runs", () => {
+    it("displays legend even when no runs are scheduled", () => {
       mockUseQuery.mockReturnValue({
         data: [],
         isLoading: false,
@@ -482,7 +498,8 @@ describe("TrainingCalendar", () => {
 
       render(<TrainingCalendar />);
 
-      expect(screen.queryByTestId("calendar-legend")).not.toBeInTheDocument();
+      // Legend is always displayed to help users understand run types
+      expect(screen.getByTestId("calendar-legend")).toBeInTheDocument();
     });
 
     it("legend contains all run type labels", () => {
@@ -678,26 +695,35 @@ describe("TrainingCalendar", () => {
       expect(screen.getByTestId("calendar-month")).toHaveTextContent("January");
     });
 
-    it("navigation wraps correctly from January to December", () => {
+    it("cannot navigate before minimum date (September 2025)", () => {
       render(<TrainingCalendar />);
 
-      const now = new Date();
-      // Navigate to January of current year
-      const monthsToJanuary = now.getMonth();
-      const prevButton = screen.getByTestId("calendar-prev");
+      // Navigate to the minimum date (September 2025)
+      const prevButton = screen.getByTestId("calendar-prev") as HTMLButtonElement;
 
-      for (let i = 0; i < monthsToJanuary; i++) {
-        fireEvent.click(prevButton);
+      // Keep clicking previous until we can't go any further
+      let iterations = 0;
+      const maxIterations = 100; // Safety limit
+
+      while (iterations < maxIterations) {
+        const currentMonth = screen.getByTestId("calendar-month").textContent;
+        if (currentMonth?.includes("September 2025")) {
+          // We've reached the minimum date
+          break;
+        }
+        if (!prevButton.disabled) {
+          fireEvent.click(prevButton);
+        } else {
+          break;
+        }
+        iterations++;
       }
 
-      // Should show January
-      expect(screen.getByTestId("calendar-month")).toHaveTextContent("January");
+      // Should be at September 2025
+      expect(screen.getByTestId("calendar-month")).toHaveTextContent("September 2025");
 
-      // Navigate one more month back
-      fireEvent.click(prevButton);
-
-      // Should show December of previous year
-      expect(screen.getByTestId("calendar-month")).toHaveTextContent("December");
+      // Previous button should be disabled
+      expect(prevButton).toBeDisabled();
     });
 
     it("updates API query when navigating to different month", () => {
