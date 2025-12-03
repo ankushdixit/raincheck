@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
+import { Sparkles, EyeOff, LogOut, Settings } from "lucide-react";
 import { api } from "@/lib/api";
+import { useIsAuthenticated, useEffectsPreference } from "@/hooks";
 
 /**
  * Get current time parts (hours and minutes)
@@ -95,6 +99,89 @@ function WeatherInfo() {
 }
 
 /**
+ * Header action button component for consistent styling
+ */
+function ActionButton({
+  onClick,
+  label,
+  isActive = false,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  isActive?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        flex items-center justify-center
+        w-9 h-9 rounded-lg
+        transition-all duration-200
+        hover:bg-white/15
+        focus:outline-none focus:ring-2 focus:ring-amber-400/50
+        ${isActive ? "text-amber-400 bg-white/10" : "text-white/70"}
+      `}
+      aria-label={label}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Header actions: Effects toggle (for all) + Logout (for authenticated users)
+ */
+function HeaderActions() {
+  const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
+  const { effectsEnabled, toggleEffects, isLoaded: effectsLoaded } = useEffectsPreference();
+
+  // Don't render until preferences are loaded
+  if (!effectsLoaded) {
+    return <div className="w-9 h-9" />; // Placeholder to prevent layout shift
+  }
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/" });
+  };
+
+  return (
+    <div className="flex items-center gap-1" data-testid="header-actions">
+      {/* Effects Toggle */}
+      <ActionButton
+        onClick={toggleEffects}
+        label={effectsEnabled ? "Disable weather effects" : "Enable weather effects"}
+        isActive={effectsEnabled}
+      >
+        {effectsEnabled ? (
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <EyeOff className="h-4 w-4" aria-hidden="true" />
+        )}
+      </ActionButton>
+
+      {/* Settings & Logout - only for authenticated users */}
+      {!authLoading && isAuthenticated && (
+        <>
+          <Link
+            href="/settings"
+            className="flex items-center justify-center w-9 h-9 rounded-lg text-white/70 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+            aria-label="Settings"
+          >
+            <Settings className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <ActionButton onClick={handleLogout} label="Sign out">
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+          </ActionButton>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
  * Header component with logo/tagline on the left and weather info on the right.
  * Part of the new grid-based layout for the homepage.
  */
@@ -111,8 +198,11 @@ export function Header() {
         className="-ml-3.5"
       />
 
-      {/* Right: Weather info */}
-      <WeatherInfo />
+      {/* Right: Actions + Weather info */}
+      <div className="flex items-start gap-4">
+        <HeaderActions />
+        <WeatherInfo />
+      </div>
     </header>
   );
 }

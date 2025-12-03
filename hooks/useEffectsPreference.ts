@@ -61,13 +61,41 @@ export function useEffectsPreference(defaultEnabled: boolean = true): EffectsPre
     setIsLoaded(true);
   }, []);
 
-  // Save preference to localStorage
+  // Listen for storage changes from other components/tabs
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue !== null) {
+        setEffectsEnabledState(e.newValue === "true");
+      }
+    };
+
+    // Also listen for custom events for same-tab updates
+    const handleCustomEvent = (e: CustomEvent<boolean>) => {
+      setEffectsEnabledState(e.detail);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("effects-preference-change", handleCustomEvent as () => void);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("effects-preference-change", handleCustomEvent as () => void);
+    };
+  }, []);
+
+  // Save preference to localStorage and notify other components
   const setEffectsEnabled = useCallback((enabled: boolean) => {
     setEffectsEnabledState(enabled);
 
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(STORAGE_KEY, String(enabled));
+
+        // Dispatch custom event for same-tab synchronization
+        // (storage event only fires for other tabs)
+        window.dispatchEvent(new CustomEvent("effects-preference-change", { detail: enabled }));
       } catch {
         // localStorage not available
       }
