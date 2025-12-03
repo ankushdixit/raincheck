@@ -73,6 +73,9 @@
   "overrides": {
     "glob": "^10.4.5",
     "rimraf": "^5.0.10",
-    "inflight": "npm:@nothing/inflight@^1.0.0"
+    "inflight": "npm:@nothing/inflight@^1.0.0",
+    "next-auth": {
+      "next": "$next"
+    }
   }
 }
