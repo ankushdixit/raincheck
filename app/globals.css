@@ -1,21 +1,55 @@
 /*
  * RainCheck Global Styles
  * Dark forest theme for weather-aware half-marathon training
+ * Tailwind CSS v4 Configuration
  */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background-deep: #0a0f0a;
-  --background-forest: #1a2e1a;
-  --text-primary: #f5f5f5;
+@theme {
+  /* Color Palette - Forest Theme */
+  --color-forest-deep: #0a0f0a;
+  --color-forest-dark: #1a2e1a;
+  --color-forest-medium: #2a4a2a;
+  --color-forest-light: #3a5a3a;
+  --color-forest-accent: #4a7a4a;
+
+  /* Surface Colors */
+  --color-surface: #1a2e1a;
+  --color-surface-base: #0a0f0a;
+  --color-surface-elevated: #1a2e1a;
+  --color-surface-overlay: rgba(26, 46, 26, 0.95);
+
+  /* Text Colors */
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a0a0a0;
+  --color-text-muted: #6b6b6b;
+  --color-text-accent: #7cb87c;
+
+  /* State Colors */
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Border Colors */
+  --color-border-default: rgba(42, 74, 42, 0.5);
+  --color-border-strong: #2a4a2a;
+  --color-border-accent: #4a7a4a;
+
+  /* Border Radius */
+  --radius-card: 0.75rem;
+  --radius-button: 0.5rem;
+  --radius-input: 0.375rem;
+
+  /* Shadows */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
 }
 
 body {
-  color: var(--text-primary);
-  background: var(--background-deep);
+  color: var(--color-text-primary);
+  background: var(--color-forest-deep);
   font-family:
     system-ui,
     -apple-system,

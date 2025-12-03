@@ -40,8 +40,7 @@ function CheckmarkIcon() {
       fill="currentColor"
       aria-hidden="true"
       data-testid="checkmark-icon"
-      className="inline-block ml-1 flex-shrink-0"
-      style={{ minWidth: "12px", minHeight: "12px" }}
+      className="inline-block ml-1 flex-shrink-0 min-w-3 min-h-3"
     >
       <path
         fillRule="evenodd"

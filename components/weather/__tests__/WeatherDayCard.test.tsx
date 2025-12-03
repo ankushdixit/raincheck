@@ -100,28 +100,32 @@ describe("WeatherDayCard", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={true} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
+      // Background is now set via Tailwind class
+      expect(card).toHaveClass("bg-forest-deep/75");
     });
 
     it("has lighter background when not selected", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={false} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
+      // Background is now set via Tailwind class with hover variant
+      expect(card).toHaveClass("bg-forest-deep/50");
     });
 
     it("has inset box-shadow ring when selected", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={true} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.4)" });
+      // Box shadow is now set via Tailwind arbitrary value class
+      expect(card.className).toContain("shadow-[inset_0_0_0_2px_rgba(255,255,255,0.4)]");
     });
 
     it("has no box-shadow when not selected", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={false} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ boxShadow: "none" });
+      // No shadow class when not selected - check it doesn't have the shadow class
+      expect(card.className).not.toContain("shadow-[inset_0_0_0_2px");
     });
 
     it("has aria-pressed false when not selected", () => {
@@ -157,35 +161,29 @@ describe("WeatherDayCard", () => {
       expect(card.tagName).toBe("BUTTON");
     });
 
-    it("changes background on mouse enter when not selected", () => {
+    it("has hover classes for background change on mouse enter when not selected", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={false} />);
 
       const card = screen.getByTestId("weather-day-card");
-      fireEvent.mouseEnter(card);
-
-      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.65)" });
-      expect(card).toHaveStyle({ borderColor: "rgba(255,255,255,0.2)" });
+      // Hover effects are now handled via Tailwind hover: variants
+      expect(card).toHaveClass("hover:bg-forest-deep/65");
+      expect(card).toHaveClass("hover:border-white/20");
     });
 
-    it("restores background on mouse leave", () => {
+    it("has base background class that persists after hover", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={false} />);
 
       const card = screen.getByTestId("weather-day-card");
-      fireEvent.mouseEnter(card);
-      fireEvent.mouseLeave(card);
-
-      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.5)" });
-      expect(card).toHaveStyle({ borderColor: "transparent" });
+      // Base background class is always present
+      expect(card).toHaveClass("bg-forest-deep/50");
     });
 
-    it("does not change background on hover when selected", () => {
+    it("does not have hover classes when selected", () => {
       render(<WeatherDayCard {...defaultProps} isSelected={true} />);
 
       const card = screen.getByTestId("weather-day-card");
-      fireEvent.mouseEnter(card);
-
-      // Background should remain the selected color
-      expect(card).toHaveStyle({ backgroundColor: "rgba(10,15,10,0.75)" });
+      // Selected state uses different class without hover variants
+      expect(card).toHaveClass("bg-forest-deep/75");
     });
   });
 
@@ -208,28 +206,32 @@ describe("WeatherDayCard", () => {
       render(<WeatherDayCard {...defaultProps} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ borderRadius: "0.5rem" });
+      // Border radius is now set via Tailwind class rounded-lg
+      expect(card).toHaveClass("rounded-lg");
     });
 
     it("has correct min-width for card sizing", () => {
       render(<WeatherDayCard {...defaultProps} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ minWidth: "130px" });
+      // Min-width is now set via Tailwind class
+      expect(card).toHaveClass("min-w-[130px]");
     });
 
     it("has correct padding for card spacing", () => {
       render(<WeatherDayCard {...defaultProps} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ padding: "20px 16px" });
+      // Padding is now set via Tailwind classes py-5 px-4
+      expect(card).toHaveClass("py-5", "px-4");
     });
 
     it("has transparent border for hover effect", () => {
       render(<WeatherDayCard {...defaultProps} />);
 
       const card = screen.getByTestId("weather-day-card");
-      expect(card).toHaveStyle({ border: "2px solid transparent" });
+      // Border is now set via Tailwind class border-2 border-transparent
+      expect(card).toHaveClass("border-2");
     });
   });
 

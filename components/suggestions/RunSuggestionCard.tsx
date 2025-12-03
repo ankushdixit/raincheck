@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { RunType } from "@prisma/client";
+import { cn } from "@/lib/utils";
 
 export interface TimeRange {
   start: string;
@@ -34,13 +35,13 @@ export interface RunSuggestionCardProps {
 }
 
 /**
- * Get score color based on value.
+ * Get score color class based on value.
  */
-function getScoreColor(score: number): string {
-  if (score >= 80) return "rgba(74, 222, 128, 1)"; // green-400
-  if (score >= 60) return "rgba(250, 204, 21, 1)"; // yellow-400
-  if (score >= 40) return "rgba(251, 146, 60, 1)"; // orange-400
-  return "rgba(248, 113, 113, 1)"; // red-400
+function getScoreColorClass(score: number): string {
+  if (score >= 80) return "text-success";
+  if (score >= 60) return "text-warning";
+  if (score >= 40) return "text-orange-400";
+  return "text-error";
 }
 
 /**
@@ -49,17 +50,17 @@ function getScoreColor(score: number): string {
 function getRunTypeIcon(runType: RunType): string {
   switch (runType) {
     case "LONG_RUN":
-      return "🏃";
+      return "\u{1F3C3}";
     case "EASY_RUN":
-      return "🚶";
+      return "\u{1F6B6}";
     case "TEMPO_RUN":
-      return "⚡";
+      return "\u26A1";
     case "INTERVAL_RUN":
-      return "⚡";
+      return "\u26A1";
     case "RECOVERY_RUN":
-      return "💚";
+      return "\u{1F49A}";
     default:
-      return "🏃";
+      return "\u{1F3C3}";
   }
 }
 
@@ -110,7 +111,6 @@ export function RunSuggestionCard({
 }: RunSuggestionCardProps) {
   const { date, runType, distance, weatherScore, isOptimal, reason, weather, timeRange } =
     suggestion;
-  const scoreColor = getScoreColor(weatherScore);
   const isLongRun = runType === "LONG_RUN";
   const isAccepted = acceptState === "success";
   const isLoading = acceptState === "loading";
@@ -138,16 +138,13 @@ export function RunSuggestionCard({
 
   return (
     <div
-      className="flex flex-col items-center backdrop-blur-md transition-all duration-200 ease-out relative"
-      style={{
-        minWidth: "130px",
-        padding: "20px 16px",
-        backgroundColor: "rgba(10,15,10,0.5)",
-        borderRadius: "0.5rem",
-        margin: "0 4px",
-        border: isLongRun ? "2px solid rgba(251, 191, 36, 0.5)" : "2px solid transparent",
-        opacity: isAccepted ? 0.6 : 1,
-      }}
+      className={cn(
+        "flex flex-col items-center backdrop-blur-md transition-all duration-200 ease-out relative",
+        "min-w-[130px] py-5 px-4 rounded-lg mx-1",
+        "bg-forest-deep/50 border-2",
+        isLongRun ? "border-warning/50" : "border-transparent",
+        isAccepted && "opacity-60"
+      )}
       data-testid="run-suggestion-card"
       data-run-type={runType}
       data-accepted={isAccepted}
@@ -155,14 +152,7 @@ export function RunSuggestionCard({
       {/* Info icon for reasoning tooltip - positioned in top right corner */}
       <button
         ref={buttonRef}
-        className="absolute w-4 h-4 rounded-full flex items-center justify-center transition-colors"
-        style={{
-          top: "6px",
-          right: "6px",
-          backgroundColor: "rgba(255,255,255,0.15)",
-          color: "rgba(255,255,255,0.7)",
-          fontSize: "10px",
-        }}
+        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center transition-colors bg-white/15 text-white/70 text-[10px]"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         onFocus={() => setShowTooltip(true)}
@@ -178,14 +168,10 @@ export function RunSuggestionCard({
         showTooltip &&
         createPortal(
           <div
-            className="fixed z-50 shadow-xl backdrop-blur-md pointer-events-none"
+            className="fixed z-50 shadow-xl backdrop-blur-md pointer-events-none w-[280px] p-4 bg-forest-dark/95 rounded-xl"
             style={{
               top: tooltipPosition.top,
               left: tooltipPosition.left,
-              width: "280px",
-              padding: "16px 18px",
-              backgroundColor: "rgba(20, 30, 20, 0.95)",
-              borderRadius: "12px",
             }}
             data-testid="reason-tooltip"
           >
@@ -195,31 +181,20 @@ export function RunSuggestionCard({
         )}
 
       {/* Day name */}
-      <span style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>
-        {getDayName(date)}
-      </span>
+      <span className="text-white text-sm font-semibold">{getDayName(date)}</span>
 
       {/* Date */}
-      <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", marginBottom: "4px" }}>
-        {getShortDate(date)}
-      </span>
+      <span className="text-white/60 text-xs mb-1">{getShortDate(date)}</span>
 
       {/* Time range */}
       {timeRange && (
-        <span
-          style={{
-            color: "rgba(255,255,255,0.5)",
-            fontSize: "0.625rem",
-            marginBottom: "4px",
-          }}
-          data-testid="time-range"
-        >
+        <span className="text-white/50 text-[10px] mb-1" data-testid="time-range">
           {timeRange.start} - {timeRange.end}
         </span>
       )}
 
       {/* Run type icon */}
-      <div style={{ margin: "6px 0" }}>
+      <div className="my-1.5">
         <span
           className="text-3xl"
           role="img"
@@ -231,30 +206,20 @@ export function RunSuggestionCard({
       </div>
 
       {/* Weather Score - displayed like temperature */}
-      <div className="flex items-baseline gap-1" style={{ marginBottom: "4px" }}>
+      <div className="flex items-baseline gap-1 mb-1">
         <span
-          style={{
-            color: scoreColor,
-            fontSize: "1.5rem",
-            fontWeight: 700,
-          }}
+          className={cn("text-2xl font-bold", getScoreColorClass(weatherScore))}
           data-testid="score-badge"
         >
           {weatherScore}
         </span>
-        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem" }}>/100</span>
+        <span className="text-white/60 text-xs">/100</span>
       </div>
 
       {/* Optimal badge */}
       {isOptimal && (
         <span
-          style={{
-            color: "rgba(74, 222, 128, 1)",
-            fontSize: "0.625rem",
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-            marginBottom: "4px",
-          }}
+          className="text-success text-[10px] font-semibold tracking-wide mb-1"
           data-testid="optimal-badge"
         >
           OPTIMAL
@@ -262,37 +227,21 @@ export function RunSuggestionCard({
       )}
 
       {/* Run type and distance */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          color: "rgba(255,255,255,0.8)",
-          fontSize: "0.75rem",
-          marginTop: "4px",
-        }}
-      >
+      <div className="flex items-center gap-1.5 text-white/80 text-xs mt-1">
         <span data-testid="run-type-label">{getRunTypeLabel(runType)}</span>
-        <span style={{ color: "rgba(255,255,255,0.4)" }}>•</span>
+        <span className="text-white/40">&bull;</span>
         <span data-testid="distance">{distance} km</span>
       </div>
 
       {/* Weather stats row */}
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          color: "rgba(255,255,255,0.8)",
-          fontSize: "0.75rem",
-          marginTop: "8px",
-        }}
+        className="flex items-center gap-3 text-white/80 text-xs mt-2"
         data-testid="weather-summary"
       >
-        <span>{Math.round(weather.temperature)}°C</span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <span>{Math.round(weather.temperature)}&deg;C</span>
+        <span className="flex items-center gap-1">
           <span role="img" aria-label="Precipitation">
-            💧
+            &#x1F4A7;
           </span>
           {Math.round(weather.precipitation)}%
         </span>
@@ -300,59 +249,30 @@ export function RunSuggestionCard({
 
       {/* Accept Button (Phase 5, authenticated only) */}
       {isAuthenticated && onAccept && (
-        <div
-          style={{
-            marginTop: "12px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
+        <div className="mt-3 flex flex-col items-center gap-1">
           <button
             onClick={onAccept}
             disabled={isLoading || isAccepted}
-            style={{
-              padding: "6px 12px",
-              backgroundColor: isAccepted
-                ? "rgba(34, 197, 94, 0.8)" // green-500
-                : "rgba(217, 119, 6, 0.8)", // amber-600
-              color: "white",
-              borderRadius: "0.375rem",
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              border: "none",
-              cursor: isLoading || isAccepted ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.7 : 1,
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
+            className={cn(
+              "px-3 py-1.5 text-white rounded-md text-xs font-medium border-none flex items-center gap-1.5",
+              isAccepted
+                ? "bg-green-500/80 cursor-not-allowed"
+                : "bg-amber-600/80 cursor-pointer hover:bg-amber-500/80",
+              isLoading && "opacity-70 cursor-not-allowed"
+            )}
             data-testid="accept-button"
           >
             {isLoading && (
               <span
-                className="animate-spin"
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "white",
-                  borderRadius: "50%",
-                }}
+                className="animate-spin w-3 h-3 border-2 border-white/30 border-t-white rounded-full"
                 data-testid="accept-spinner"
               />
             )}
-            {isAccepted ? "Scheduled ✓" : isLoading ? "Scheduling..." : "Accept & Schedule"}
+            {isAccepted ? "Scheduled \u2713" : isLoading ? "Scheduling..." : "Accept & Schedule"}
           </button>
           {hasError && acceptError && (
             <span
-              style={{
-                color: "rgba(248, 113, 113, 1)", // red-400
-                fontSize: "0.625rem",
-                textAlign: "center",
-                maxWidth: "120px",
-              }}
+              className="text-error text-[10px] text-center max-w-[120px]"
               data-testid="accept-error"
             >
               {acceptError}
@@ -370,15 +290,7 @@ export function RunSuggestionCard({
 export function RunSuggestionCardSkeleton() {
   return (
     <div
-      className="flex flex-col items-center rounded-lg animate-pulse"
-      style={{
-        minWidth: "130px",
-        padding: "20px 16px",
-        backgroundColor: "rgba(10,15,10,0.5)",
-        borderRadius: "0.5rem",
-        margin: "0 4px",
-        border: "2px solid transparent",
-      }}
+      className="flex flex-col items-center rounded-lg animate-pulse min-w-[130px] py-5 px-4 bg-forest-deep/50 mx-1 border-2 border-transparent"
       data-testid="run-suggestion-skeleton"
     >
       {/* Day name placeholder */}

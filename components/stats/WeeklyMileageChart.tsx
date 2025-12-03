@@ -57,7 +57,7 @@ function CustomDot({ cx, cy, payload }: CustomDotProps) {
 function ChartSkeleton() {
   return (
     <div className="animate-pulse" data-testid="chart-skeleton">
-      <div className="h-[250px] md:h-[300px] lg:h-[350px] bg-green-900/30 rounded-lg" />
+      <div className="h-[250px] md:h-[300px] lg:h-[350px] bg-forest-deep/50 rounded-lg" />
     </div>
   );
 }
@@ -68,10 +68,10 @@ function ChartSkeleton() {
 function EmptyState() {
   return (
     <div
-      className="flex items-center justify-center h-[250px] md:h-[300px] lg:h-[350px] bg-green-900/20 rounded-lg border border-green-800/30"
+      className="flex items-center justify-center h-[250px] md:h-[300px] lg:h-[350px] bg-forest-deep/30 rounded-lg border border-forest-medium/30"
       data-testid="empty-state"
     >
-      <p className="text-gray-400 text-sm">No mileage data available yet</p>
+      <p className="text-text-secondary text-sm">No mileage data available yet</p>
     </div>
   );
 }
@@ -98,10 +98,10 @@ export function WeeklyMileageChart({ weeks = 12 }: WeeklyMileageChartProps) {
   if (error) {
     return (
       <div
-        className="flex items-center justify-center h-[250px] md:h-[300px] lg:h-[350px] bg-red-900/20 rounded-lg border border-red-800/30"
+        className="flex items-center justify-center h-[250px] md:h-[300px] lg:h-[350px] bg-error/20 rounded-lg border border-error/30"
         data-testid="error-state"
       >
-        <p className="text-red-400 text-sm">Failed to load mileage data</p>
+        <p className="text-error text-sm">Failed to load mileage data</p>
       </div>
     );
   }
@@ -110,6 +110,8 @@ export function WeeklyMileageChart({ weeks = 12 }: WeeklyMileageChartProps) {
     return <EmptyState />;
   }
 
+  // Note: Recharts components require inline styles for theming
+  // as they don't support Tailwind classes internally
   return (
     <div className="w-full h-[250px] md:h-[300px] lg:h-[350px]">
       <ResponsiveContainer width="100%" height="100%">
