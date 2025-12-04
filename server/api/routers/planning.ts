@@ -206,8 +206,13 @@ export const planningRouter = createTRPCRouter({
     });
 
     // Group by phase to get start/end dates for each phase
+    // Filter out the current phase - we only want phases that are DIFFERENT from current
     const phaseMap = new Map<string, { start: Date; end: Date }>();
     for (const plan of futurePlans) {
+      // Skip weeks that are still part of the current phase
+      if (plan.phase === currentPlan.phase) {
+        continue;
+      }
       const existing = phaseMap.get(plan.phase);
       if (!existing) {
         phaseMap.set(plan.phase, { start: plan.weekStart, end: plan.weekEnd });
