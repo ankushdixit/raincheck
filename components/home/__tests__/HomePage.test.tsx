@@ -274,9 +274,9 @@ describe("HomePage", () => {
   it("has full viewport layout for main element", () => {
     render(<HomePage />);
     const main = screen.getByRole("main");
-    expect(main).toHaveClass("h-screen");
-    expect(main).toHaveClass("w-screen");
-    expect(main).toHaveClass("overflow-hidden");
+    expect(main).toHaveClass("relative");
+    expect(main).toHaveClass("min-h-screen");
+    expect(main).toHaveClass("w-full");
   });
 
   describe("layered background transitions", () => {

@@ -148,8 +148,9 @@ describe("StatsPage", () => {
     it("has immersive full-width layout", () => {
       render(<StatsPage />);
       const main = screen.getByRole("main");
+      expect(main).toHaveClass("relative");
       expect(main).toHaveClass("min-h-screen");
-      expect(main).toHaveClass("w-screen");
+      expect(main).toHaveClass("w-full");
     });
 
     it("renders weather effects layer", () => {

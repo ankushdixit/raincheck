@@ -302,10 +302,13 @@ describe("WeatherForecast", () => {
       render(<WeatherForecast />);
 
       const container = screen.getByTestId("weather-forecast");
+      expect(container).toHaveClass("flex");
+      expect(container).toHaveClass("gap-4");
       expect(container).toHaveClass("overflow-x-auto");
+      expect(container).toHaveClass("scrollbar-hide");
     });
 
-    it("has grid class for desktop", () => {
+    it("has grid class for 2xl screens", () => {
       mockUseQuery.mockReturnValue({
         data: createMockForecastData(),
         isLoading: false,
@@ -317,8 +320,10 @@ describe("WeatherForecast", () => {
       render(<WeatherForecast />);
 
       const container = screen.getByTestId("weather-forecast");
-      expect(container).toHaveClass("md:grid");
-      expect(container).toHaveClass("md:grid-cols-7");
+      expect(container).toHaveClass("2xl:grid");
+      expect(container).toHaveClass("2xl:grid-cols-7");
+      expect(container).toHaveClass("2xl:gap-5");
+      expect(container).toHaveClass("2xl:overflow-visible");
     });
   });
 
