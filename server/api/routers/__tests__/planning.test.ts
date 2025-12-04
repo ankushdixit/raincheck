@@ -145,9 +145,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -192,9 +193,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -235,9 +237,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -272,9 +275,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -347,9 +351,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -391,9 +396,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -414,7 +420,8 @@ describe("Planning Router", () => {
         const mockDb = {
           userSettings: { findFirst: jest.fn() },
           trainingPlan: { findFirst: jest.fn() },
-          weatherCache: { findFirst: jest.fn(), upsert: jest.fn() },
+          weatherCache: { findMany: jest.fn(), upsert: jest.fn() },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: { findMany: jest.fn() },
         };
 
@@ -431,7 +438,8 @@ describe("Planning Router", () => {
         const mockDb = {
           userSettings: { findFirst: jest.fn() },
           trainingPlan: { findFirst: jest.fn() },
-          weatherCache: { findFirst: jest.fn(), upsert: jest.fn() },
+          weatherCache: { findMany: jest.fn(), upsert: jest.fn() },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: { findMany: jest.fn() },
         };
 
@@ -465,9 +473,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn(),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn(),
           },
@@ -503,9 +512,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn(),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn(),
           },
@@ -544,9 +554,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -598,9 +609,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -651,9 +663,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -697,9 +710,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -752,9 +766,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -811,9 +826,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -864,7 +880,6 @@ describe("Planning Router", () => {
           };
         });
 
-        let callIndex = 0;
         const mockDb = {
           userSettings: {
             findFirst: jest.fn().mockResolvedValue({
@@ -875,13 +890,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockImplementation(() => {
-              const result = cachedDays[callIndex];
-              callIndex++;
-              return Promise.resolve(result);
-            }),
+            findMany: jest.fn().mockResolvedValue(cachedDays), // All cached
             upsert: jest.fn(),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -922,9 +934,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -962,9 +975,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
@@ -1004,9 +1018,10 @@ describe("Planning Router", () => {
             findFirst: jest.fn().mockResolvedValue(trainingPlan),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },

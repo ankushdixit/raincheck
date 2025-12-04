@@ -22,6 +22,7 @@ jest.mock("@/server/db", () => {
     db: {
       run: {
         findMany: jest.fn(),
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
@@ -41,6 +42,7 @@ import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 
 const mockFindMany = db.run.findMany as jest.Mock;
+const mockFindFirst = db.run.findFirst as jest.Mock;
 const mockFindUnique = db.run.findUnique as jest.Mock;
 const mockCreate = db.run.create as jest.Mock;
 const mockUpdate = db.run.update as jest.Mock;
@@ -83,7 +85,7 @@ describe("Runs Router", () => {
       expect(result).toEqual([mockRun]);
       expect(mockFindMany).toHaveBeenCalledWith({
         where: undefined,
-        take: undefined,
+        take: 100, // Default limit
         orderBy: { date: "desc" },
       });
     });
@@ -111,7 +113,7 @@ describe("Runs Router", () => {
       expect(result).toEqual([mockRun]);
       expect(mockFindMany).toHaveBeenCalledWith({
         where: { completed: false },
-        take: undefined,
+        take: 100, // Default limit
         orderBy: { date: "desc" },
       });
     });
@@ -126,7 +128,7 @@ describe("Runs Router", () => {
       expect(result).toEqual([completedRun]);
       expect(mockFindMany).toHaveBeenCalledWith({
         where: { completed: true },
-        take: undefined,
+        take: 100, // Default limit
         orderBy: { date: "desc" },
       });
     });
@@ -601,16 +603,10 @@ describe("Runs Router", () => {
       },
     ];
 
-    const mockAllCompletedRuns = [
-      { ...mockRun, id: "run-1", distance: 18, completed: true },
-      { ...mockRun, id: "run-2", distance: 16, completed: true },
-      { ...mockRun, id: "run-3", distance: 10, completed: true },
-    ];
-
     it("returns longest run distance", async () => {
-      mockFindMany
-        .mockResolvedValueOnce(mockAllCompletedRuns) // completed runs
-        .mockResolvedValueOnce(mockLongRuns); // completed long runs
+      // Mock Promise.all: findFirst for longest run, findMany for long runs
+      mockFindFirst.mockResolvedValue({ distance: 18 });
+      mockFindMany.mockResolvedValue(mockLongRuns.map((r) => ({ pace: r.pace })));
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getProgressStats();
@@ -619,9 +615,9 @@ describe("Runs Router", () => {
     });
 
     it("returns best (fastest) long run pace", async () => {
-      mockFindMany
-        .mockResolvedValueOnce(mockAllCompletedRuns) // completed runs
-        .mockResolvedValueOnce(mockLongRuns); // completed long runs
+      // Mock Promise.all: findFirst for longest run, findMany for long runs
+      mockFindFirst.mockResolvedValue({ distance: 18 });
+      mockFindMany.mockResolvedValue(mockLongRuns.map((r) => ({ pace: r.pace })));
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getProgressStats();
@@ -631,9 +627,9 @@ describe("Runs Router", () => {
     });
 
     it("returns null when no completed runs exist", async () => {
-      mockFindMany
-        .mockResolvedValueOnce([]) // no completed runs
-        .mockResolvedValueOnce([]); // no completed long runs
+      // Mock Promise.all: no longest run, no long runs
+      mockFindFirst.mockResolvedValue(null);
+      mockFindMany.mockResolvedValue([]);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getProgressStats();
@@ -643,13 +639,9 @@ describe("Runs Router", () => {
     });
 
     it("returns null for pace when no completed long runs exist", async () => {
-      const easyRuns = [
-        { ...mockRun, id: "run-1", distance: 10, type: RunType.EASY_RUN, completed: true },
-      ];
-
-      mockFindMany
-        .mockResolvedValueOnce(easyRuns) // completed runs (only easy)
-        .mockResolvedValueOnce([]); // no completed long runs
+      // Mock Promise.all: longest run exists, but no long runs for pace
+      mockFindFirst.mockResolvedValue({ distance: 10 });
+      mockFindMany.mockResolvedValue([]); // no long runs
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getProgressStats();
@@ -660,7 +652,8 @@ describe("Runs Router", () => {
 
     it("works without authentication (public procedure)", async () => {
       mockAuth.mockResolvedValue(null); // Not authenticated
-      mockFindMany.mockResolvedValueOnce(mockAllCompletedRuns).mockResolvedValueOnce(mockLongRuns);
+      mockFindFirst.mockResolvedValue({ distance: 18 });
+      mockFindMany.mockResolvedValue(mockLongRuns.map((r) => ({ pace: r.pace })));
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getProgressStats();
@@ -670,15 +663,9 @@ describe("Runs Router", () => {
     });
 
     it("only considers completed runs", async () => {
-      const mixedRuns = [
-        { ...mockRun, id: "run-1", distance: 20, completed: false }, // Not completed - should be ignored
-        { ...mockRun, id: "run-2", distance: 15, completed: true }, // Completed
-      ];
-
-      // Query for completed runs (ordered by distance desc)
-      mockFindMany
-        .mockResolvedValueOnce([mixedRuns[1]]) // Only the completed run
-        .mockResolvedValueOnce([]); // No long runs
+      // Mock Promise.all: only completed runs (distance 15), no long runs
+      mockFindFirst.mockResolvedValue({ distance: 15 }); // Only completed run
+      mockFindMany.mockResolvedValue([]); // No long runs
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getProgressStats();
