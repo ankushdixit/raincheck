@@ -226,7 +226,7 @@ export function Header() {
         width={350}
         height={88}
         priority
-        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[220px] sm:w-[240px] md:w-[280px] lg:w-[350px] h-auto"
+        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[260px] sm:w-[260px] md:w-[280px] lg:w-[350px] h-auto"
       />
 
       {/* Right: Actions + Weather info */}
