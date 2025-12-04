@@ -12,7 +12,7 @@ export function SolokitBadge() {
       href="https://www.getsolokit.com/"
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-white/40 hover:text-white/60 transition-colors text-sm"
+      className="inline-flex items-center gap-2 text-white/70 hover:text-white/90 transition-colors text-sm"
     >
       <span>Built with</span>
       <Image

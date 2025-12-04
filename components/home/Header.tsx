@@ -147,9 +147,9 @@ function ActionButton({
         flex items-center justify-center
         w-9 h-9 rounded-lg
         transition-all duration-200
-        hover:bg-white/15
+        hover:bg-white/25
         focus:outline-none focus:ring-2 focus:ring-amber-400/50
-        ${isActive ? "text-amber-400 bg-white/10" : "text-white/70"}
+        ${isActive ? "text-amber-400 bg-white/20" : "text-white bg-white/10"}
       `}
       aria-label={label}
       type="button"
@@ -195,7 +195,7 @@ function HeaderActions() {
         <>
           <Link
             href="/settings"
-            className="flex items-center justify-center w-9 h-9 rounded-lg text-white/70 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+            className="flex items-center justify-center w-9 h-9 rounded-lg text-white bg-white/10 hover:bg-white/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
             aria-label="Settings"
           >
             <Settings className="h-4 w-4" aria-hidden="true" />
@@ -226,7 +226,7 @@ export function Header() {
         width={350}
         height={88}
         priority
-        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[140px] sm:w-[200px] md:w-[280px] lg:w-[350px] h-auto"
+        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[180px] sm:w-[200px] md:w-[280px] lg:w-[350px] h-auto"
       />
 
       {/* Right: Actions + Weather info */}

@@ -98,14 +98,12 @@ export function CompactStatsRow() {
       />
       <Link
         href="/stats"
-        className="bg-amber-500/20 hover:bg-amber-500/30 backdrop-blur-md rounded-lg p-2 sm:p-3 flex flex-col justify-between transition-colors group h-full"
+        className="bg-amber-500/50 hover:bg-amber-500/60 backdrop-blur-md rounded-lg p-2 sm:p-3 flex flex-col justify-between transition-colors group h-full"
       >
-        <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 group-hover:translate-x-1 transition-transform" />
+        <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-white group-hover:translate-x-1 transition-transform" />
         <div>
-          <p className="text-amber-500 text-[10px] sm:text-xs font-medium">See All</p>
-          <p className="text-amber-500/70 text-[8px] sm:text-[10px] uppercase tracking-wide">
-            Stats
-          </p>
+          <p className="text-white text-[10px] sm:text-xs font-medium">See All</p>
+          <p className="text-white/80 text-[8px] sm:text-[10px] uppercase tracking-wide">Stats</p>
         </div>
       </Link>
     </div>

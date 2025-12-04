@@ -315,18 +315,22 @@ describe("RunSuggestions", () => {
       });
     });
 
-    it("has grid layout", () => {
+    it("has flex layout with horizontal scroll on mobile", () => {
       render(<RunSuggestions />);
 
       const container = screen.getByTestId("run-suggestions");
-      expect(container).toHaveClass("grid");
+      expect(container).toHaveClass("flex");
+      expect(container).toHaveClass("overflow-x-auto");
+      expect(container).toHaveClass("scrollbar-hide");
     });
 
-    it("has 6-column grid", () => {
+    it("has 6-column grid on xl screens", () => {
       render(<RunSuggestions />);
 
       const container = screen.getByTestId("run-suggestions");
-      expect(container).toHaveClass("grid-cols-6");
+      expect(container).toHaveClass("xl:grid");
+      expect(container).toHaveClass("xl:grid-cols-6");
+      expect(container).toHaveClass("xl:overflow-visible");
     });
 
     it("has gap for spacing between cards", () => {
