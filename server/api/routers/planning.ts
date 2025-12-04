@@ -27,7 +27,7 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 
 /**
  * Fetch weather forecast with cache support.
- * Uses the same caching strategy as the weather router.
+ * Uses batch queries for optimal performance.
  */
 async function getWeatherForecast(
   db: PrismaClient,
@@ -35,26 +35,37 @@ async function getWeatherForecast(
   location: string
 ): Promise<WeatherData[]> {
   const now = new Date();
-  const results: WeatherData[] = [];
-  const missingDates: Date[] = [];
 
-  // Generate date keys for each day we need
+  // Generate all dates we need
+  const datesToFetch: Date[] = [];
   for (let i = 0; i < days; i++) {
     const date = new Date(now);
     date.setDate(date.getDate() + i);
     date.setHours(0, 0, 0, 0);
+    datesToFetch.push(date);
+  }
 
-    // Check cache for this date
-    const cached = await db.weatherCache.findFirst({
-      where: {
-        location,
-        datetime: date,
-        expiresAt: {
-          gt: now,
-        },
-      },
-    });
+  // BATCH QUERY: Check cache for all dates at once (instead of N queries)
+  const cachedEntries = await db.weatherCache.findMany({
+    where: {
+      location,
+      datetime: { in: datesToFetch },
+      expiresAt: { gt: now },
+    },
+  });
 
+  // Build a map of cached dates for quick lookup
+  const cachedByDate = new Map<number, (typeof cachedEntries)[0]>();
+  for (const cached of cachedEntries) {
+    cachedByDate.set(cached.datetime.getTime(), cached);
+  }
+
+  // Separate cached results and missing dates
+  const results: WeatherData[] = [];
+  const missingDates: Date[] = [];
+
+  for (const date of datesToFetch) {
+    const cached = cachedByDate.get(date.getTime());
     if (cached) {
       results.push({
         location: cached.location,
@@ -85,61 +96,63 @@ async function getWeatherForecast(
     const forecastData = await fetchHybridForecast(location, days);
     const expiresAt = new Date(now.getTime() + CACHE_TTL_MS);
 
-    // Cache each day's data and add to results
+    // Collect data to cache
+    const dataToCache: WeatherData[] = [];
     for (const dayData of forecastData) {
-      // Normalize datetime to midnight for consistent cache keys
       const normalizedDate = new Date(dayData.datetime);
       normalizedDate.setHours(0, 0, 0, 0);
 
-      // Check if this is one of the missing dates
       const isMissing = missingDates.some((d) => d.getTime() === normalizedDate.getTime());
-
       if (isMissing) {
-        // Cache this day's data
-        await db.weatherCache.upsert({
-          where: {
-            location_datetime: {
-              location: dayData.location,
-              datetime: normalizedDate,
-            },
-          },
-          update: {
-            latitude: dayData.latitude,
-            longitude: dayData.longitude,
-            condition: dayData.condition,
-            description: dayData.description,
-            temperature: dayData.temperature,
-            feelsLike: dayData.feelsLike,
-            precipitation: dayData.precipitation,
-            humidity: dayData.humidity,
-            windSpeed: dayData.windSpeed,
-            windDirection: dayData.windDirection,
-            cachedAt: now,
-            expiresAt,
-          },
-          create: {
-            location: dayData.location,
-            latitude: dayData.latitude,
-            longitude: dayData.longitude,
-            datetime: normalizedDate,
-            condition: dayData.condition,
-            description: dayData.description,
-            temperature: dayData.temperature,
-            feelsLike: dayData.feelsLike,
-            precipitation: dayData.precipitation,
-            humidity: dayData.humidity,
-            windSpeed: dayData.windSpeed,
-            windDirection: dayData.windDirection,
-            cachedAt: now,
-            expiresAt,
-          },
-        });
-
-        results.push({
-          ...dayData,
-          datetime: normalizedDate,
-        });
+        dataToCache.push({ ...dayData, datetime: normalizedDate });
+        results.push({ ...dayData, datetime: normalizedDate });
       }
+    }
+
+    // BATCH UPSERT: Use transaction for all cache updates
+    if (dataToCache.length > 0) {
+      await db.$transaction(
+        dataToCache.map((dayData) =>
+          db.weatherCache.upsert({
+            where: {
+              location_datetime: {
+                location: dayData.location,
+                datetime: dayData.datetime,
+              },
+            },
+            update: {
+              latitude: dayData.latitude,
+              longitude: dayData.longitude,
+              condition: dayData.condition,
+              description: dayData.description,
+              temperature: dayData.temperature,
+              feelsLike: dayData.feelsLike,
+              precipitation: dayData.precipitation,
+              humidity: dayData.humidity,
+              windSpeed: dayData.windSpeed,
+              windDirection: dayData.windDirection,
+              cachedAt: now,
+              expiresAt,
+            },
+            create: {
+              location: dayData.location,
+              latitude: dayData.latitude,
+              longitude: dayData.longitude,
+              datetime: dayData.datetime,
+              condition: dayData.condition,
+              description: dayData.description,
+              temperature: dayData.temperature,
+              feelsLike: dayData.feelsLike,
+              precipitation: dayData.precipitation,
+              humidity: dayData.humidity,
+              windSpeed: dayData.windSpeed,
+              windDirection: dayData.windDirection,
+              cachedAt: now,
+              expiresAt,
+            },
+          })
+        )
+      );
     }
 
     // Return sorted by date

@@ -119,16 +119,31 @@ export const statsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const weeksToFetch = input?.weeks ?? 12;
 
-      // Get the training plan to determine week structure
-      const trainingPlans = await ctx.db.trainingPlan.findMany({
-        orderBy: { weekNumber: "asc" },
-      });
+      // Calculate date range - only fetch runs from the relevant time period
+      const now = new Date();
+      const currentWeekNum = getWeekNumberForDate(now);
+      const startWeekNum = Math.max(1, currentWeekNum - weeksToFetch);
+      const startDate = new Date(
+        TRAINING_START_DATE.getTime() + (startWeekNum - 1) * 7 * 24 * 60 * 60 * 1000
+      );
 
-      // Get all completed runs
-      const runs = await ctx.db.run.findMany({
-        where: { completed: true },
-        orderBy: { date: "asc" },
-      });
+      // Parallel fetch: training plans and runs for the relevant time period only
+      const [trainingPlans, runs] = await Promise.all([
+        ctx.db.trainingPlan.findMany({
+          where: {
+            weekNumber: { gte: startWeekNum, lte: currentWeekNum },
+          },
+          orderBy: { weekNumber: "asc" },
+        }),
+        ctx.db.run.findMany({
+          where: {
+            completed: true,
+            date: { gte: startDate },
+          },
+          orderBy: { date: "asc" },
+          select: { date: true, distance: true }, // Only select needed fields
+        }),
+      ]);
 
       if (runs.length === 0) {
         return [];
@@ -154,9 +169,6 @@ export const statsRouter = createTRPCRouter({
         target: number;
         isCurrentWeek: boolean;
       }> = [];
-
-      const now = new Date();
-      const currentWeekNum = getWeekNumberForDate(now, trainingStart);
 
       // Get unique weeks that have runs or are in training plan
       const allWeeks = new Set<number>();
@@ -212,6 +224,8 @@ export const statsRouter = createTRPCRouter({
           ...(input?.runType && { type: input.runType }),
         },
         orderBy: { date: "asc" },
+        select: { date: true, distance: true, pace: true }, // Only select needed fields
+        take: 500, // Reasonable limit
       });
 
       // Get current week number
@@ -279,13 +293,15 @@ export const statsRouter = createTRPCRouter({
    * Weeks without long runs show distance of 0.
    */
   getLongRunProgression: publicProcedure.query(async ({ ctx }) => {
-    // Get completed long runs
+    // Get completed long runs with only needed fields
     const longRuns = await ctx.db.run.findMany({
       where: {
         completed: true,
         type: RunType.LONG_RUN,
       },
       orderBy: { date: "asc" },
+      select: { date: true, distance: true }, // Only select needed fields
+      take: 200, // Reasonable limit for long runs
     });
 
     // Get current week number
@@ -351,27 +367,31 @@ export const statsRouter = createTRPCRouter({
       const now = new Date();
       now.setHours(23, 59, 59, 999);
 
-      // Get all runs scheduled up to today (excludes future runs)
-      const allRuns = await ctx.db.run.findMany({
-        where: {
-          date: { lte: now },
-        },
-      });
+      // Parallel fetch: runs and training plans
+      const [allRuns, trainingPlans] = await Promise.all([
+        ctx.db.run.findMany({
+          where: { date: { lte: now } },
+          select: { date: true, completed: true }, // Only select needed fields
+          take: 500, // Reasonable limit
+        }),
+        ctx.db.trainingPlan.findMany({
+          orderBy: { weekNumber: "asc" },
+          select: { phase: true, weekNumber: true }, // Only select needed fields
+        }),
+      ]);
 
-      // Get training plans for phase filtering
-      const trainingPlans = await ctx.db.trainingPlan.findMany({
-        orderBy: { weekNumber: "asc" },
-      });
+      // Build a map of week numbers to phases for efficient lookup
+      const weekToPhase = new Map<number, Phase>();
+      for (const plan of trainingPlans) {
+        weekToPhase.set(plan.weekNumber, plan.phase);
+      }
 
       // Filter by phase if specified
       let filteredRuns = allRuns;
-
       if (input?.phase && trainingPlans.length > 0) {
-        const phasePlans = trainingPlans.filter((p) => p.phase === input.phase);
-
         filteredRuns = allRuns.filter((run) => {
           const weekNum = getWeekNumberForDate(run.date);
-          return phasePlans.some((p) => p.weekNumber === weekNum);
+          return weekToPhase.get(weekNum) === input.phase;
         });
       }
 
@@ -379,7 +399,7 @@ export const statsRouter = createTRPCRouter({
       const completed = filteredRuns.filter((r) => r.completed).length;
       const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-      // Calculate by phase (also only counting runs up to today)
+      // Calculate by phase using the precomputed map
       const byPhase: Array<{
         phase: Phase;
         total: number;
@@ -395,22 +415,29 @@ export const statsRouter = createTRPCRouter({
           Phase.PEAK_TAPER,
         ];
 
+        // Group runs by phase using the map (O(n) instead of O(n*m))
+        const phaseStats = new Map<Phase, { total: number; completed: number }>();
         for (const phase of phases) {
-          const phasePlans = trainingPlans.filter((p) => p.phase === phase);
-          const phaseRuns = allRuns.filter((run) => {
-            const weekNum = getWeekNumberForDate(run.date);
-            return phasePlans.some((p) => p.weekNumber === weekNum);
-          });
+          phaseStats.set(phase, { total: 0, completed: 0 });
+        }
 
-          const phaseTotal = phaseRuns.length;
-          const phaseCompleted = phaseRuns.filter((r) => r.completed).length;
-          const phaseRate = phaseTotal > 0 ? Math.round((phaseCompleted / phaseTotal) * 100) : 0;
+        for (const run of allRuns) {
+          const weekNum = getWeekNumberForDate(run.date);
+          const phase = weekToPhase.get(weekNum);
+          if (phase) {
+            const stats = phaseStats.get(phase)!;
+            stats.total++;
+            if (run.completed) stats.completed++;
+          }
+        }
 
+        for (const phase of phases) {
+          const stats = phaseStats.get(phase)!;
           byPhase.push({
             phase,
-            total: phaseTotal,
-            completed: phaseCompleted,
-            rate: phaseRate,
+            total: stats.total,
+            completed: stats.completed,
+            rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
           });
         }
       }
@@ -434,12 +461,34 @@ export const statsRouter = createTRPCRouter({
    * - longestRun: Maximum distance from completed runs (km)
    */
   getSummary: publicProcedure.query(async ({ ctx }) => {
-    const completedRuns = await ctx.db.run.findMany({
-      where: { completed: true },
-      orderBy: { date: "desc" },
-    });
+    // Use database aggregation for count and sum (more efficient than fetching all records)
+    const [aggregates, longestRunResult, recentRuns] = await Promise.all([
+      // Aggregate: count and sum in one query
+      ctx.db.run.aggregate({
+        where: { completed: true },
+        _count: { id: true },
+        _sum: { distance: true },
+      }),
+      // Get longest run distance
+      ctx.db.run.findFirst({
+        where: { completed: true },
+        orderBy: { distance: "desc" },
+        select: { distance: true },
+      }),
+      // Only fetch runs needed for pace calculation and streak (limit to recent weeks)
+      ctx.db.run.findMany({
+        where: { completed: true },
+        orderBy: { date: "desc" },
+        select: { date: true, distance: true, pace: true },
+        take: 500, // Reasonable limit for stats calculation
+      }),
+    ]);
 
-    if (completedRuns.length === 0) {
+    const totalRuns = aggregates._count.id ?? 0;
+    const totalDistance = Math.round((aggregates._sum.distance ?? 0) * 100) / 100;
+    const longestRun = longestRunResult?.distance ?? 0;
+
+    if (totalRuns === 0) {
       return {
         totalRuns: 0,
         totalDistance: 0,
@@ -449,17 +498,10 @@ export const statsRouter = createTRPCRouter({
       };
     }
 
-    // Total runs
-    const totalRuns = completedRuns.length;
-
-    // Total distance
-    const totalDistance =
-      Math.round(completedRuns.reduce((sum, run) => sum + run.distance, 0) * 100) / 100;
-
-    // Average pace (weighted by distance)
+    // Average pace (weighted by distance) - use the recent runs
     let totalWeightedSeconds = 0;
     let totalDistanceForPace = 0;
-    for (const run of completedRuns) {
+    for (const run of recentRuns) {
       const paceSeconds = paceToSeconds(run.pace);
       totalWeightedSeconds += paceSeconds * run.distance;
       totalDistanceForPace += run.distance;
@@ -468,9 +510,6 @@ export const statsRouter = createTRPCRouter({
       totalDistanceForPace > 0 ? totalWeightedSeconds / totalDistanceForPace : 0;
     const avgPace = avgPaceSeconds > 0 ? secondsToPace(avgPaceSeconds) : "";
 
-    // Longest run
-    const longestRun = Math.max(...completedRuns.map((r) => r.distance));
-
     // Current streak (consecutive weeks with >10km total mileage)
     let streak = 0;
     const now = new Date();
@@ -478,14 +517,13 @@ export const statsRouter = createTRPCRouter({
 
     // Group runs by week and sum mileage
     const weeklyMileage = new Map<number, number>();
-    for (const run of completedRuns) {
+    for (const run of recentRuns) {
       const weekNum = getWeekNumberForDate(run.date);
       const existing = weeklyMileage.get(weekNum) ?? 0;
       weeklyMileage.set(weekNum, existing + run.distance);
     }
 
     // Count consecutive weeks backwards from current week with >10km
-    // A week counts if it has more than 10km total mileage
     const STREAK_THRESHOLD_KM = 10;
 
     for (let weekNum = currentWeekNum; weekNum >= 1; weekNum--) {

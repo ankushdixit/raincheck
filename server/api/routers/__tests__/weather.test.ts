@@ -484,7 +484,6 @@ describe("Weather Router", () => {
           };
         });
 
-        let callIndex = 0;
         const mockDb = {
           userSettings: {
             findFirst: jest.fn().mockResolvedValue({
@@ -492,13 +491,10 @@ describe("Weather Router", () => {
             }),
           },
           weatherCache: {
-            findFirst: jest.fn().mockImplementation(() => {
-              const result = cachedDays[callIndex];
-              callIndex++;
-              return Promise.resolve(result);
-            }),
+            findMany: jest.fn().mockResolvedValue(cachedDays), // Batch query returns all cached
             upsert: jest.fn(),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -511,7 +507,7 @@ describe("Weather Router", () => {
 
         expect(result).toHaveLength(7);
         expect(mockFetchForecast).not.toHaveBeenCalled();
-        expect(mockDb.weatherCache.upsert).not.toHaveBeenCalled();
+        expect(mockDb.weatherCache.findMany).toHaveBeenCalled();
       });
 
       it("fetches from API and caches on cache miss", async () => {
@@ -526,9 +522,10 @@ describe("Weather Router", () => {
             }),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null), // All cache miss
+            findMany: jest.fn().mockResolvedValue([]), // All cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -541,7 +538,7 @@ describe("Weather Router", () => {
 
         expect(result).toHaveLength(7);
         expect(mockFetchForecast).toHaveBeenCalledWith("Balbriggan, IE", 7);
-        expect(mockDb.weatherCache.upsert).toHaveBeenCalledTimes(7);
+        expect(mockDb.$transaction).toHaveBeenCalled();
       });
 
       it("handles partial cache hits correctly", async () => {
@@ -550,7 +547,6 @@ describe("Weather Router", () => {
         mockFetchForecast.mockResolvedValue(forecastData);
 
         // First 3 days cached, rest missing
-        let callIndex = 0;
         const cachedDays = Array.from({ length: 3 }, (_, i) => {
           const date = new Date(now);
           date.setDate(date.getDate() + i);
@@ -581,13 +577,10 @@ describe("Weather Router", () => {
             }),
           },
           weatherCache: {
-            findFirst: jest.fn().mockImplementation(() => {
-              const result = callIndex < 3 ? cachedDays[callIndex] : null;
-              callIndex++;
-              return Promise.resolve(result);
-            }),
+            findMany: jest.fn().mockResolvedValue(cachedDays), // Partial cache - only 3 days
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -600,8 +593,8 @@ describe("Weather Router", () => {
 
         expect(result).toHaveLength(7);
         expect(mockFetchForecast).toHaveBeenCalled();
-        // Should cache only the missing 4 days
-        expect(mockDb.weatherCache.upsert).toHaveBeenCalledTimes(4);
+        // Should batch upsert the missing 4 days via transaction
+        expect(mockDb.$transaction).toHaveBeenCalled();
       });
     });
 
@@ -616,9 +609,10 @@ describe("Weather Router", () => {
             findFirst: jest.fn(),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -645,9 +639,10 @@ describe("Weather Router", () => {
             }),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -671,9 +666,10 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -699,9 +695,10 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -725,9 +722,10 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -753,8 +751,9 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -778,8 +777,9 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -805,8 +805,9 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -834,9 +835,10 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({
@@ -876,9 +878,10 @@ describe("Weather Router", () => {
             findFirst: jest.fn().mockResolvedValue(null),
           },
           weatherCache: {
-            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]), // Cache miss
             upsert: jest.fn().mockResolvedValue({}),
           },
+          $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
         };
 
         const caller = createCaller({

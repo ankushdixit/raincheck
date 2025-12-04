@@ -52,7 +52,7 @@ export const runsRouter = createTRPCRouter({
     .input(
       z
         .object({
-          limit: z.number().positive().optional(),
+          limit: z.number().positive().max(500).default(100).optional(),
           completed: z.boolean().optional(),
         })
         .optional()
@@ -60,7 +60,7 @@ export const runsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.run.findMany({
         where: input?.completed !== undefined ? { completed: input.completed } : undefined,
-        take: input?.limit,
+        take: input?.limit ?? 100, // Default limit to prevent unbounded queries
         orderBy: { date: "desc" },
       });
     }),
@@ -232,36 +232,36 @@ export const runsRouter = createTRPCRouter({
    * Public - anyone can view progress stats
    */
   getProgressStats: publicProcedure.query(async ({ ctx }) => {
-    // Get all completed runs
-    const completedRuns = await ctx.db.run.findMany({
-      where: { completed: true },
-      orderBy: { distance: "desc" },
-    });
+    // Parallel queries: get longest run and all long runs for pace comparison
+    const [longestRun, completedLongRuns] = await Promise.all([
+      // Get only the longest run (not all runs)
+      ctx.db.run.findFirst({
+        where: { completed: true },
+        orderBy: { distance: "desc" },
+        select: { distance: true },
+      }),
+      // Get completed long runs with only needed fields
+      ctx.db.run.findMany({
+        where: {
+          completed: true,
+          type: RunType.LONG_RUN,
+        },
+        select: { pace: true },
+        take: 100, // Reasonable limit
+      }),
+    ]);
 
-    // Get all completed long runs for pace comparison
-    const completedLongRuns = await ctx.db.run.findMany({
-      where: {
-        completed: true,
-        type: RunType.LONG_RUN,
-      },
-    });
-
-    // Find longest distance
-    const longestRun = completedRuns[0];
     const longestRunDistance = longestRun?.distance ?? null;
 
     // Find best (fastest) pace on long runs
-    // Pace format is "M:SS" or "MM:SS" - lower is faster
     let bestLongRunPace: string | null = null;
 
     if (completedLongRuns.length > 0) {
-      // Convert pace strings to seconds for comparison
       const paceToSeconds = (pace: string): number => {
         const [minutes, seconds] = pace.split(":").map(Number);
         return (minutes ?? 0) * 60 + (seconds ?? 0);
       };
 
-      // Find the run with the lowest (fastest) pace
       let bestPaceSeconds = Infinity;
       for (const run of completedLongRuns) {
         const paceSeconds = paceToSeconds(run.pace);

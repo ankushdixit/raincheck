@@ -21,6 +21,8 @@ jest.mock("@/server/db", () => {
     db: {
       run: {
         findMany: jest.fn(),
+        findFirst: jest.fn(),
+        aggregate: jest.fn(),
       },
       trainingPlan: {
         findMany: jest.fn(),
@@ -39,6 +41,8 @@ import { db } from "@/server/db";
 import { auth } from "@/lib/auth";
 
 const mockRunFindMany = db.run.findMany as jest.Mock;
+const mockRunFindFirst = db.run.findFirst as jest.Mock;
+const mockRunAggregate = db.run.aggregate as jest.Mock;
 const mockTrainingPlanFindMany = db.trainingPlan.findMany as jest.Mock;
 const mockAuth = auth as jest.Mock;
 
@@ -123,8 +127,11 @@ describe("Stats Router", () => {
 
   describe("getWeeklyMileage", () => {
     it("returns weekly mileage with targets", async () => {
+      // Mock Promise.all: training plans and runs (with only selected fields)
       mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage();
@@ -141,8 +148,11 @@ describe("Stats Router", () => {
     });
 
     it("returns mileage data with calculated targets (no db dependency)", async () => {
+      // Mock Promise.all: no training plans, runs with selected fields
       mockTrainingPlanFindMany.mockResolvedValue([]);
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage();
@@ -166,8 +176,11 @@ describe("Stats Router", () => {
     });
 
     it("respects weeks parameter", async () => {
+      // Mock Promise.all: training plans and runs with selected fields
       mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage({ weeks: 4 });
@@ -176,8 +189,11 @@ describe("Stats Router", () => {
     });
 
     it("marks current week correctly", async () => {
+      // Mock Promise.all: training plans and runs with selected fields
       mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage();
@@ -188,28 +204,19 @@ describe("Stats Router", () => {
     });
 
     it("includes pre-training weeks with 'Pre' label", async () => {
+      // Mock Promise.all: training plans and pre-training runs
       mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
       // Add runs from before training plan start (Sep 21)
       const preTrainingRuns = [
         {
-          id: "pre-run-1",
           date: new Date("2025-09-14T08:00:00.000Z"), // 1 week before training (Sep 14-20)
           distance: 7,
-          pace: "6:20",
-          duration: "44:20",
-          type: RunType.LONG_RUN,
-          completed: true,
         },
         {
-          id: "pre-run-2",
           date: new Date("2025-09-07T08:00:00.000Z"), // 2 weeks before training (Sep 7-13)
           distance: 10.82,
-          pace: "6:42",
-          duration: "72:25",
-          type: RunType.LONG_RUN,
-          completed: true,
         },
-        ...mockCompletedRuns,
+        ...mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance })),
       ];
       mockRunFindMany.mockResolvedValue(preTrainingRuns);
 
@@ -233,8 +240,11 @@ describe("Stats Router", () => {
 
     it("works without authentication (public)", async () => {
       mockAuth.mockResolvedValue(null);
+      // Mock Promise.all: training plans and runs with selected fields
       mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
 
@@ -244,7 +254,10 @@ describe("Stats Router", () => {
 
   describe("getPaceProgression", () => {
     it("returns weekly average pace data for all weeks", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock runs with only selected fields
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getPaceProgression();
@@ -258,7 +271,10 @@ describe("Stats Router", () => {
     });
 
     it("calculates weighted average pace for each week", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock runs with only selected fields
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getPaceProgression();
@@ -270,7 +286,10 @@ describe("Stats Router", () => {
     });
 
     it("shows null pace for weeks without runs", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock runs with only selected fields
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getPaceProgression();
@@ -282,8 +301,9 @@ describe("Stats Router", () => {
     });
 
     it("filters by run type when specified", async () => {
+      const longRuns = mockCompletedRuns.filter((r) => r.type === RunType.LONG_RUN);
       mockRunFindMany.mockResolvedValue(
-        mockCompletedRuns.filter((r) => r.type === RunType.LONG_RUN)
+        longRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
       );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
@@ -327,7 +347,10 @@ describe("Stats Router", () => {
     const longRuns = mockCompletedRuns.filter((r) => r.type === RunType.LONG_RUN);
 
     it("returns all weeks from week 1 to current week with distances", async () => {
-      mockRunFindMany.mockResolvedValue(longRuns);
+      // Mock runs with only selected fields
+      mockRunFindMany.mockResolvedValue(
+        longRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getLongRunProgression();
@@ -341,7 +364,10 @@ describe("Stats Router", () => {
     });
 
     it("shows 0 distance for weeks without long runs", async () => {
-      mockRunFindMany.mockResolvedValue(longRuns);
+      // Mock runs with only selected fields
+      mockRunFindMany.mockResolvedValue(
+        longRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getLongRunProgression();
@@ -356,7 +382,10 @@ describe("Stats Router", () => {
     });
 
     it("calculates target based on week number", async () => {
-      mockRunFindMany.mockResolvedValue(longRuns);
+      // Mock runs with only selected fields
+      mockRunFindMany.mockResolvedValue(
+        longRuns.map((r) => ({ date: r.date, distance: r.distance }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getLongRunProgression();
@@ -398,8 +427,13 @@ describe("Stats Router", () => {
 
   describe("getCompletionRate", () => {
     it("returns completion statistics", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      // Mock Promise.all: runs and training plans with selected fields
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, completed: r.completed }))
+      );
+      mockTrainingPlanFindMany.mockResolvedValue(
+        mockTrainingPlans.map((p) => ({ phase: p.phase, weekNumber: p.weekNumber }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getCompletionRate();
@@ -412,12 +446,15 @@ describe("Stats Router", () => {
 
     it("calculates correct completion rate", async () => {
       const mixedRuns = [
-        { ...mockCompletedRuns[0], completed: true },
-        { ...mockCompletedRuns[1], completed: true },
-        { ...mockCompletedRuns[2], completed: false },
+        { date: mockCompletedRuns[0].date, completed: true },
+        { date: mockCompletedRuns[1].date, completed: true },
+        { date: mockCompletedRuns[2].date, completed: false },
       ];
+      // Mock Promise.all: runs and training plans with selected fields
       mockRunFindMany.mockResolvedValue(mixedRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      mockTrainingPlanFindMany.mockResolvedValue(
+        mockTrainingPlans.map((p) => ({ phase: p.phase, weekNumber: p.weekNumber }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getCompletionRate();
@@ -428,9 +465,12 @@ describe("Stats Router", () => {
     });
 
     it("returns 0% rate when no runs completed", async () => {
-      const noCompletedRuns = mockCompletedRuns.map((r) => ({ ...r, completed: false }));
+      const noCompletedRuns = mockCompletedRuns.map((r) => ({ date: r.date, completed: false }));
+      // Mock Promise.all: runs and training plans with selected fields
       mockRunFindMany.mockResolvedValue(noCompletedRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      mockTrainingPlanFindMany.mockResolvedValue(
+        mockTrainingPlans.map((p) => ({ phase: p.phase, weekNumber: p.weekNumber }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getCompletionRate();
@@ -439,8 +479,11 @@ describe("Stats Router", () => {
     });
 
     it("returns 0% rate when no runs exist", async () => {
+      // Mock Promise.all: empty runs, training plans with selected fields
       mockRunFindMany.mockResolvedValue([]);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      mockTrainingPlanFindMany.mockResolvedValue(
+        mockTrainingPlans.map((p) => ({ phase: p.phase, weekNumber: p.weekNumber }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getCompletionRate();
@@ -451,8 +494,13 @@ describe("Stats Router", () => {
     });
 
     it("includes breakdown by phase", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      // Mock Promise.all: runs and training plans with selected fields
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, completed: r.completed }))
+      );
+      mockTrainingPlanFindMany.mockResolvedValue(
+        mockTrainingPlans.map((p) => ({ phase: p.phase, weekNumber: p.weekNumber }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getCompletionRate();
@@ -465,8 +513,13 @@ describe("Stats Router", () => {
     });
 
     it("filters by phase when specified", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+      // Mock Promise.all: runs and training plans with selected fields
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, completed: r.completed }))
+      );
+      mockTrainingPlanFindMany.mockResolvedValue(
+        mockTrainingPlans.map((p) => ({ phase: p.phase, weekNumber: p.weekNumber }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const filteredResult = await caller.getCompletionRate({ phase: Phase.BASE_BUILDING });
@@ -478,7 +531,15 @@ describe("Stats Router", () => {
 
   describe("getSummary", () => {
     it("returns summary statistics", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock Promise.all: aggregate, findFirst, findMany
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 29.63 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 12 });
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
@@ -491,7 +552,15 @@ describe("Stats Router", () => {
     });
 
     it("calculates correct total runs", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock Promise.all: aggregate returns count
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 29.63 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 12 });
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
@@ -500,7 +569,15 @@ describe("Stats Router", () => {
     });
 
     it("calculates correct total distance", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock Promise.all: aggregate returns sum
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 29.63 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 12 });
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
@@ -510,7 +587,15 @@ describe("Stats Router", () => {
     });
 
     it("calculates weighted average pace", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock Promise.all: aggregate, findFirst, findMany
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 29.63 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 12 });
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
@@ -520,7 +605,15 @@ describe("Stats Router", () => {
     });
 
     it("finds longest run distance", async () => {
-      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+      // Mock Promise.all: aggregate, findFirst returns longest
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 29.63 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 12 });
+      mockRunFindMany.mockResolvedValue(
+        mockCompletedRuns.map((r) => ({ date: r.date, distance: r.distance, pace: r.pace }))
+      );
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
@@ -529,6 +622,12 @@ describe("Stats Router", () => {
     });
 
     it("returns zeros and empty string when no runs exist", async () => {
+      // Mock Promise.all: all empty/null
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 0 },
+        _sum: { distance: null },
+      });
+      mockRunFindFirst.mockResolvedValue(null);
       mockRunFindMany.mockResolvedValue([]);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
@@ -549,21 +648,28 @@ describe("Stats Router", () => {
       // Week 9: Nov 16-22
       const weeklyRuns = [
         {
-          ...mockCompletedRuns[0],
           date: new Date("2025-12-01T08:00:00.000Z"), // Week 11
           distance: 15, // >10km
+          pace: "6:30",
         },
         {
-          ...mockCompletedRuns[1],
           date: new Date("2025-11-25T08:00:00.000Z"), // Week 10
           distance: 12, // >10km
+          pace: "6:40",
         },
         {
-          ...mockCompletedRuns[2],
           date: new Date("2025-11-18T08:00:00.000Z"), // Week 9
           distance: 11, // >10km
+          pace: "6:45",
         },
       ];
+
+      // Mock Promise.all
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 38 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 15 });
       mockRunFindMany.mockResolvedValue(weeklyRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
@@ -577,11 +683,18 @@ describe("Stats Router", () => {
       // Current week (week 11) has runs but less than 10km total
       const lowMileageRuns = [
         {
-          ...mockCompletedRuns[0],
           date: new Date("2025-12-01T08:00:00.000Z"), // Week 11
           distance: 5, // Only 5km - below 10km threshold
+          pace: "6:30",
         },
       ];
+
+      // Mock Promise.all
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 1 },
+        _sum: { distance: 5 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 5 });
       mockRunFindMany.mockResolvedValue(lowMileageRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
@@ -597,21 +710,28 @@ describe("Stats Router", () => {
       // Week 9: 20km (doesn't count - streak already broken)
       const mixedRuns = [
         {
-          ...mockCompletedRuns[0],
           date: new Date("2025-12-01T08:00:00.000Z"), // Week 11
           distance: 15,
+          pace: "6:30",
         },
         {
-          ...mockCompletedRuns[1],
           date: new Date("2025-11-25T08:00:00.000Z"), // Week 10
           distance: 5, // Below threshold
+          pace: "6:35",
         },
         {
-          ...mockCompletedRuns[2],
           date: new Date("2025-11-18T08:00:00.000Z"), // Week 9
           distance: 20,
+          pace: "6:40",
         },
       ];
+
+      // Mock Promise.all
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 3 },
+        _sum: { distance: 40 },
+      });
+      mockRunFindFirst.mockResolvedValue({ distance: 20 });
       mockRunFindMany.mockResolvedValue(mixedRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
@@ -623,6 +743,12 @@ describe("Stats Router", () => {
 
     it("works without authentication (public)", async () => {
       mockAuth.mockResolvedValue(null);
+      // Mock Promise.all: all empty/null
+      mockRunAggregate.mockResolvedValue({
+        _count: { id: 0 },
+        _sum: { distance: null },
+      });
+      mockRunFindFirst.mockResolvedValue(null);
       mockRunFindMany.mockResolvedValue([]);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
