@@ -540,12 +540,13 @@ export default function SettingsPage() {
   const [backgroundTint, setBackgroundTint] = useState(getTintColor("default"));
   const [displayedCondition, setDisplayedCondition] = useState("");
 
-  // Night overlay state
-  const [nightTint, setNightTint] = useState<string>(getNightTint());
+  // Night overlay state - initialize with "transparent" to avoid hydration mismatch
+  const [nightTint, setNightTint] = useState<string>("transparent");
 
-  // Update night overlay every minute
+  // Set initial night tint on client and update every minute
   useEffect(() => {
     const updateNightTint = () => setNightTint(getNightTint());
+    updateNightTint(); // Set initial value on client
     const interval = setInterval(updateNightTint, 60000);
     return () => clearInterval(interval);
   }, []);
