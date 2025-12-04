@@ -161,7 +161,7 @@ export default function StatsPage() {
           {/* Left Column: Weekly Mileage Chart - height matches right column */}
           <div className="flex flex-col">
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">WEEKLY MILEAGE</p>
-            <div className="rounded-xl bg-white/10 border border-white/15 p-4 flex-1">
+            <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4 flex-1">
               <WeeklyMileageChart />
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function StatsPage() {
         <div className="px-10 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">PACE PROGRESSION</p>
-            <div className="rounded-xl bg-white/10 border border-white/15 p-4">
+            <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4">
               <PaceProgressionChart />
             </div>
           </div>
@@ -195,7 +195,7 @@ export default function StatsPage() {
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">
               LONG RUN PROGRESSION
             </p>
-            <div className="rounded-xl bg-white/10 border border-white/15 p-4">
+            <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4">
               <LongRunProgressionChart />
             </div>
           </div>

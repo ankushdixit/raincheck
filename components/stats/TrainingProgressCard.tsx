@@ -32,7 +32,7 @@ export function TrainingProgressCard() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-white/10 border border-white/15 p-5 animate-pulse">
+      <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
         <div className="flex gap-8 mb-6">
           <div>
             <div className="h-3 w-24 rounded bg-white/10 mb-2" />
@@ -72,7 +72,7 @@ export function TrainingProgressCard() {
   const phaseColor = PHASE_COLORS[currentPhase] ?? "bg-blue-500/30 text-blue-400";
 
   return (
-    <div className="rounded-xl bg-white/10 border border-white/15 p-5">
+    <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5">
       <div className="flex gap-8 mb-6">
         {/* Current Phase */}
         <div>
