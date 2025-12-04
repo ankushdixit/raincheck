@@ -2,78 +2,41 @@
 
 import { api } from "@/lib/api";
 
-interface CircularProgressProps {
-  percentage: number;
-  size?: number;
-  strokeWidth?: number;
-}
-
 /**
- * Circular progress indicator with percentage display
+ * Circular Progress Component
  */
-function CircularProgress({ percentage, size = 120, strokeWidth = 8 }: CircularProgressProps) {
-  const radius = (size - strokeWidth) / 2;
+function CircularProgress({ percentage }: { percentage: number }) {
+  const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="-rotate-90">
+    <div className="relative w-20 h-20 flex items-center justify-center">
+      <svg width="80" height="80" className="-rotate-90">
         {/* Background circle */}
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="40"
+          cy="40"
           r={radius}
           fill="none"
-          className="stroke-forest-medium"
-          strokeWidth={strokeWidth}
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="8"
         />
         {/* Progress circle */}
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="40"
+          cy="40"
           r={radius}
           fill="none"
-          className="stroke-amber-500 transition-all duration-500 ease-out"
-          strokeWidth={strokeWidth}
+          stroke="#4CAF50"
+          strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
+          className="transition-all duration-500"
         />
       </svg>
-      <span className="absolute text-2xl font-bold text-text-primary">{percentage}%</span>
-    </div>
-  );
-}
-
-/**
- * Loading skeleton for completion rate card
- */
-function CompletionRateSkeleton() {
-  return (
-    <div
-      className="bg-forest-dark border border-forest-medium rounded-lg p-6 animate-pulse"
-      data-testid="completion-skeleton"
-    >
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-[120px] h-[120px] bg-forest-deep/50 rounded-full" />
-        <div className="h-6 bg-forest-deep/50 rounded w-32" />
-        <div className="h-4 bg-forest-deep/50 rounded w-24" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Empty state when no scheduled runs exist
- */
-function EmptyState() {
-  return (
-    <div
-      className="bg-forest-dark border border-forest-medium rounded-lg p-6 text-center"
-      data-testid="completion-empty-state"
-    >
-      <p className="text-text-secondary">No runs scheduled yet. Start planning your training!</p>
+      <span className="absolute text-white text-lg font-bold">{percentage}%</span>
     </div>
   );
 }
@@ -81,42 +44,67 @@ function EmptyState() {
 /**
  * Completion Rate Card
  *
- * Displays overall completion rate as a circular progress indicator
- * with completed/total run counts.
+ * Shows completion rate with circular progress and breakdown stats.
  */
 export function CompletionRateCard() {
-  const { data, isLoading, error } = api.stats.getCompletionRate.useQuery();
+  const { data, isLoading, error } = api.stats.getCompletionRate.useQuery({});
 
   if (isLoading) {
-    return <CompletionRateSkeleton />;
-  }
-
-  if (error) {
     return (
-      <div
-        className="bg-error/20 border border-error/30 rounded-lg p-6"
-        data-testid="completion-error-state"
-      >
-        <p className="text-error text-sm text-center">Failed to load completion rate</p>
+      <div className="rounded-xl bg-white/10 border border-white/15 p-5 animate-pulse">
+        <div className="flex gap-6">
+          <div className="w-20 h-20 rounded-full bg-white/10" />
+          <div className="flex-1 space-y-3">
+            <div className="h-4 w-24 rounded bg-white/10" />
+            <div className="h-4 w-20 rounded bg-white/10" />
+            <div className="h-4 w-16 rounded bg-white/10" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!data || data.total === 0) {
-    return <EmptyState />;
+  if (error || !data) {
+    return (
+      <div className="rounded-xl bg-white/10 border border-white/15 p-5">
+        <p className="text-red-400 text-sm">Failed to load completion rate</p>
+      </div>
+    );
   }
 
+  const missed = data.total - data.completed;
+  const targetRate = 80;
+  const isOnTrack = data.rate >= targetRate;
+
   return (
-    <div
-      className="bg-forest-dark border border-forest-medium rounded-lg p-6"
-      data-testid="completion-rate-card"
-    >
-      <div className="flex flex-col items-center gap-4">
+    <div className="rounded-xl bg-white/10 border border-white/15 p-5">
+      <div className="flex gap-6">
+        {/* Circular Progress */}
         <CircularProgress percentage={data.rate} />
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-text-primary">Completion Rate</h3>
-          <p className="text-text-secondary text-sm">
-            {data.completed} of {data.total} runs completed
+
+        {/* Stats Breakdown */}
+        <div className="flex-1">
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div>
+              <p className="text-white/60 text-xs uppercase tracking-wide">Completed</p>
+              <p className="text-green-400 text-xl font-bold">{data.completed}</p>
+            </div>
+            <div>
+              <p className="text-white/60 text-xs uppercase tracking-wide">Scheduled</p>
+              <p className="text-white/80 text-xl font-bold">{data.total}</p>
+            </div>
+            <div>
+              <p className="text-white/60 text-xs uppercase tracking-wide">Missed</p>
+              <p className="text-red-400 text-xl font-bold">{missed}</p>
+            </div>
+          </div>
+
+          {/* Status */}
+          <p className="text-white/50 text-xs">
+            Target: {targetRate}% | Status:{" "}
+            <span className={isOnTrack ? "text-green-400" : "text-amber-400"}>
+              {isOnTrack ? "On Track" : "Needs Attention"}
+            </span>
           </p>
         </div>
       </div>

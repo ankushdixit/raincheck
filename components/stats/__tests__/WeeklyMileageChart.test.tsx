@@ -14,17 +14,6 @@ jest.mock("@/lib/api", () => ({
   },
 }));
 
-// Mock recharts ResponsiveContainer to avoid resize observer issues
-jest.mock("recharts", () => {
-  const OriginalModule = jest.requireActual("recharts");
-  return {
-    ...OriginalModule,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-      <div style={{ width: 800, height: 350 }}>{children}</div>
-    ),
-  };
-});
-
 // Sample data
 const mockWeeklyData = [
   {
@@ -56,29 +45,18 @@ describe("WeeklyMileageChart", () => {
   });
 
   describe("loading state", () => {
-    it("displays loading skeleton while fetching data", () => {
+    it("displays loading spinner while fetching data", () => {
       mockWeeklyMileageQuery.mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
       });
 
-      render(<WeeklyMileageChart />);
+      const { container } = render(<WeeklyMileageChart />);
 
-      expect(screen.getByTestId("chart-skeleton")).toBeInTheDocument();
-    });
-
-    it("skeleton has animate-pulse class", () => {
-      mockWeeklyMileageQuery.mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        error: null,
-      });
-
-      render(<WeeklyMileageChart />);
-
-      const skeleton = screen.getByTestId("chart-skeleton");
-      expect(skeleton).toHaveClass("animate-pulse");
+      // Should show spinner (animate-spin class)
+      const spinner = container.querySelector(".animate-spin");
+      expect(spinner).toBeInTheDocument();
     });
   });
 
@@ -92,7 +70,6 @@ describe("WeeklyMileageChart", () => {
 
       render(<WeeklyMileageChart />);
 
-      expect(screen.getByTestId("error-state")).toBeInTheDocument();
       expect(screen.getByText("Failed to load mileage data")).toBeInTheDocument();
     });
   });
@@ -107,7 +84,6 @@ describe("WeeklyMileageChart", () => {
 
       render(<WeeklyMileageChart />);
 
-      expect(screen.getByTestId("empty-state")).toBeInTheDocument();
       expect(screen.getByText("No mileage data available yet")).toBeInTheDocument();
     });
 
@@ -120,7 +96,7 @@ describe("WeeklyMileageChart", () => {
 
       render(<WeeklyMileageChart />);
 
-      expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+      expect(screen.getByText("No mileage data available yet")).toBeInTheDocument();
     });
   });
 
@@ -133,36 +109,33 @@ describe("WeeklyMileageChart", () => {
       });
     });
 
-    it("renders the chart container", () => {
+    it("renders the chart with legend", () => {
       render(<WeeklyMileageChart />);
 
-      // Chart should be rendered (ResponsiveContainer is mocked)
-      expect(screen.queryByTestId("chart-skeleton")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("error-state")).not.toBeInTheDocument();
+      // Should have legend items
+      expect(screen.getByText("Actual")).toBeInTheDocument();
+      expect(screen.getByText("Target")).toBeInTheDocument();
     });
 
-    it("renders the recharts wrapper", () => {
-      const { container } = render(<WeeklyMileageChart />);
+    it("renders week labels", () => {
+      render(<WeeklyMileageChart />);
 
-      // Recharts creates a wrapper div with class "recharts-wrapper"
-      const rechartsWrapper = container.querySelector(".recharts-wrapper");
-      expect(rechartsWrapper).toBeInTheDocument();
+      // Week labels should be rendered (shortened format)
+      expect(screen.getByText("W1")).toBeInTheDocument();
+      expect(screen.getByText("W2")).toBeInTheDocument();
+      expect(screen.getByText("W3")).toBeInTheDocument();
     });
 
     it("data is passed to the query correctly", () => {
       render(<WeeklyMileageChart />);
 
-      // Verify that the query was called
-      expect(mockWeeklyMileageQuery).toHaveBeenCalled();
-      // The component should not show loading/empty/error states
-      expect(screen.queryByTestId("chart-skeleton")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+      // Verify that the query was called with default weeks
+      expect(mockWeeklyMileageQuery).toHaveBeenCalledWith({ weeks: 12 });
     });
   });
 
   describe("props", () => {
-    it("uses default weeks when not specified", () => {
+    it("uses default weeks (12) when not specified", () => {
       mockWeeklyMileageQuery.mockReturnValue({
         data: mockWeeklyData,
         isLoading: false,
@@ -173,22 +146,10 @@ describe("WeeklyMileageChart", () => {
 
       expect(mockWeeklyMileageQuery).toHaveBeenCalledWith({ weeks: 12 });
     });
-
-    it("passes custom weeks prop to query", () => {
-      mockWeeklyMileageQuery.mockReturnValue({
-        data: mockWeeklyData,
-        isLoading: false,
-        error: null,
-      });
-
-      render(<WeeklyMileageChart weeks={8} />);
-
-      expect(mockWeeklyMileageQuery).toHaveBeenCalledWith({ weeks: 8 });
-    });
   });
 
-  describe("responsiveness", () => {
-    it("chart container has responsive height classes", () => {
+  describe("chart dimensions", () => {
+    it("chart container has fixed height", () => {
       mockWeeklyMileageQuery.mockReturnValue({
         data: mockWeeklyData,
         isLoading: false,
@@ -198,9 +159,9 @@ describe("WeeklyMileageChart", () => {
       const { container } = render(<WeeklyMileageChart />);
 
       const chartContainer = container.firstChild;
-      expect(chartContainer).toHaveClass("h-[250px]");
-      expect(chartContainer).toHaveClass("md:h-[300px]");
-      expect(chartContainer).toHaveClass("lg:h-[350px]");
+      // Chart uses h-full with min-h-[250px] for flexible height
+      expect(chartContainer).toHaveClass("h-full");
+      expect(chartContainer).toHaveClass("min-h-[250px]");
     });
   });
 });

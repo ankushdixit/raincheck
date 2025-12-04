@@ -20,6 +20,8 @@ const mockGetCurrentWeather = jest.fn();
 const mockGetCurrentPhase = jest.fn();
 const mockGetProgressStats = jest.fn();
 const mockGetSettings = jest.fn();
+const mockGetSummary = jest.fn();
+const mockGetWeeklyMileage = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -41,6 +43,14 @@ jest.mock("@/lib/api", () => ({
     settings: {
       get: {
         useQuery: () => mockGetSettings(),
+      },
+    },
+    stats: {
+      getSummary: {
+        useQuery: () => mockGetSummary(),
+      },
+      getWeeklyMileage: {
+        useQuery: () => mockGetWeeklyMileage(),
       },
     },
   },
@@ -168,6 +178,30 @@ describe("HomePage", () => {
         raceDate: futureDate,
         targetTime: "2:00:00",
       },
+      isLoading: false,
+      isError: false,
+    });
+
+    // Mock stats summary API response
+    mockGetSummary.mockReturnValue({
+      data: {
+        totalRuns: 24,
+        totalDistance: 156.5,
+        avgPace: "6:15",
+        streak: 11,
+        longestRun: 13,
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    // Mock weekly mileage API response
+    mockGetWeeklyMileage.mockReturnValue({
+      data: [
+        { week: "Week 1", mileage: 15, target: 10, isCurrentWeek: false },
+        { week: "Week 2", mileage: 19.4, target: 11.5, isCurrentWeek: false },
+        { week: "Week 3", mileage: 18, target: 13, isCurrentWeek: true },
+      ],
       isLoading: false,
       isError: false,
     });
