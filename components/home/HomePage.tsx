@@ -159,15 +159,15 @@ export function HomePage() {
 
   return (
     <main
-      className="relative h-screen w-screen overflow-hidden"
+      className="relative min-h-screen w-full"
       data-testid="trail-background"
       data-active-layer={activeLayer}
       data-layer0-image={layers[0].image}
       data-layer1-image={layers[1].image}
     >
-      {/* Background Layer 0 */}
+      {/* Background Layer 0 - Fixed to viewport */}
       <div
-        className="absolute top-0 left-0 w-full h-full z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
         style={{
           backgroundImage: `linear-gradient(${layers[0].tint}, ${layers[0].tint}), url('/images/trails/${layers[0].image}')`,
           opacity: activeLayer === 0 ? 1 : 0,
@@ -176,9 +176,9 @@ export function HomePage() {
         aria-hidden="true"
       />
 
-      {/* Background Layer 1 */}
+      {/* Background Layer 1 - Fixed to viewport */}
       <div
-        className="absolute top-0 left-0 w-full h-full z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
         style={{
           backgroundImage: `linear-gradient(${layers[1].tint}, ${layers[1].tint}), url('/images/trails/${layers[1].image}')`,
           opacity: activeLayer === 1 ? 1 : 0,
@@ -195,10 +195,10 @@ export function HomePage() {
         />
       )}
 
-      {/* Night Overlay Layer - on top of weather effects to dim them (only when not previewing a day) */}
+      {/* Night Overlay Layer - Fixed to viewport, dims weather effects (only when not previewing a day) */}
       {nightTint !== "transparent" && selectedDayIndex === null && (
         <div
-          className="absolute top-0 left-0 w-full h-full z-[5] pointer-events-none transition-opacity duration-1000"
+          className="fixed inset-0 z-[5] pointer-events-none transition-opacity duration-1000"
           style={{ backgroundColor: nightTint }}
           data-testid="night-overlay"
           aria-hidden="true"
@@ -220,19 +220,19 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Content Layer - Full viewport, no scroll */}
-      <div className="relative z-10 flex h-screen w-full flex-col overflow-hidden">
+      {/* Content Layer - Scrolls over fixed background */}
+      <div className="relative z-10 flex min-h-screen w-full flex-col">
         {/* Header */}
         <Header />
 
         {/* Story Section + Compact Stats Row */}
-        <div className="px-10 mt-6 mb-8 flex flex-col lg:flex-row lg:items-stretch gap-4">
-          {/* Journey Card - Full width on mobile, ~60% on desktop */}
-          <div className="lg:flex-[3] min-w-0">
+        <div className="px-4 sm:px-6 lg:px-10 mt-6 mb-8 flex flex-col xl:flex-row xl:items-stretch gap-4">
+          {/* Journey Card - Full width below xl, ~60% on large desktop */}
+          <div className="xl:flex-[3] min-w-0">
             <StoryCard />
           </div>
-          {/* Compact Stats - Full width on mobile, ~40% on desktop */}
-          <div className="lg:flex-[2] min-w-0 flex">
+          {/* Compact Stats - Full width below xl, ~40% on large desktop */}
+          <div className="xl:flex-[2] min-w-0 flex">
             <CompactStatsRow />
           </div>
         </div>
@@ -240,10 +240,10 @@ export function HomePage() {
         {/* Info Boxes Row: Phase, Progress, Countdown */}
         <InfoBoxes />
 
-        {/* Main content area - Two column grid layout */}
-        <div className="flex gap-5 px-10 mt-5 pb-6 overflow-hidden">
-          {/* Left Column: Weather + Suggested Runs (~65%) */}
-          <div className="flex-[2] flex flex-col gap-8 overflow-y-auto">
+        {/* Main content area - Two column layout on 2xl desktop, stacked below */}
+        <div className="flex flex-col 2xl:flex-row gap-5 2xl:gap-5 px-4 sm:px-6 lg:px-10 mt-5 pb-6">
+          {/* Left Column: Weather + Suggested Runs (~65% on 2xl desktop) */}
+          <div className="w-full 2xl:flex-[2] flex flex-col gap-8">
             {/* Weather Section */}
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-4">
@@ -261,8 +261,8 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Right Column: Calendar (~35%) */}
-          <div className="flex-[1] overflow-y-auto">
+          {/* Right Column: Calendar (~35% on 2xl desktop) */}
+          <div className="w-full 2xl:flex-[1]">
             <h3 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-4">
               Calendar
             </h3>
@@ -271,7 +271,7 @@ export function HomePage() {
         </div>
 
         {/* Footer Badge */}
-        <div className="px-10 py-3 text-center">
+        <div className="px-4 sm:px-6 lg:px-10 py-3 text-center">
           <SolokitBadge />
         </div>
       </div>

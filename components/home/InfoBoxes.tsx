@@ -226,11 +226,14 @@ function RaceCountdownBox() {
 
 /**
  * InfoBoxes component
- * Three-column row showing Phase Info, Progress Bars, and Race Countdown
+ * Three-column row on large desktop, stacked on smaller screens
  */
 export function InfoBoxes() {
   return (
-    <div className="flex w-full gap-5 px-10 mb-5" data-testid="info-boxes">
+    <div
+      className="flex flex-col xl:flex-row w-full gap-4 xl:gap-5 px-4 sm:px-6 lg:px-10 mb-5"
+      data-testid="info-boxes"
+    >
       <PhaseInfoBox />
       <ProgressBarsBox />
       <RaceCountdownBox />

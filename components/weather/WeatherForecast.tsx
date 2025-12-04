@@ -11,7 +11,7 @@ import { WeatherDayCard } from "./WeatherDayCard";
 function ForecastSkeleton() {
   return (
     <div
-      className="flex gap-4 overflow-x-auto md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
+      className="flex gap-4 overflow-x-auto scrollbar-hide 2xl:grid 2xl:grid-cols-7 2xl:gap-5 2xl:overflow-visible"
       data-testid="forecast-skeleton"
     >
       {Array.from({ length: 7 }).map((_, index) => (
@@ -146,7 +146,7 @@ export function WeatherForecast({
 
   return (
     <div
-      className="flex gap-4 overflow-x-auto md:grid md:grid-cols-7 md:gap-5 md:overflow-visible"
+      className="flex gap-4 overflow-x-auto scrollbar-hide 2xl:grid 2xl:grid-cols-7 2xl:gap-5 2xl:overflow-visible"
       data-testid="weather-forecast"
     >
       {forecast.map((day, index) => (

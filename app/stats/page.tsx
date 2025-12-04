@@ -48,7 +48,7 @@ function StatsHeader() {
   }, []);
 
   return (
-    <header className="flex items-start justify-between w-full px-10 py-6">
+    <header className="flex items-start justify-between w-full px-4 sm:px-6 lg:px-10 py-4 lg:py-6">
       {/* Left: Logo and subtitle */}
       <div>
         <Link href="/" className="inline-block">
@@ -58,7 +58,7 @@ function StatsHeader() {
             width={350}
             height={88}
             priority
-            className="-ml-3.5"
+            className="-ml-2 lg:-ml-3.5 w-[200px] sm:w-[280px] lg:w-[350px] h-auto"
           />
         </Link>
         <p className="text-white/60 text-sm mt-1">Training Statistics</p>
@@ -125,7 +125,7 @@ export default function StatsPage() {
   }, [currentWeather]);
 
   return (
-    <main className="relative min-h-screen w-screen overflow-x-hidden">
+    <main className="relative min-h-screen w-full">
       {/* Dynamic Background */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
@@ -153,12 +153,12 @@ export default function StatsPage() {
         <StatsHeader />
 
         {/* Summary Stats Row */}
-        <div className="px-10 mb-6">
+        <div className="px-4 sm:px-6 lg:px-10 mb-6">
           <SummaryStatsRow />
         </div>
 
         {/* Main Content: Two Column Layout */}
-        <div className="px-10 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 mb-6">
+        <div className="px-4 sm:px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 mb-6">
           {/* Left Column: Weekly Mileage Chart - height matches right column */}
           <div className="flex flex-col">
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">WEEKLY MILEAGE</p>
@@ -184,7 +184,7 @@ export default function StatsPage() {
         </div>
 
         {/* Bottom Row: Pace & Long Run Progression */}
-        <div className="px-10 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="px-4 sm:px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">PACE PROGRESSION</p>
             <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4">
@@ -203,7 +203,7 @@ export default function StatsPage() {
         </div>
 
         {/* Footer: Legend + Back Link */}
-        <div className="px-10 pb-4 flex items-center justify-between">
+        <div className="px-4 sm:px-6 lg:px-10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <Link
             href="/"
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
@@ -216,7 +216,7 @@ export default function StatsPage() {
         </div>
 
         {/* Solokit Badge */}
-        <div className="px-10 py-3 text-center">
+        <div className="px-4 sm:px-6 lg:px-10 py-3 text-center">
           <SolokitBadge />
         </div>
       </div>

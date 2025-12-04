@@ -55,13 +55,18 @@ function SuggestionsError({ onRetry, isRetrying }: { onRetry: () => void; isRetr
 
 /**
  * Loading skeleton showing multiple placeholder cards.
- * Uses 6-column grid to match weather forecast width.
+ * Horizontal scroll on mobile/tablet, 6-column grid on large desktop.
  */
 function SuggestionsSkeleton() {
   return (
-    <div className="grid grid-cols-6 gap-3" data-testid="suggestions-skeleton">
+    <div
+      className="flex gap-3 overflow-x-auto scrollbar-hide xl:grid xl:grid-cols-6 xl:overflow-visible"
+      data-testid="suggestions-skeleton"
+    >
       {Array.from({ length: 6 }).map((_, index) => (
-        <RunSuggestionCardSkeleton key={index} />
+        <div key={index} className="min-w-[140px] xl:min-w-0">
+          <RunSuggestionCardSkeleton />
+        </div>
       ))}
     </div>
   );
@@ -245,7 +250,10 @@ export function RunSuggestions({ isAuthenticated = false }: RunSuggestionsProps)
   }
 
   return (
-    <div className="grid grid-cols-6 gap-3" data-testid="run-suggestions">
+    <div
+      className="flex gap-3 overflow-x-auto scrollbar-hide xl:grid xl:grid-cols-6 xl:overflow-visible"
+      data-testid="run-suggestions"
+    >
       {sortedSuggestions.map((suggestion) => {
         const suggestionDate = new Date(suggestion.date);
         const dateKey = suggestionDate.toISOString();
@@ -260,24 +268,25 @@ export function RunSuggestions({ isAuthenticated = false }: RunSuggestionsProps)
           : acceptState?.state || "idle";
 
         return (
-          <RunSuggestionCard
-            key={dateKey}
-            suggestion={{
-              ...suggestion,
-              date: suggestionDate,
-            }}
-            isAuthenticated={isAuthenticated}
-            onAccept={() =>
-              handleAccept({
+          <div key={dateKey} className="min-w-[140px] xl:min-w-0 flex-shrink-0 xl:flex-shrink">
+            <RunSuggestionCard
+              suggestion={{
+                ...suggestion,
                 date: suggestionDate,
-                runType: suggestion.runType,
-                distance: suggestion.distance,
-                reason: suggestion.reason,
-              })
-            }
-            acceptState={effectiveState}
-            acceptError={acceptState?.error}
-          />
+              }}
+              isAuthenticated={isAuthenticated}
+              onAccept={() =>
+                handleAccept({
+                  date: suggestionDate,
+                  runType: suggestion.runType,
+                  distance: suggestion.distance,
+                  reason: suggestion.reason,
+                })
+              }
+              acceptState={effectiveState}
+              acceptError={acceptState?.error}
+            />
+          </div>
         );
       })}
     </div>

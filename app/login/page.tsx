@@ -63,17 +63,17 @@ export default function LoginPage() {
   // Show loading state while checking auth
   if (status === "loading") {
     return (
-      <main className="relative h-screen w-screen overflow-hidden">
-        {/* Background */}
+      <main className="relative min-h-screen w-full">
+        {/* Background - Fixed to viewport */}
         <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `linear-gradient(${getTintColor("default")}, ${getTintColor("default")}), url('/images/trails/${getTrailImage("default")}')`,
           }}
           aria-hidden="true"
         />
         {/* Loading indicator */}
-        <div className="relative z-10 flex h-full items-center justify-center">
+        <div className="relative z-10 flex min-h-screen items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
         </div>
       </main>
@@ -86,10 +86,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden">
-      {/* Dynamic Background Layer */}
+    <main className="relative min-h-screen w-full">
+      {/* Dynamic Background Layer - Fixed to viewport */}
       <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
         style={{
           backgroundImage: `linear-gradient(${backgroundTint}, ${backgroundTint}), url('/images/trails/${backgroundImage}')`,
         }}
@@ -99,32 +99,32 @@ export default function LoginPage() {
       {/* Weather Effects Layer */}
       {displayedCondition && <WeatherEffectLayer condition={displayedCondition} />}
 
-      {/* Night Overlay Layer */}
+      {/* Night Overlay Layer - Fixed to viewport */}
       {nightTint !== "transparent" && (
         <div
-          className="absolute inset-0 z-[5] pointer-events-none transition-opacity duration-1000"
+          className="fixed inset-0 z-[5] pointer-events-none transition-opacity duration-1000"
           style={{ backgroundColor: nightTint }}
           aria-hidden="true"
         />
       )}
 
       {/* Content Layer */}
-      <div className="relative z-10 flex h-full flex-col">
+      <div className="relative z-10 flex min-h-screen flex-col">
         {/* Header with Logo */}
-        <header className="px-10 py-6">
+        <header className="px-4 sm:px-6 lg:px-10 py-4 lg:py-6">
           <Image
             src="/images/logo-lockup-1.svg"
             alt="RainCheck - Weather-aware Marathon Training"
             width={280}
             height={70}
             priority
-            className="-ml-3"
+            className="-ml-2 lg:-ml-3 w-[180px] sm:w-[220px] lg:w-[280px] h-auto"
           />
         </header>
 
         {/* Centered Login Card */}
-        <div className="flex flex-1 items-center justify-center px-6">
-          <div className="w-full max-w-sm rounded-xl bg-forest-deep/50 backdrop-blur-md p-8">
+        <div className="flex flex-1 items-center justify-center px-4 sm:px-6">
+          <div className="w-full max-w-sm rounded-xl bg-forest-deep/50 backdrop-blur-md p-6 sm:p-8">
             <div className="flex flex-col items-center text-center mb-6">
               <h1 className="text-2xl font-bold tracking-tight text-white">Welcome Back</h1>
               <p className="text-white/60 mt-1">Sign in to manage your training</p>

@@ -571,9 +571,9 @@ export default function SettingsPage() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <main className="relative h-screen w-screen overflow-hidden">
+      <main className="relative min-h-screen w-full">
         <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `linear-gradient(${getTintColor("default")}, ${getTintColor("default")}), url('/images/trails/${getTrailImage("default")}')`,
           }}
@@ -592,7 +592,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="relative min-h-screen w-screen overflow-x-hidden">
+    <main className="relative min-h-screen w-full">
       {/* Dynamic Background */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
@@ -617,25 +617,35 @@ export default function SettingsPage() {
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
-        <header className="flex items-center justify-between px-10 py-6">
+        <header className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-4 lg:py-6">
           <Link
             href="/"
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span>Back to Dashboard</span>
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Link>
-          <Image src="/images/logo-lockup-1.svg" alt="RainCheck" width={200} height={50} priority />
+          <Image
+            src="/images/logo-lockup-1.svg"
+            alt="RainCheck"
+            width={200}
+            height={50}
+            priority
+            className="w-[120px] sm:w-[160px] lg:w-[200px] h-auto"
+          />
         </header>
 
         {/* Page Title */}
-        <div className="px-10 mb-8">
-          <h1 className="text-3xl font-bold text-white">Settings</h1>
-          <p className="text-white/60 mt-1">Manage your training configuration and runs</p>
+        <div className="px-4 sm:px-6 lg:px-10 mb-6 lg:mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">Settings</h1>
+          <p className="text-white/60 mt-1 text-sm lg:text-base">
+            Manage your training configuration and runs
+          </p>
         </div>
 
         {/* Settings Sections */}
-        <div className="px-10 pb-10 space-y-6 max-w-4xl">
+        <div className="px-4 sm:px-6 lg:px-10 pb-10 space-y-6 max-w-4xl">
           <LocationSettings />
           <RaceSettings />
           <RunsManagement />

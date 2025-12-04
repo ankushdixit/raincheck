@@ -64,12 +64,20 @@ function LiveClock() {
   }
 
   return (
-    <span className="text-2xl font-medium text-white font-mono">
+    <span className="text-xl sm:text-2xl font-medium text-white font-mono">
       {time.hours}
       <span className={colonVisible ? "opacity-100" : "opacity-0"}>:</span>
       {time.minutes}
     </span>
   );
+}
+
+/**
+ * Extract just city name from full location string
+ * e.g., "Dublin, Leinster, Ireland" -> "Dublin"
+ */
+function getCityName(location: string): string {
+  return location.split(",")[0].trim();
 }
 
 /**
@@ -95,17 +103,24 @@ function WeatherInfo() {
 
   return (
     <div className="flex flex-col items-end gap-0.5" data-testid="header-weather-info">
-      {/* Location */}
-      <span className="text-xs text-white/70">{weather.location}</span>
+      {/* Location - city only on mobile, full on larger screens */}
+      <span className="text-xs text-white/70">
+        <span className="sm:hidden">{getCityName(weather.location)}</span>
+        <span className="hidden sm:inline">{weather.location}</span>
+      </span>
 
       {/* Time */}
       <LiveClock />
 
-      {/* Weather stats: temp | precipitation | wind */}
-      <span className="text-sm text-white">
-        {Math.round(weather.temperature)}&deg;C{"  |  "}
-        {Math.round(weather.precipitation)}%{"  |  "}
-        {Math.round(weather.windSpeed)} km/h
+      {/* Weather stats - compact on mobile */}
+      <span className="text-xs sm:text-sm text-white whitespace-nowrap">
+        {Math.round(weather.temperature)}&deg;
+        <span className="hidden sm:inline">C</span>
+        {" | "}
+        {Math.round(weather.precipitation)}%{" | "}
+        {Math.round(weather.windSpeed)}
+        <span className="hidden sm:inline"> km/h</span>
+        <span className="sm:hidden">k</span>
       </span>
     </div>
   );
@@ -200,7 +215,10 @@ function HeaderActions() {
  */
 export function Header() {
   return (
-    <header className="flex items-start justify-between w-full px-10 py-6" data-testid="header">
+    <header
+      className="flex items-start justify-between w-full px-4 sm:px-6 lg:px-10 py-3 sm:py-4 lg:py-6"
+      data-testid="header"
+    >
       {/* Left: Logo lockup - negative margin compensates for SVG internal whitespace */}
       <Image
         src="/images/logo-lockup-1.svg"
@@ -208,11 +226,11 @@ export function Header() {
         width={350}
         height={88}
         priority
-        className="-ml-3.5"
+        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[140px] sm:w-[200px] md:w-[280px] lg:w-[350px] h-auto"
       />
 
       {/* Right: Actions + Weather info */}
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-2 sm:gap-4">
         <HeaderActions />
         <WeatherInfo />
       </div>
