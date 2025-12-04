@@ -36,12 +36,16 @@ function WeatherInfoSkeleton() {
 
 /**
  * Live clock component with blinking colon
+ * Uses useEffect to avoid hydration mismatch (server/client time difference)
  */
 function LiveClock() {
-  const [time, setTime] = useState(getTimeParts);
+  const [time, setTime] = useState<{ hours: string; minutes: string } | null>(null);
   const [colonVisible, setColonVisible] = useState(true);
 
   useEffect(() => {
+    // Set initial time on client only to avoid hydration mismatch
+    setTime(getTimeParts());
+
     const interval = setInterval(() => {
       setTime(getTimeParts());
       setColonVisible((prev) => !prev);
@@ -49,6 +53,15 @@ function LiveClock() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Show placeholder during SSR to avoid hydration mismatch
+  if (!time) {
+    return (
+      <span className="text-2xl font-medium text-white font-mono">
+        --<span className="opacity-100">:</span>--
+      </span>
+    );
+  }
 
   return (
     <span className="text-2xl font-medium text-white font-mono">

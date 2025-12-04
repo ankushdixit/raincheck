@@ -70,11 +70,13 @@ export function HomePage() {
   const activeLayerRef = useRef<0 | 1>(0);
 
   // Night overlay state (updates every minute)
-  const [nightTint, setNightTint] = useState<string>(getNightTint());
+  // Initialize with "transparent" to avoid hydration mismatch, set actual value in useEffect
+  const [nightTint, setNightTint] = useState<string>("transparent");
 
-  // Update night overlay every minute
+  // Set initial night tint on client and update every minute
   useEffect(() => {
     const updateNightTint = () => setNightTint(getNightTint());
+    updateNightTint(); // Set initial value on client
     const interval = setInterval(updateNightTint, 60000);
     return () => clearInterval(interval);
   }, []);
