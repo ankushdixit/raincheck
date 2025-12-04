@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import { TRPCReactProvider } from "@/lib/api";
 import { SessionProvider } from "@/components/providers";
 import "./globals.css";
@@ -22,6 +23,7 @@ export default function RootLayout({
         <SessionProvider>
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );

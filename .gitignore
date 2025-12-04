@@ -59,3 +59,6 @@ Desktop.ini         # Windows
 $RECYCLE.BIN/       # Windows
 *~                  # Linux backup files
 .env
+
+# Marketing copy (private)
+/marketing-copy/
