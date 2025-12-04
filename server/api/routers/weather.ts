@@ -31,17 +31,23 @@ export const weatherRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }): Promise<WeatherData> => {
+      const startTime = Date.now();
+      const timings: Record<string, number> = {};
+
       // Get location from input or default from UserSettings
       let location = input.location;
 
       if (!location) {
+        const settingsStart = Date.now();
         const settings = await ctx.db.userSettings.findFirst();
+        timings.userSettings = Date.now() - settingsStart;
         location = settings?.defaultLocation ?? "Balbriggan, IE";
       }
 
       const now = new Date();
 
       // Check cache for unexpired entry
+      const cacheCheckStart = Date.now();
       const cached = await ctx.db.weatherCache.findFirst({
         where: {
           location,
@@ -53,9 +59,12 @@ export const weatherRouter = createTRPCRouter({
           cachedAt: "desc",
         },
       });
+      timings.cacheCheck = Date.now() - cacheCheckStart;
 
       if (cached) {
         // Cache hit - return cached data
+        timings.total = Date.now() - startTime;
+        console.log(`[weather.getCurrentWeather] CACHE HIT - timings:`, timings);
         return {
           location: cached.location,
           latitude: cached.latitude,
@@ -74,12 +83,15 @@ export const weatherRouter = createTRPCRouter({
 
       // Cache miss - fetch from API
       try {
+        const apiStart = Date.now();
         const weatherData = await fetchCurrentWeather(location);
+        timings.externalApi = Date.now() - apiStart;
 
         // Calculate expiration time (1 hour from now)
         const expiresAt = new Date(now.getTime() + CACHE_TTL_MS);
 
         // Store in cache (upsert to handle race conditions)
+        const upsertStart = Date.now();
         await ctx.db.weatherCache.upsert({
           where: {
             location_datetime: {
@@ -118,6 +130,9 @@ export const weatherRouter = createTRPCRouter({
             expiresAt,
           },
         });
+        timings.cacheUpsert = Date.now() - upsertStart;
+        timings.total = Date.now() - startTime;
+        console.log(`[weather.getCurrentWeather] CACHE MISS - timings:`, timings);
 
         return weatherData;
       } catch (error) {

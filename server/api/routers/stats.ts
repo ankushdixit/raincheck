@@ -461,6 +461,8 @@ export const statsRouter = createTRPCRouter({
    * - longestRun: Maximum distance from completed runs (km)
    */
   getSummary: publicProcedure.query(async ({ ctx }) => {
+    const startTime = Date.now();
+
     // Use database aggregation for count and sum (more efficient than fetching all records)
     const [aggregates, longestRunResult, recentRuns] = await Promise.all([
       // Aggregate: count and sum in one query
@@ -483,6 +485,8 @@ export const statsRouter = createTRPCRouter({
         take: 500, // Reasonable limit for stats calculation
       }),
     ]);
+
+    console.log(`[stats.getSummary] DB queries took ${Date.now() - startTime}ms`);
 
     const totalRuns = aggregates._count.id ?? 0;
     const totalDistance = Math.round((aggregates._sum.distance ?? 0) * 100) / 100;
