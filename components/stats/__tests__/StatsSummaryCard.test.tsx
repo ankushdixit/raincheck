@@ -142,11 +142,11 @@ describe("StatsSummaryCard", () => {
       expect(screen.getByText("6:15 /km")).toBeInTheDocument();
     });
 
-    it("displays current streak", () => {
+    it("displays current streak in weeks", () => {
       render(<StatsSummaryCard />);
 
       expect(screen.getByText("Current Streak")).toBeInTheDocument();
-      expect(screen.getByText("3 days")).toBeInTheDocument();
+      expect(screen.getByText("3 weeks")).toBeInTheDocument();
     });
 
     it("renders all icons", () => {
@@ -193,7 +193,25 @@ describe("StatsSummaryCard", () => {
 
       render(<StatsSummaryCard />);
 
-      expect(screen.getByText("0 days")).toBeInTheDocument();
+      expect(screen.getByText("0 weeks")).toBeInTheDocument();
+    });
+
+    it("handles singular week correctly", () => {
+      mockSummaryQuery.mockReturnValue({
+        data: {
+          totalRuns: 2,
+          totalDistance: 15,
+          avgPace: "5:30",
+          streak: 1,
+          longestRun: 10,
+        },
+        isLoading: false,
+        error: null,
+      });
+
+      render(<StatsSummaryCard />);
+
+      expect(screen.getByText("1 week")).toBeInTheDocument();
     });
   });
 

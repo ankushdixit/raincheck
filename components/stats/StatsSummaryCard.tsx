@@ -119,7 +119,7 @@ export function StatsSummaryCard() {
       />
       <SummaryCard
         label="Current Streak"
-        value={`${data.streak} days`}
+        value={`${data.streak} ${data.streak === 1 ? "week" : "weeks"}`}
         icon={<Flame className="h-6 w-6" />}
       />
     </div>

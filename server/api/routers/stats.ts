@@ -41,13 +41,64 @@ function secondsToPace(totalSeconds: number): string {
 }
 
 /**
- * Get the training week number for a given date
- * Training starts Nov 23, 2025 - weeks are Sun-Sat
+ * Training reference start date - September 21, 2025
+ * This is when week counting begins for all training statistics.
  */
-function getWeekNumberForDate(date: Date, trainingStart: Date): number {
+const TRAINING_START_DATE = new Date("2025-09-21T00:00:00");
+
+/**
+ * Get the training week number for a given date
+ * Training starts Sep 21, 2025 - weeks are Sun-Sat
+ */
+function getWeekNumberForDate(date: Date, trainingStart: Date = TRAINING_START_DATE): number {
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;
   const diffMs = date.getTime() - trainingStart.getTime();
   return Math.floor(diffMs / msPerWeek) + 1;
+}
+
+/**
+ * Calculate target weekly mileage based on week number
+ * Linear progression: 10km in week 1 → 25km by week 11 → continues to ~45km peak
+ * Then tapers in final weeks before race
+ */
+function calculateWeeklyTarget(weekNum: number): number {
+  if (weekNum < 1) return 0; // Pre-training weeks have no target
+
+  // Base building (weeks 1-11): 10km → 25km (1.5km/week increase)
+  if (weekNum <= 11) {
+    return 10 + (weekNum - 1) * 1.5;
+  }
+
+  // Continue building (weeks 12-26): 25km → 45km (slower ~1.4km/week)
+  if (weekNum <= 26) {
+    return 25 + (weekNum - 11) * 1.33;
+  }
+
+  // Taper (weeks 27-34): Reduce to 60-70% of peak
+  const peakTarget = 45;
+  const taperWeeks = weekNum - 26;
+  const taperReduction = taperWeeks * 3; // Reduce by 3km per taper week
+  return Math.max(25, peakTarget - taperReduction);
+}
+
+/**
+ * Calculate target long run distance based on week number
+ * Progressive increase: 7km in week 1 → 21km (race distance) by week 30
+ */
+function calculateLongRunTarget(weekNum: number): number {
+  if (weekNum < 1) return 0;
+
+  // Linear progression: 7km to 21km over 30 weeks
+  const startDistance = 7;
+  const raceDistance = 21.1;
+  const buildWeeks = 30;
+
+  if (weekNum <= buildWeeks) {
+    return startDistance + ((raceDistance - startDistance) / buildWeeks) * weekNum;
+  }
+
+  // After week 30, taper down slightly
+  return raceDistance * 0.8;
 }
 
 export const statsRouter = createTRPCRouter({
@@ -83,19 +134,8 @@ export const statsRouter = createTRPCRouter({
         return [];
       }
 
-      // Determine the reference start date
-      // Use training plan start if available, otherwise use earliest run date aligned to Sunday
-      let trainingStart: Date;
-      if (trainingPlans.length > 0) {
-        trainingStart = trainingPlans[0]!.weekStart;
-      } else {
-        // Align earliest run to the previous Sunday
-        const earliestRun = runs[0]!.date;
-        trainingStart = new Date(earliestRun);
-        const dayOfWeek = trainingStart.getDay();
-        trainingStart.setDate(trainingStart.getDate() - dayOfWeek);
-        trainingStart.setHours(0, 0, 0, 0);
-      }
+      // Use the fixed training start date (September 21, 2025)
+      const trainingStart = TRAINING_START_DATE;
 
       // Group runs by week number (can be negative for pre-training weeks)
       const runsByWeek = new Map<number, number>();
@@ -134,7 +174,6 @@ export const statsRouter = createTRPCRouter({
       const relevantWeeks = sortedWeeks.filter((w) => w <= currentWeekNum).slice(-weeksToFetch);
 
       for (const weekNum of relevantWeeks) {
-        const plan = trainingPlans.find((p) => p.weekNumber === weekNum);
         const mileage = runsByWeek.get(weekNum) ?? 0;
 
         // Label pre-training weeks differently
@@ -142,11 +181,9 @@ export const statsRouter = createTRPCRouter({
 
         result.push({
           week: weekLabel,
-          weekStart:
-            plan?.weekStart ??
-            new Date(trainingStart.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000),
+          weekStart: new Date(trainingStart.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000),
           mileage: Math.round(mileage * 100) / 100,
-          target: plan?.weeklyMileageTarget ?? 0,
+          target: Math.round(calculateWeeklyTarget(weekNum) * 10) / 10, // Linear target based on week
           isCurrentWeek: weekNum === currentWeekNum,
         });
       }
@@ -157,8 +194,8 @@ export const statsRouter = createTRPCRouter({
   /**
    * Get pace progression data
    *
-   * Returns pace data points with dates and run types for charting.
-   * Optionally filter by run type.
+   * Returns weekly average pace for all weeks from week 1 to current week.
+   * Weeks without runs show null pace.
    */
   getPaceProgression: publicProcedure
     .input(
@@ -177,18 +214,69 @@ export const statsRouter = createTRPCRouter({
         orderBy: { date: "asc" },
       });
 
-      return runs.map((run) => ({
-        date: run.date,
-        pace: run.pace,
-        paceSeconds: paceToSeconds(run.pace),
-        type: run.type,
-      }));
+      // Get current week number
+      const now = new Date();
+      const currentWeekNum = getWeekNumberForDate(now);
+
+      if (currentWeekNum < 1) {
+        return [];
+      }
+
+      // Group runs by week and calculate weighted average pace
+      const weeklyPaces = new Map<number, { totalDistance: number; totalTime: number }>();
+
+      for (const run of runs) {
+        const weekNum = getWeekNumberForDate(run.date);
+        if (weekNum < 1 || weekNum > currentWeekNum) continue;
+
+        const paceSeconds = paceToSeconds(run.pace);
+        const runTime = paceSeconds * run.distance; // Total time in seconds
+
+        const existing = weeklyPaces.get(weekNum) ?? { totalDistance: 0, totalTime: 0 };
+        weeklyPaces.set(weekNum, {
+          totalDistance: existing.totalDistance + run.distance,
+          totalTime: existing.totalTime + runTime,
+        });
+      }
+
+      // Build result for each week from 1 to current
+      const result: Array<{
+        week: number;
+        date: Date;
+        paceSeconds: number | null;
+        pace: string | null;
+      }> = [];
+
+      for (let weekNum = 1; weekNum <= currentWeekNum; weekNum++) {
+        const weekStart = new Date(
+          TRAINING_START_DATE.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000
+        );
+
+        const weekData = weeklyPaces.get(weekNum);
+        let avgPaceSeconds: number | null = null;
+        let avgPace: string | null = null;
+
+        if (weekData && weekData.totalDistance > 0) {
+          avgPaceSeconds = weekData.totalTime / weekData.totalDistance;
+          avgPace = secondsToPace(avgPaceSeconds);
+        }
+
+        result.push({
+          week: weekNum,
+          date: weekStart,
+          paceSeconds: avgPaceSeconds,
+          pace: avgPace,
+        });
+      }
+
+      return result;
     }),
 
   /**
    * Get long run progression data
    *
-   * Returns long run distances with training plan targets.
+   * Returns long run distances for all weeks from week 1 to current week.
+   * Weeks without long runs show distance of 0.
    */
   getLongRunProgression: publicProcedure.query(async ({ ctx }) => {
     // Get completed long runs
@@ -200,34 +288,55 @@ export const statsRouter = createTRPCRouter({
       orderBy: { date: "asc" },
     });
 
-    // Get training plans for target data
-    const trainingPlans = await ctx.db.trainingPlan.findMany({
-      orderBy: { weekNumber: "asc" },
-    });
+    // Get current week number
+    const now = new Date();
+    const currentWeekNum = getWeekNumberForDate(now);
 
-    if (trainingPlans.length === 0 || longRuns.length === 0) {
+    // Only show data for positive weeks (from training start)
+    if (currentWeekNum < 1) {
       return [];
     }
 
-    const trainingStart = trainingPlans[0]!.weekStart;
+    // Group long runs by week number
+    const runsByWeek = new Map<number, number>();
+    for (const run of longRuns) {
+      const weekNum = getWeekNumberForDate(run.date);
+      // Use the maximum distance if multiple long runs in same week
+      const existing = runsByWeek.get(weekNum) ?? 0;
+      if (run.distance > existing) {
+        runsByWeek.set(weekNum, run.distance);
+      }
+    }
 
-    return longRuns.map((run) => {
-      const weekNum = getWeekNumberForDate(run.date, trainingStart);
-      const plan = trainingPlans.find((p) => p.weekNumber === weekNum);
+    // Build result for each week from 1 to current
+    const result: Array<{
+      week: number;
+      date: Date;
+      distance: number;
+      target: number;
+    }> = [];
 
-      return {
-        date: run.date,
-        distance: run.distance,
-        target: plan?.longRunTarget ?? 0,
-      };
-    });
+    for (let weekNum = 1; weekNum <= currentWeekNum; weekNum++) {
+      const weekStart = new Date(
+        TRAINING_START_DATE.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000
+      );
+
+      result.push({
+        week: weekNum,
+        date: weekStart,
+        distance: runsByWeek.get(weekNum) ?? 0, // 0 if no long run that week
+        target: calculateLongRunTarget(weekNum),
+      });
+    }
+
+    return result;
   }),
 
   /**
    * Get completion rate statistics
    *
    * Returns completion statistics overall and broken down by training phase.
-   * Calculates based on scheduled runs (future + completed).
+   * Only counts scheduled runs up to the current date (excludes future runs).
    */
   getCompletionRate: publicProcedure
     .input(
@@ -238,21 +347,30 @@ export const statsRouter = createTRPCRouter({
         .optional()
     )
     .query(async ({ ctx, input }) => {
-      // Get all runs (scheduled and completed)
-      const allRuns = await ctx.db.run.findMany();
+      // Get current date at end of day for comparison
+      const now = new Date();
+      now.setHours(23, 59, 59, 999);
 
-      // Filter by phase if specified
-      let filteredRuns = allRuns;
+      // Get all runs scheduled up to today (excludes future runs)
+      const allRuns = await ctx.db.run.findMany({
+        where: {
+          date: { lte: now },
+        },
+      });
+
+      // Get training plans for phase filtering
       const trainingPlans = await ctx.db.trainingPlan.findMany({
         orderBy: { weekNumber: "asc" },
       });
 
+      // Filter by phase if specified
+      let filteredRuns = allRuns;
+
       if (input?.phase && trainingPlans.length > 0) {
-        const trainingStart = trainingPlans[0]!.weekStart;
         const phasePlans = trainingPlans.filter((p) => p.phase === input.phase);
 
         filteredRuns = allRuns.filter((run) => {
-          const weekNum = getWeekNumberForDate(run.date, trainingStart);
+          const weekNum = getWeekNumberForDate(run.date);
           return phasePlans.some((p) => p.weekNumber === weekNum);
         });
       }
@@ -261,7 +379,7 @@ export const statsRouter = createTRPCRouter({
       const completed = filteredRuns.filter((r) => r.completed).length;
       const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-      // Calculate by phase
+      // Calculate by phase (also only counting runs up to today)
       const byPhase: Array<{
         phase: Phase;
         total: number;
@@ -270,7 +388,6 @@ export const statsRouter = createTRPCRouter({
       }> = [];
 
       if (trainingPlans.length > 0) {
-        const trainingStart = trainingPlans[0]!.weekStart;
         const phases = [
           Phase.BASE_BUILDING,
           Phase.BASE_EXTENSION,
@@ -281,7 +398,7 @@ export const statsRouter = createTRPCRouter({
         for (const phase of phases) {
           const phasePlans = trainingPlans.filter((p) => p.phase === phase);
           const phaseRuns = allRuns.filter((run) => {
-            const weekNum = getWeekNumberForDate(run.date, trainingStart);
+            const weekNum = getWeekNumberForDate(run.date);
             return phasePlans.some((p) => p.weekNumber === weekNum);
           });
 
@@ -354,40 +471,30 @@ export const statsRouter = createTRPCRouter({
     // Longest run
     const longestRun = Math.max(...completedRuns.map((r) => r.distance));
 
-    // Current streak (consecutive days with runs ending today or yesterday)
+    // Current streak (consecutive weeks with >10km total mileage)
     let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const currentWeekNum = getWeekNumberForDate(now);
 
-    // Sort runs by date descending (most recent first)
-    const sortedRuns = [...completedRuns].sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Group runs by week and sum mileage
+    const weeklyMileage = new Map<number, number>();
+    for (const run of completedRuns) {
+      const weekNum = getWeekNumberForDate(run.date);
+      const existing = weeklyMileage.get(weekNum) ?? 0;
+      weeklyMileage.set(weekNum, existing + run.distance);
+    }
 
-    // Check if most recent run is today or yesterday
-    const mostRecentRun = sortedRuns[0];
-    if (mostRecentRun) {
-      const runDate = new Date(mostRecentRun.date);
-      runDate.setHours(0, 0, 0, 0);
+    // Count consecutive weeks backwards from current week with >10km
+    // A week counts if it has more than 10km total mileage
+    const STREAK_THRESHOLD_KM = 10;
 
-      const daysDiff = Math.floor((today.getTime() - runDate.getTime()) / (24 * 60 * 60 * 1000));
-
-      // Only count streak if most recent run is within last day
-      if (daysDiff <= 1) {
-        // Build set of dates with runs
-        const runDates = new Set<string>();
-        for (const run of sortedRuns) {
-          const d = new Date(run.date);
-          d.setHours(0, 0, 0, 0);
-          runDates.add(d.toISOString());
-        }
-
-        // Count consecutive days backwards from most recent run
-        const checkDate = new Date(mostRecentRun.date);
-        checkDate.setHours(0, 0, 0, 0);
-
-        while (runDates.has(checkDate.toISOString())) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        }
+    for (let weekNum = currentWeekNum; weekNum >= 1; weekNum--) {
+      const mileage = weeklyMileage.get(weekNum) ?? 0;
+      if (mileage > STREAK_THRESHOLD_KM) {
+        streak++;
+      } else {
+        // Streak broken - stop counting
+        break;
       }
     }
 

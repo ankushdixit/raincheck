@@ -11,6 +11,8 @@ import { api } from "@/lib/api";
 import { Header } from "./Header";
 import { InfoBoxes } from "./InfoBoxes";
 import { StoryCard } from "./StoryCard";
+import { CompactStatsRow } from "./CompactStatsRow";
+import { SolokitBadge } from "@/components/common";
 
 /** Selected day data for background coordination */
 interface SelectedDay {
@@ -221,9 +223,16 @@ export function HomePage() {
         {/* Header */}
         <Header />
 
-        {/* Story Section - Top area */}
-        <div className="px-10 mt-6 mb-8">
-          <StoryCard />
+        {/* Story Section + Compact Stats Row */}
+        <div className="px-10 mt-6 mb-8 flex flex-col lg:flex-row lg:items-stretch gap-4">
+          {/* Journey Card - Full width on mobile, ~60% on desktop */}
+          <div className="lg:flex-[3] min-w-0">
+            <StoryCard />
+          </div>
+          {/* Compact Stats - Full width on mobile, ~40% on desktop */}
+          <div className="lg:flex-[2] min-w-0 flex">
+            <CompactStatsRow />
+          </div>
         </div>
 
         {/* Info Boxes Row: Phase, Progress, Countdown */}
@@ -257,6 +266,11 @@ export function HomePage() {
             </h3>
             <TrainingCalendar />
           </div>
+        </div>
+
+        {/* Footer Badge */}
+        <div className="px-10 py-3 text-center">
+          <SolokitBadge />
         </div>
       </div>
     </main>

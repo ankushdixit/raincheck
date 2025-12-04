@@ -6,7 +6,10 @@
  */
 export function StoryCard() {
   return (
-    <div className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-6" data-testid="story-card">
+    <div
+      className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-6 h-full"
+      data-testid="story-card"
+    >
       <h2 className="text-lg font-semibold text-white mb-3">My Running Journey</h2>
       <p className="text-white/80 text-sm leading-relaxed">
         I&apos;m <span className="text-white font-medium">Ankush Dixit</span>. I started running for

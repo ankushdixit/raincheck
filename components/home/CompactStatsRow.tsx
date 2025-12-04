@@ -1,0 +1,107 @@
+"use client";
+
+import { Route, MapPin, Timer, Flame, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { api } from "@/lib/api";
+
+interface CompactStatCardProps {
+  icon: React.ReactNode;
+  value: string;
+  unit: string;
+  label: string;
+}
+
+function CompactStatCard({ icon, value, unit, label }: CompactStatCardProps) {
+  return (
+    <div
+      className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-3 flex flex-col justify-between h-full"
+      title={label}
+    >
+      <div className="text-amber-500">{icon}</div>
+      <div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-white text-xl font-bold">{value}</span>
+          <span className="text-white/50 text-xs">{unit}</span>
+        </div>
+        <p className="text-white/40 text-[10px] uppercase tracking-wide truncate">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function CompactStatCardSkeleton() {
+  return (
+    <div className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-3 animate-pulse h-full flex flex-col justify-between">
+      <div className="h-5 w-5 rounded bg-white/10" />
+      <div>
+        <div className="h-6 w-12 rounded bg-white/10 mb-1" />
+        <div className="h-3 w-16 rounded bg-white/10" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact Stats Row for Homepage
+ *
+ * Displays 5 square cards: Total Runs, Total Distance, Average Pace, Current Streak, and See Stats link
+ */
+export function CompactStatsRow() {
+  const { data, isLoading } = api.stats.getSummary.useQuery();
+  const { data: weeklyData } = api.stats.getWeeklyMileage.useQuery({ weeks: 52 });
+
+  // Calculate max weekly mileage for best week display
+  const maxWeeklyMileage =
+    weeklyData && weeklyData.length > 0 ? Math.max(...weeklyData.map((w) => w.mileage)) : 0;
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 h-full w-full">
+        <CompactStatCardSkeleton />
+        <CompactStatCardSkeleton />
+        <CompactStatCardSkeleton />
+        <CompactStatCardSkeleton />
+        <CompactStatCardSkeleton />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 h-full w-full">
+      <CompactStatCard
+        icon={<Route className="h-5 w-5" />}
+        value={data?.totalRuns.toString() ?? "0"}
+        unit="runs"
+        label="Total Runs"
+      />
+      <CompactStatCard
+        icon={<MapPin className="h-5 w-5" />}
+        value={data?.totalDistance.toFixed(0) ?? "0"}
+        unit="km"
+        label="Total Distance"
+      />
+      <CompactStatCard
+        icon={<Timer className="h-5 w-5" />}
+        value={data?.avgPace || "--:--"}
+        unit="/km"
+        label="Avg Pace"
+      />
+      <CompactStatCard
+        icon={<Flame className="h-5 w-5" />}
+        value={data?.streak.toString() ?? "0"}
+        unit={data?.streak === 1 ? "wk" : "wks"}
+        label={maxWeeklyMileage > 0 ? `Best: ${maxWeeklyMileage.toFixed(0)}km` : "Streak"}
+      />
+      <Link
+        href="/stats"
+        className="bg-amber-500/20 hover:bg-amber-500/30 backdrop-blur-md rounded-lg p-3 flex flex-col justify-between transition-colors group h-full"
+      >
+        <ArrowRight className="h-5 w-5 text-amber-500 group-hover:translate-x-1 transition-transform" />
+        <div>
+          <p className="text-amber-500 text-xs font-medium">See All</p>
+          <p className="text-amber-500/70 text-[10px] uppercase tracking-wide">Stats</p>
+        </div>
+      </Link>
+    </div>
+  );
+}

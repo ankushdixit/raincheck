@@ -45,42 +45,43 @@ const mockAuth = auth as jest.Mock;
 describe("Stats Router", () => {
   const createCaller = createCallerFactory(statsRouter);
 
-  // Mock training plan data
+  // Training starts September 21, 2025 (fixed date in stats router)
+  // Mock training plan data - aligned with Sep 21 start
   const mockTrainingPlans = [
     {
       id: "plan-1",
       phase: Phase.BASE_BUILDING,
       weekNumber: 1,
+      weekStart: new Date("2025-09-21T00:00:00.000Z"),
+      weekEnd: new Date("2025-09-27T23:59:59.999Z"),
+      longRunTarget: 10,
+      weeklyMileageTarget: 20,
+    },
+    {
+      id: "plan-10",
+      phase: Phase.BASE_BUILDING,
+      weekNumber: 10,
       weekStart: new Date("2025-11-23T00:00:00.000Z"),
       weekEnd: new Date("2025-11-29T23:59:59.999Z"),
       longRunTarget: 12,
       weeklyMileageTarget: 24,
     },
     {
-      id: "plan-2",
+      id: "plan-11",
       phase: Phase.BASE_BUILDING,
-      weekNumber: 2,
+      weekNumber: 11,
       weekStart: new Date("2025-11-30T00:00:00.000Z"),
       weekEnd: new Date("2025-12-06T23:59:59.999Z"),
-      longRunTarget: 12,
-      weeklyMileageTarget: 24,
-    },
-    {
-      id: "plan-3",
-      phase: Phase.BASE_EXTENSION,
-      weekNumber: 7,
-      weekStart: new Date("2026-01-05T00:00:00.000Z"),
-      weekEnd: new Date("2026-01-11T23:59:59.999Z"),
-      longRunTarget: 15,
-      weeklyMileageTarget: 28,
+      longRunTarget: 13,
+      weeklyMileageTarget: 26,
     },
   ];
 
-  // Mock run data
+  // Mock run data - aligned with Sep 21 start (Week 10 = Nov 23, Week 11 = Nov 30)
   const mockCompletedRuns = [
     {
       id: "run-1",
-      date: new Date("2025-11-23T08:00:00.000Z"), // Week 1
+      date: new Date("2025-11-23T08:00:00.000Z"), // Week 10
       distance: 11.48,
       pace: "6:45",
       duration: "77:32",
@@ -89,7 +90,7 @@ describe("Stats Router", () => {
     },
     {
       id: "run-2",
-      date: new Date("2025-11-26T08:00:00.000Z"), // Week 1
+      date: new Date("2025-11-26T08:00:00.000Z"), // Week 10
       distance: 6.15,
       pace: "6:39",
       duration: "40:53",
@@ -98,7 +99,7 @@ describe("Stats Router", () => {
     },
     {
       id: "run-3",
-      date: new Date("2025-11-30T08:00:00.000Z"), // Week 2
+      date: new Date("2025-11-30T08:00:00.000Z"), // Week 11
       distance: 12,
       pace: "6:40",
       duration: "80:00",
@@ -131,27 +132,27 @@ describe("Stats Router", () => {
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
 
-      // Check structure of first week
-      const week1 = result.find((w) => w.week === "Week 1");
-      expect(week1).toBeDefined();
-      expect(week1?.mileage).toBeCloseTo(17.63, 1); // 11.48 + 6.15
-      expect(week1?.target).toBe(24);
+      // Check structure of Week 10 (Nov 23-29, containing runs 1 and 2)
+      const week10 = result.find((w) => w.week === "Week 10");
+      expect(week10).toBeDefined();
+      expect(week10?.mileage).toBeCloseTo(17.63, 1); // 11.48 + 6.15
+      // Target is now calculated: 10 + (10-1) * 1.5 = 23.5
+      expect(week10?.target).toBeCloseTo(23.5, 1);
     });
 
-    it("returns mileage data without targets when no training plans exist", async () => {
+    it("returns mileage data with calculated targets (no db dependency)", async () => {
       mockTrainingPlanFindMany.mockResolvedValue([]);
       mockRunFindMany.mockResolvedValue(mockCompletedRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage();
 
-      // Should still return mileage data, just without targets
+      // Should still return mileage data with calculated targets
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
-      // All targets should be 0 when no training plan
-      result.forEach((week) => {
-        expect(week.target).toBe(0);
-      });
+      // Targets are calculated based on week number, not from DB
+      const week10 = result.find((w) => w.week === "Week 10");
+      expect(week10?.target).toBeCloseTo(23.5, 1); // 10 + (10-1) * 1.5
     });
 
     it("returns empty array when no runs exist", async () => {
@@ -181,18 +182,18 @@ describe("Stats Router", () => {
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getWeeklyMileage();
 
-      // Current week (Dec 1) should be week 2
+      // Current week (Dec 1) should be week 11 (Sep 21 start + 10 weeks)
       const currentWeek = result.find((w) => w.isCurrentWeek);
-      expect(currentWeek?.week).toBe("Week 2");
+      expect(currentWeek?.week).toBe("Week 11");
     });
 
     it("includes pre-training weeks with 'Pre' label", async () => {
       mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
-      // Add runs from before training plan start (Nov 23)
+      // Add runs from before training plan start (Sep 21)
       const preTrainingRuns = [
         {
           id: "pre-run-1",
-          date: new Date("2025-09-23T08:00:00.000Z"), // 9 weeks before training
+          date: new Date("2025-09-14T08:00:00.000Z"), // 1 week before training (Sep 14-20)
           distance: 7,
           pace: "6:20",
           duration: "44:20",
@@ -201,7 +202,7 @@ describe("Stats Router", () => {
         },
         {
           id: "pre-run-2",
-          date: new Date("2025-11-16T08:00:00.000Z"), // 1 week before training
+          date: new Date("2025-09-07T08:00:00.000Z"), // 2 weeks before training (Sep 7-13)
           distance: 10.82,
           pace: "6:42",
           duration: "72:25",
@@ -224,10 +225,10 @@ describe("Stats Router", () => {
         expect(week.target).toBe(0);
       });
 
-      // Pre 1 should be the week before Week 1 (Nov 16-22)
+      // Pre 1 should be the week before Week 1 (Sep 14-20)
       const pre1 = result.find((w) => w.week === "Pre 1");
       expect(pre1).toBeDefined();
-      expect(pre1?.mileage).toBeCloseTo(10.82, 1);
+      expect(pre1?.mileage).toBeCloseTo(7, 1);
     });
 
     it("works without authentication (public)", async () => {
@@ -242,27 +243,42 @@ describe("Stats Router", () => {
   });
 
   describe("getPaceProgression", () => {
-    it("returns pace data for all runs", async () => {
+    it("returns weekly average pace data for all weeks", async () => {
       mockRunFindMany.mockResolvedValue(mockCompletedRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getPaceProgression();
 
-      expect(result).toHaveLength(3);
+      // Current week (Dec 1) is week 11, so should return 11 weeks
+      expect(result).toHaveLength(11);
+      expect(result[0]).toHaveProperty("week");
       expect(result[0]).toHaveProperty("date");
       expect(result[0]).toHaveProperty("pace");
       expect(result[0]).toHaveProperty("paceSeconds");
-      expect(result[0]).toHaveProperty("type");
     });
 
-    it("converts pace string to seconds correctly", async () => {
-      mockRunFindMany.mockResolvedValue([mockCompletedRuns[0]]);
+    it("calculates weighted average pace for each week", async () => {
+      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getPaceProgression();
 
-      // 6:45 = 6*60 + 45 = 405 seconds
-      expect(result[0]?.paceSeconds).toBe(405);
+      // Week 10 has runs with different paces - should be weighted average
+      const week10 = result.find((r) => r.week === 10);
+      expect(week10?.paceSeconds).not.toBeNull();
+      expect(week10?.pace).not.toBeNull();
+    });
+
+    it("shows null pace for weeks without runs", async () => {
+      mockRunFindMany.mockResolvedValue(mockCompletedRuns);
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getPaceProgression();
+
+      // Week 5 has no runs
+      const week5 = result.find((r) => r.week === 5);
+      expect(week5?.paceSeconds).toBeNull();
+      expect(week5?.pace).toBeNull();
     });
 
     it("filters by run type when specified", async () => {
@@ -282,13 +298,17 @@ describe("Stats Router", () => {
       );
     });
 
-    it("returns empty array when no runs exist", async () => {
+    it("returns all weeks with null paces when no runs exist", async () => {
       mockRunFindMany.mockResolvedValue([]);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getPaceProgression();
 
-      expect(result).toEqual([]);
+      // Should still return 11 weeks, all with null pace
+      expect(result).toHaveLength(11);
+      result.forEach((week) => {
+        expect(week.paceSeconds).toBeNull();
+      });
     });
 
     it("works without authentication (public)", async () => {
@@ -296,61 +316,72 @@ describe("Stats Router", () => {
       mockRunFindMany.mockResolvedValue([]);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getPaceProgression();
 
-      await expect(caller.getPaceProgression()).resolves.toEqual([]);
+      // Returns weeks with null paces
+      expect(result).toHaveLength(11);
     });
   });
 
   describe("getLongRunProgression", () => {
     const longRuns = mockCompletedRuns.filter((r) => r.type === RunType.LONG_RUN);
 
-    it("returns long run distances with targets", async () => {
+    it("returns all weeks from week 1 to current week with distances", async () => {
       mockRunFindMany.mockResolvedValue(longRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getLongRunProgression();
 
-      expect(result).toHaveLength(2);
+      // Current week (Dec 1) is week 11, so should return 11 weeks
+      expect(result).toHaveLength(11);
+      expect(result[0]).toHaveProperty("week");
       expect(result[0]).toHaveProperty("date");
       expect(result[0]).toHaveProperty("distance");
       expect(result[0]).toHaveProperty("target");
     });
 
-    it("matches target from training plan week", async () => {
-      mockRunFindMany.mockResolvedValue([longRuns[0]]);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
+    it("shows 0 distance for weeks without long runs", async () => {
+      mockRunFindMany.mockResolvedValue(longRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getLongRunProgression();
 
-      // Run on Nov 23 (Week 1) should have target of 12km
-      expect(result[0]?.target).toBe(12);
+      // Weeks 1-9 have no long runs, should be 0
+      const week5 = result.find((r) => r.week === 5);
+      expect(week5?.distance).toBe(0);
+
+      // Week 10 (Nov 23) has a long run of 11.48km
+      const week10 = result.find((r) => r.week === 10);
+      expect(week10?.distance).toBe(11.48);
     });
 
-    it("returns empty array when no long runs exist", async () => {
+    it("calculates target based on week number", async () => {
+      mockRunFindMany.mockResolvedValue(longRuns);
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getLongRunProgression();
+
+      // Target = 7 + (21.1 - 7) / 30 * weekNum
+      // Week 10 target = 7 + 14.1/30 * 10 ≈ 11.7
+      const week10 = result.find((r) => r.week === 10);
+      expect(week10?.target).toBeCloseTo(11.7, 0);
+    });
+
+    it("returns all weeks even when no long runs exist", async () => {
       mockRunFindMany.mockResolvedValue([]);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getLongRunProgression();
 
-      expect(result).toEqual([]);
+      // Should still return 11 weeks with 0 distance
+      expect(result).toHaveLength(11);
+      result.forEach((week) => {
+        expect(week.distance).toBe(0);
+      });
     });
 
-    it("returns empty array when no training plans exist", async () => {
+    it("only queries LONG_RUN type from database", async () => {
       mockRunFindMany.mockResolvedValue(longRuns);
-      mockTrainingPlanFindMany.mockResolvedValue([]);
-
-      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
-      const result = await caller.getLongRunProgression();
-
-      expect(result).toEqual([]);
-    });
-
-    it("only includes LONG_RUN type", async () => {
-      mockRunFindMany.mockResolvedValue(longRuns);
-      mockTrainingPlanFindMany.mockResolvedValue(mockTrainingPlans);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       await caller.getLongRunProgression();
@@ -510,42 +541,84 @@ describe("Stats Router", () => {
       expect(result.longestRun).toBe(0);
     });
 
-    it("calculates streak for consecutive days", async () => {
-      // Runs on Nov 29, Nov 30, Dec 1 (today)
-      const consecutiveRuns = [
+    it("calculates streak as consecutive weeks with >10km", async () => {
+      // Create runs across multiple weeks, each week with >10km
+      // Training starts Sep 21, 2025
+      // Week 11: Nov 30 - Dec 6 (current week based on mock date Dec 1)
+      // Week 10: Nov 23-29
+      // Week 9: Nov 16-22
+      const weeklyRuns = [
         {
           ...mockCompletedRuns[0],
-          date: new Date("2025-12-01T08:00:00.000Z"),
+          date: new Date("2025-12-01T08:00:00.000Z"), // Week 11
+          distance: 15, // >10km
         },
         {
           ...mockCompletedRuns[1],
-          date: new Date("2025-11-30T08:00:00.000Z"),
+          date: new Date("2025-11-25T08:00:00.000Z"), // Week 10
+          distance: 12, // >10km
         },
         {
           ...mockCompletedRuns[2],
-          date: new Date("2025-11-29T08:00:00.000Z"),
+          date: new Date("2025-11-18T08:00:00.000Z"), // Week 9
+          distance: 11, // >10km
         },
       ];
-      mockRunFindMany.mockResolvedValue(consecutiveRuns);
+      mockRunFindMany.mockResolvedValue(weeklyRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
 
+      // Should be 3 consecutive weeks with >10km each
       expect(result.streak).toBe(3);
     });
 
-    it("returns 0 streak when no recent runs", async () => {
-      // Runs from over a week ago
-      const oldRuns = mockCompletedRuns.map((r) => ({
-        ...r,
-        date: new Date("2025-11-20T08:00:00.000Z"),
-      }));
-      mockRunFindMany.mockResolvedValue(oldRuns);
+    it("returns 0 streak when current week has insufficient mileage", async () => {
+      // Current week (week 11) has runs but less than 10km total
+      const lowMileageRuns = [
+        {
+          ...mockCompletedRuns[0],
+          date: new Date("2025-12-01T08:00:00.000Z"), // Week 11
+          distance: 5, // Only 5km - below 10km threshold
+        },
+      ];
+      mockRunFindMany.mockResolvedValue(lowMileageRuns);
 
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getSummary();
 
+      // Week 11 has <10km so streak is 0
       expect(result.streak).toBe(0);
+    });
+
+    it("breaks streak when a week has insufficient mileage", async () => {
+      // Week 11: 15km (counts)
+      // Week 10: 5km (breaks streak - below 10km)
+      // Week 9: 20km (doesn't count - streak already broken)
+      const mixedRuns = [
+        {
+          ...mockCompletedRuns[0],
+          date: new Date("2025-12-01T08:00:00.000Z"), // Week 11
+          distance: 15,
+        },
+        {
+          ...mockCompletedRuns[1],
+          date: new Date("2025-11-25T08:00:00.000Z"), // Week 10
+          distance: 5, // Below threshold
+        },
+        {
+          ...mockCompletedRuns[2],
+          date: new Date("2025-11-18T08:00:00.000Z"), // Week 9
+          distance: 20,
+        },
+      ];
+      mockRunFindMany.mockResolvedValue(mixedRuns);
+
+      const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
+      const result = await caller.getSummary();
+
+      // Only week 11 counts, week 10 breaks the streak
+      expect(result.streak).toBe(1);
     });
 
     it("works without authentication (public)", async () => {
