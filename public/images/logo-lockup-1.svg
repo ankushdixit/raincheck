@@ -27,12 +27,12 @@
   </g>
 
   <!-- Brand name -->
-  <text x="100" y="52" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="36" font-weight="600" fill="#1E293B">
+  <text x="100" y="52" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="36" font-weight="600" fill="#FFFFFF">
     Rain<tspan fill="#2563EB">Check</tspan>
   </text>
 
   <!-- Tagline -->
-  <text x="100" y="75" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="400" fill="#64748B" letter-spacing="0.5">
+  <text x="100" y="75" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="400" fill="#FFFFFF" fill-opacity="0.85" letter-spacing="0.5">
     Weather-aware Marathon Training
   </text>
 </svg>
