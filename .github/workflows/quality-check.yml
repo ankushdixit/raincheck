@@ -23,6 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Type check
         run: npm run type-check
 
@@ -55,9 +58,6 @@ jobs:
           else
             npm run check:unused --if-present
           fi
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
 
       - name: Production build
         run: npm run build
