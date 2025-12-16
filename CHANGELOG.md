@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Slide animation when transitioning between daily and hourly views
 - "Today" label on first daily card, "Tomorrow" on second, dates on rest for consistency
 
+### Security
+
+- Updated @trpc/client, @trpc/next, @trpc/react-query, and @trpc/server from 11.7.1 to 11.8.0 to fix prototype pollution vulnerability (GHSA-43p4-m455-4f4j)
+
 ### Fixed
 
 - Run cards on Settings page now display properly on mobile devices with stacked layout
