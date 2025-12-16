@@ -363,7 +363,7 @@ function RunsManagement() {
           {runs.map((run) => (
             <div
               key={run.id}
-              className={`flex items-center justify-between p-3 rounded-lg ${
+              className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 rounded-lg ${
                 run.completed ? "bg-green-500/10" : "bg-white/5"
               }`}
             >
@@ -376,8 +376,8 @@ function RunsManagement() {
                 />
               ) : (
                 <>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-white font-medium">{formatDate(run.date)}</span>
                       <span
                         className={`text-xs px-2 py-0.5 rounded ${
@@ -393,12 +393,10 @@ function RunsManagement() {
                       {RUN_TYPE_LABELS[run.type]} • {run.distance}km • {run.pace}/km
                     </div>
                     {run.notes && (
-                      <div className="text-white/40 text-xs mt-1 truncate max-w-md">
-                        {run.notes}
-                      </div>
+                      <div className="text-white/40 text-xs mt-1 truncate">{run.notes}</div>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 self-end sm:self-center shrink-0">
                     <button
                       onClick={() => handleToggleComplete(run)}
                       disabled={toggleCompleteMutation.isPending}
