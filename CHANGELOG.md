@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Overhauled run suggestion algorithm with smarter scheduling logic
+- Weather scoring weights now prioritize precipitation (60%) and wind (30%) over temperature (5%) and condition (5%)
+- Long runs now scheduled only on Sundays or Mondays based on best hourly weather in 10am-3pm window
+- Short runs fixed at 6km, scheduled 3 days after long runs (2 rest days + 1) and 2 days after previous short run
+- Long run distance progression: floor(longest completed or scheduled run) + 1km
+- Suggestions now start from tomorrow, respecting rest gaps from last completed run
+- No unaccepted suggestions appear between today and last accepted run date
+- Accepted runs now display in the suggestions area with real weather data and scores
+- Time window for hourly weather scoring changed from 9am-5pm/9am-2pm to 10am-3pm for all runs
+- Algorithm generates suggestions for 21 days (up from 14) to ensure adequate planning horizon
+- Cache invalidation added to Settings page (on complete/update/delete) and Calendar (on drag-drop)
+
 ### Added
 
 - Hourly weather forecast view with expand/collapse functionality

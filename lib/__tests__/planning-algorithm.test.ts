@@ -18,6 +18,7 @@ import {
   getDayName,
   isWeekend,
   isSunday,
+  isSundayOrMonday,
   formatHour,
   getDayGap,
   validateNoLargeGaps,
@@ -355,13 +356,20 @@ describe("generateSuggestions", () => {
     });
 
     it("generates suggestions with time ranges", () => {
-      // Start on a Sunday to ensure weekend is included
-      const startDate = new Date("2025-11-30"); // Sunday
+      // Start from tomorrow (Sunday) to ensure algorithm generates suggestions
+      const tomorrow = addDays(new Date(), 1);
+      // Find next Sunday
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -375,31 +383,45 @@ describe("generateSuggestions", () => {
       });
     });
 
-    it("places long runs only on weekends", () => {
-      const startDate = new Date("2025-11-30"); // Sunday
+    it("places long runs only on Sunday or Monday", () => {
+      // Start from tomorrow (Sunday) to ensure algorithm generates suggestions
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
       const longRuns = result.filter((s) => s.runType === RunType.LONG_RUN);
 
-      // All long runs should be on weekends
+      // All long runs should be on Sunday or Monday
       longRuns.forEach((longRun) => {
-        expect(isWeekend(longRun.date)).toBe(true);
+        expect(isSundayOrMonday(longRun.date)).toBe(true);
       });
     });
 
     it("schedules at least 2 long runs with 14-day forecast", () => {
-      const startDate = new Date("2025-11-30"); // Sunday
+      // Start from tomorrow (Sunday) to ensure algorithm generates suggestions
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -409,12 +431,19 @@ describe("generateSuggestions", () => {
     });
 
     it("enforces 2-day rest after long runs", () => {
-      const startDate = new Date("2025-11-30"); // Sunday
+      // Start from next Sunday
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -438,12 +467,18 @@ describe("generateSuggestions", () => {
     });
 
     it("includes weather data in suggestions", () => {
-      const startDate = new Date("2025-11-30");
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -457,12 +492,18 @@ describe("generateSuggestions", () => {
     });
 
     it("generates human-readable reasons", () => {
-      const startDate = new Date("2025-11-30");
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -474,12 +515,18 @@ describe("generateSuggestions", () => {
     });
 
     it("sorts suggestions by date", () => {
-      const startDate = new Date("2025-11-30");
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -492,7 +539,10 @@ describe("generateSuggestions", () => {
 
   describe("weather scoring", () => {
     it("assigns higher scores to better weather", () => {
-      const startDate = new Date("2025-11-30"); // Sunday
+      // Start from next Sunday
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
 
       // Create forecast with varying weather
       const forecast = create14DayForecast(startDate);
@@ -509,6 +559,9 @@ describe("generateSuggestions", () => {
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -523,7 +576,10 @@ describe("generateSuggestions", () => {
     });
 
     it("marks optimal days when score >= 80", () => {
-      const startDate = new Date("2025-11-30");
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const forecast = create14DayForecast(startDate).map((day) =>
         createWeatherData(day.datetime, {
           condition: "Clear",
@@ -538,6 +594,9 @@ describe("generateSuggestions", () => {
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -553,7 +612,9 @@ describe("generateSuggestions", () => {
 
   describe("existing runs handling", () => {
     it("skips days that already have runs scheduled", () => {
-      const startDate = new Date("2025-11-30");
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
       const existingRunDate = addDays(startDate, 3);
 
       const input: AlgorithmInput = {
@@ -561,6 +622,9 @@ describe("generateSuggestions", () => {
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [{ date: existingRunDate, runType: RunType.EASY_RUN }],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
@@ -573,40 +637,51 @@ describe("generateSuggestions", () => {
   });
 
   describe("edge cases", () => {
-    it("handles forecast with no weekends", () => {
-      // Create a 5-day forecast starting Monday (no weekends)
-      const monday = new Date("2025-12-01"); // Monday
-      const forecast = Array.from({ length: 5 }, (_, i) => createWeatherData(addDays(monday, i)));
+    it("handles forecast with no Sunday or Monday", () => {
+      // Create a 5-day forecast starting Tuesday (no Sun/Mon for long runs)
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilTuesday = (9 - tomorrow.getDay()) % 7; // 9 = Tuesday + 7
+      const tuesday = addDays(tomorrow, daysUntilTuesday || 7);
+      const forecast = Array.from({ length: 5 }, (_, i) => createWeatherData(addDays(tuesday, i)));
 
       const input: AlgorithmInput = {
         forecast,
         trainingPlan: createTrainingPlan(),
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
 
-      // Should still schedule easy runs even without weekends
+      // Should not schedule long runs without Sunday/Monday
       const longRuns = result.filter((s) => s.runType === RunType.LONG_RUN);
-      expect(longRuns.length).toBe(0); // No weekends = no long runs
+      expect(longRuns.length).toBe(0);
     });
 
     it("handles null training plan", () => {
-      const startDate = new Date("2025-11-30");
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
       const input: AlgorithmInput = {
         forecast: create14DayForecast(startDate),
         trainingPlan: null,
         preferences: createWeatherPreferences(),
         existingRuns: [],
+        acceptedRuns: [],
+        longestCompletedDistance: 0,
+        lastCompletedRun: null,
       };
 
       const result = generateSuggestions(input);
 
-      // Should use default distances (12km long, 6km easy)
+      // Should use default distances (10km long start, 6km easy)
       const longRun = result.find((s) => s.runType === RunType.LONG_RUN);
       if (longRun) {
-        expect(longRun.distance).toBe(12);
+        expect(longRun.distance).toBe(10); // New algorithm starts at 10km
       }
     });
   });

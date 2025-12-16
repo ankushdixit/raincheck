@@ -76,36 +76,36 @@ describe("weather-preferences", () => {
         const weather = createWeather({ precipitation: 20 });
         const preference = createPreference({ maxPrecipitation: 20 });
 
-        // Precipitation penalty = 40 points
+        // Precipitation penalty = 60 points (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(60);
+        expect(score).toBe(40);
       });
 
       it("applies half penalty when precipitation is half of max", () => {
         const weather = createWeather({ precipitation: 10 });
         const preference = createPreference({ maxPrecipitation: 20 });
 
-        // Precipitation penalty = 20 points
+        // Precipitation penalty = 30 points (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(80);
+        expect(score).toBe(70);
       });
 
-      it("caps penalty at 40 points when precipitation exceeds max", () => {
+      it("caps penalty at 60 points when precipitation exceeds max", () => {
         const weather = createWeather({ precipitation: 100 });
         const preference = createPreference({ maxPrecipitation: 20 });
 
-        // Should be capped at 40, not 200
+        // Should be capped at 60, not 300 (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(60);
+        expect(score).toBe(40);
       });
 
       it("handles maxPrecipitation of 0 without division by zero", () => {
         const weather = createWeather({ precipitation: 50 });
         const preference = createPreference({ maxPrecipitation: 0 });
 
-        // Should not throw, penalty capped at 40
+        // Should not throw, penalty capped at 60 (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBeLessThanOrEqual(60);
+        expect(score).toBeLessThanOrEqual(40);
       });
     });
 
@@ -122,9 +122,9 @@ describe("weather-preferences", () => {
         const weather = createWeather({ windSpeed: 25 });
         const preference = createPreference({ maxWindSpeed: 25 });
 
-        // Wind penalty = 25 points
+        // Wind penalty = 30 points (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(75);
+        expect(score).toBe(70);
       });
 
       it("applies no wind penalty when maxWindSpeed is null", () => {
@@ -136,13 +136,13 @@ describe("weather-preferences", () => {
         expect(score).toBe(100);
       });
 
-      it("caps wind penalty at 25 points when wind exceeds max", () => {
+      it("caps wind penalty at 30 points when wind exceeds max", () => {
         const weather = createWeather({ windSpeed: 100 });
         const preference = createPreference({ maxWindSpeed: 25 });
 
-        // Should be capped at 25
+        // Should be capped at 30 (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(75);
+        expect(score).toBe(70);
       });
     });
 
@@ -155,22 +155,22 @@ describe("weather-preferences", () => {
         expect(score).toBe(100);
       });
 
-      it("applies 2 points penalty per degree away from ideal", () => {
-        // 5 degrees below ideal = 10 points penalty
+      it("applies 2 points penalty per degree away from ideal, capped at 5", () => {
+        // 5 degrees below ideal = 10 points, but capped at 5 (new weight)
         const weather = createWeather({ temperature: 7.5 });
         const preference = createPreference();
 
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(90);
+        expect(score).toBe(95);
       });
 
-      it("caps temperature penalty at 20 points", () => {
-        // 30 degrees away from ideal = should be 60 points, but capped at 20
+      it("caps temperature penalty at 5 points", () => {
+        // 30 degrees away from ideal = should be 60 points, but capped at 5 (new weight)
         const weather = createWeather({ temperature: 42.5 });
         const preference = createPreference();
 
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(80);
+        expect(score).toBe(95);
       });
 
       it("applies penalty symmetrically for cold temperatures", () => {
@@ -198,14 +198,15 @@ describe("weather-preferences", () => {
         expect(score).toBe(100);
       });
 
-      it("applies 15 point penalty when condition matches avoid list", () => {
+      it("applies 5 point penalty when condition matches avoid list", () => {
         const weather = createWeather({ condition: "Heavy Rain" });
         const preference = createPreference({
           avoidConditions: ["Heavy Rain", "Thunderstorm"],
         });
 
+        // Condition penalty = 5 points (new weight)
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(85);
+        expect(score).toBe(95);
       });
 
       it("matches condition case-insensitively", () => {
@@ -215,7 +216,7 @@ describe("weather-preferences", () => {
         });
 
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(85);
+        expect(score).toBe(95);
       });
 
       it("matches partial condition strings", () => {
@@ -225,7 +226,7 @@ describe("weather-preferences", () => {
         });
 
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(85);
+        expect(score).toBe(95);
       });
 
       it("applies no penalty when avoidConditions is empty", () => {
@@ -240,14 +241,14 @@ describe("weather-preferences", () => {
     describe("combined penalties", () => {
       it("combines all penalties correctly", () => {
         const weather = createWeather({
-          precipitation: 20, // 40 points
-          windSpeed: 25, // 25 points
-          temperature: 22.5, // 10 degrees from ideal = 20 points
-          condition: "Heavy Rain", // 15 points
+          precipitation: 20, // 60 points (new weight)
+          windSpeed: 25, // 30 points (new weight)
+          temperature: 22.5, // 10 degrees from ideal = capped at 5 points (new weight)
+          condition: "Heavy Rain", // 5 points (new weight)
         });
         const preference = createPreference({ maxPrecipitation: 20, maxWindSpeed: 25 });
 
-        // 100 - 40 - 25 - 20 - 15 = 0
+        // 100 - 60 - 30 - 5 - 5 = 0
         const score = getWeatherScore(weather, preference);
         expect(score).toBe(0);
       });
@@ -284,7 +285,7 @@ describe("weather-preferences", () => {
         const preference = createPreference({ maxPrecipitation: 20 });
 
         const score = getWeatherScore(weather, preference);
-        expect(score).toBe(60); // Full precipitation penalty
+        expect(score).toBe(40); // Full precipitation penalty (60 points, new weight)
       });
 
       it("handles temperature at exactly ideal", () => {

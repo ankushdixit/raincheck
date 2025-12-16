@@ -21,28 +21,70 @@ model UserSettings {
 
 model WeatherCache {
   id            String   @id @default(cuid())
-  location      String   // Location name, e.g., "Balbriggan, IE"
+  location      String
   latitude      Float
   longitude     Float
-  datetime      DateTime // Forecast timestamp
-  timezone      String   @default("Europe/Dublin") // IANA timezone, e.g., "Europe/Dublin"
-  condition     String   // Weather condition, e.g., "Clear", "Light Rain", "Heavy Snow"
-  description   String   // Detailed weather description
-  temperature   Float    // Temperature in Celsius
-  feelsLike     Float    // Feels-like temperature in Celsius
-  precipitation Float    // Precipitation probability 0-100
-  humidity      Int      // Humidity percentage 0-100
-  windSpeed     Float    // Wind speed in km/h
-  windDirection Int      // Wind direction in degrees 0-360
+  datetime      DateTime
+  condition     String
+  description   String
+  temperature   Float
+  feelsLike     Float
+  precipitation Float
+  humidity      Int
+  windSpeed     Float
+  windDirection Int
   cachedAt      DateTime @default(now())
-  expiresAt     DateTime // Cache expiry time (TTL: 1 hour)
+  expiresAt     DateTime
+  timezone      String   @default("Europe/Dublin")
 
   @@unique([location, datetime])
   @@index([location, datetime])
   @@index([expiresAt])
 }
 
-// Enums for training plan and weather preferences
+model TrainingPlan {
+  id                  String   @id @default(cuid())
+  phase               Phase
+  weekNumber          Int      @unique
+  weekStart           DateTime
+  weekEnd             DateTime
+  longRunTarget       Float
+  weeklyMileageTarget Float
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([weekStart])
+}
+
+model WeatherPreference {
+  id               String   @id @default(cuid())
+  runType          RunType  @unique
+  maxPrecipitation Float
+  maxWindSpeed     Float?
+  minTemperature   Float?
+  maxTemperature   Float?
+  avoidConditions  String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Run {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  distance  Float
+  pace      String
+  duration  String
+  type      RunType
+  notes     String?
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([completed])
+}
+
 enum RunType {
   LONG_RUN
   EASY_RUN
@@ -57,47 +99,4 @@ enum Phase {
   BASE_EXTENSION
   SPEED_DEVELOPMENT
   PEAK_TAPER
-}
-
-model TrainingPlan {
-  id                  String   @id @default(cuid())
-  phase               Phase
-  weekNumber          Int      @unique
-  weekStart           DateTime
-  weekEnd             DateTime
-  longRunTarget       Float    // km
-  weeklyMileageTarget Float    // km
-  notes               String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  @@index([weekStart])
-}
-
-model WeatherPreference {
-  id               String   @id @default(cuid())
-  runType          RunType  @unique
-  maxPrecipitation Float    // 0-100
-  maxWindSpeed     Float?   // km/h, null = no limit
-  minTemperature   Float?   // Celsius, null = no limit
-  maxTemperature   Float?   // Celsius, null = no limit
-  avoidConditions  String[] // e.g., ["Heavy Rain", "Thunderstorm"]
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
-
-model Run {
-  id        String   @id @default(cuid())
-  date      DateTime @unique // One run per day max
-  distance  Float    // Kilometers
-  pace      String   // Format: "6:30" (min:sec per km)
-  duration  String   // Format: "45:30" (min:sec total)
-  type      RunType
-  notes     String?
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([date])
-  @@index([completed])
 }

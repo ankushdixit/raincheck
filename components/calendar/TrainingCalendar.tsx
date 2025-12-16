@@ -247,6 +247,8 @@ export function TrainingCalendar() {
     onSuccess: () => {
       // Invalidate the runs query to refetch the updated data
       utils.runs.getByDateRange.invalidate();
+      // Invalidate suggestions to regenerate based on moved run
+      utils.planning.generateSuggestions.invalidate();
     },
   });
 

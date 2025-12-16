@@ -6,12 +6,14 @@
  * and weather preferences as inputs, then generates optimal run suggestions.
  *
  * Algorithm Rules:
- * 1. Long runs MUST be on weekends (Saturday or Sunday) only
- * 2. Long runs are always scheduled regardless of weather (they're too important to skip)
+ * 1. Long runs are scheduled on Sunday or Monday (whichever has better weather)
+ * 2. Long runs are >= 10km, distance progresses from longest completed run
  * 3. After a long run, 2 rest days are enforced
- * 4. After an easy run, 1 rest day is enforced
- * 5. Hourly weather is used to find the best time window for each run
- * 6. Time windows: 9am-5pm for easy runs, 9am-2pm for long runs (Ireland winter daylight)
+ * 4. Short runs are always 6km
+ * 5. After a short run, 1 rest day is enforced
+ * 6. Time window: 10am-3pm for all runs
+ * 7. Suggestions start from tomorrow, respecting rest gaps from completed runs
+ * 8. New suggestions only appear after the last accepted (scheduled) run
  *
  * @example
  * ```typescript
@@ -22,6 +24,9 @@
  *   trainingPlan: currentWeekPlan,
  *   preferences: weatherPreferences,
  *   existingRuns: [],
+ *   acceptedRuns: [],
+ *   longestCompletedDistance: 12,
+ *   lastCompletedRun: null,
  * });
  * ```
  */
@@ -37,15 +42,37 @@ import {
 // Re-export RunType for convenience
 export { RunType } from "@prisma/client";
 
-// Time window constants (Ireland winter daylight hours)
-const EASY_RUN_START_HOUR = 9; // 9am
-const EASY_RUN_END_HOUR = 17; // 5pm (run should end by this time)
-const LONG_RUN_START_HOUR = 9; // 9am
-const LONG_RUN_END_HOUR = 14; // 2pm (run should end by this time)
+// Time window constants (10am-3pm for all runs)
+const RUN_START_HOUR = 10; // 10am
+const RUN_END_HOUR = 15; // 3pm
 
 // Rest day constants
 const REST_DAYS_AFTER_LONG_RUN = 2;
-const REST_DAYS_AFTER_EASY_RUN = 1;
+const REST_DAYS_AFTER_SHORT_RUN = 1;
+
+// Distance constants
+const SHORT_RUN_DISTANCE = 6; // Always 6km
+const LONG_RUN_THRESHOLD = 10; // >= 10km is considered a long run
+const DEFAULT_FIRST_LONG_RUN_DISTANCE = 10; // Starting distance if no history
+
+/**
+ * Accepted run structure for scheduling around existing runs.
+ */
+export interface AcceptedRun {
+  id: string;
+  date: Date;
+  runType: RunType;
+  completed: boolean;
+  distance: number;
+}
+
+/**
+ * Last completed run for calculating rest requirements.
+ */
+export interface LastCompletedRun {
+  date: Date;
+  distance: number;
+}
 
 /**
  * Input parameters for the planning algorithm.
@@ -57,16 +84,22 @@ export interface AlgorithmInput {
   trainingPlan: TrainingPlan | null;
   /** Weather preferences for each run type */
   preferences: WeatherPreference[];
-  /** Already scheduled runs to avoid conflicts */
+  /** Already scheduled runs to avoid conflicts (legacy, kept for compatibility) */
   existingRuns: Array<{ date: Date | string; runType: RunType }>;
+  /** Accepted runs (scheduled but not completed) */
+  acceptedRuns?: AcceptedRun[];
+  /** Longest distance from completed runs (for progression) */
+  longestCompletedDistance?: number;
+  /** Most recent completed run (for rest calculation) */
+  lastCompletedRun?: LastCompletedRun | null;
 }
 
 /**
  * Time range for a suggested run
  */
 export interface TimeRange {
-  start: string; // "9am"
-  end: string; // "11am"
+  start: string; // "10am"
+  end: string; // "12pm"
 }
 
 /**
@@ -157,6 +190,32 @@ export function isSunday(date: Date): boolean {
 }
 
 /**
+ * Check if a date is a Monday.
+ */
+export function isMonday(date: Date): boolean {
+  return date.getDay() === 1;
+}
+
+/**
+ * Check if a date is Sunday or Monday (valid long run days).
+ */
+export function isSundayOrMonday(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 1; // 0 = Sunday, 1 = Monday
+}
+
+/**
+ * Get the Sunday that starts the week containing the given date.
+ */
+export function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
  * Format hour to readable string (e.g., 9 -> "9am", 14 -> "2pm")
  */
 export function formatHour(hour: number): string {
@@ -167,6 +226,71 @@ export function formatHour(hour: number): string {
 }
 
 /**
+ * Calculate the next long run distance based on progression.
+ * Returns floor(longest) + 1, so:
+ * - If longest is 13.26km, next is 14km
+ * - If longest is 15.0km (already scheduled), next is 16km
+ */
+export function calculateNextLongRunDistance(longestCompletedDistance: number): number {
+  if (longestCompletedDistance === 0 || longestCompletedDistance < LONG_RUN_THRESHOLD) {
+    return DEFAULT_FIRST_LONG_RUN_DISTANCE;
+  }
+  // Use floor + 1 to ensure we always progress beyond the longest existing run
+  return Math.floor(longestCompletedDistance) + 1;
+}
+
+/**
+ * Calculate the start date for new suggestions.
+ * Takes into account:
+ * - Must be at least tomorrow
+ * - Must respect rest days after last completed run
+ * - Must be after last accepted (scheduled) run
+ */
+export function calculateSuggestionStartDate(
+  lastCompletedRun: LastCompletedRun | null | undefined,
+  acceptedRuns: AcceptedRun[] | undefined
+): Date {
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+
+  let startDate = tomorrow;
+
+  // If there are accepted (scheduled but not completed) runs,
+  // suggestions start after the last one
+  if (acceptedRuns && acceptedRuns.length > 0) {
+    const scheduledRuns = acceptedRuns
+      .filter((r) => !r.completed)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (scheduledRuns.length > 0) {
+      const lastScheduled = new Date(scheduledRuns[0]!.date);
+      lastScheduled.setHours(0, 0, 0, 0);
+      const dayAfterLastScheduled = addDays(lastScheduled, 1);
+      if (dayAfterLastScheduled > startDate) {
+        startDate = dayAfterLastScheduled;
+      }
+    }
+  }
+
+  // Calculate based on rest from last completed run
+  if (lastCompletedRun) {
+    const restDays =
+      lastCompletedRun.distance >= LONG_RUN_THRESHOLD
+        ? REST_DAYS_AFTER_LONG_RUN
+        : REST_DAYS_AFTER_SHORT_RUN;
+    const lastCompletedDate = new Date(lastCompletedRun.date);
+    lastCompletedDate.setHours(0, 0, 0, 0);
+    const restEndDate = addDays(lastCompletedDate, restDays + 1);
+    if (restEndDate > startDate) {
+      startDate = restEndDate;
+    }
+  }
+
+  return startDate;
+}
+
+/**
  * Get the weather preference for a specific run type.
  */
 function getPreferenceForRunType(
@@ -174,34 +298,6 @@ function getPreferenceForRunType(
   runType: RunType
 ): WeatherPreference | undefined {
   return preferences.find((p) => p.runType === runType);
-}
-
-/**
- * Calculate runs needed for a training week.
- */
-function getRunsNeeded(trainingPlan: TrainingPlan | null): {
-  longRunDistance: number;
-  easyRunDistance: number;
-  totalEasyRuns: number;
-} {
-  if (!trainingPlan) {
-    return {
-      longRunDistance: 12,
-      easyRunDistance: 6,
-      totalEasyRuns: 3,
-    };
-  }
-
-  const longRunDistance = trainingPlan.longRunTarget;
-  const remainingMileage = trainingPlan.weeklyMileageTarget - longRunDistance;
-  const totalEasyRuns = remainingMileage > 15 ? 3 : 2;
-  const easyRunDistance = Math.round((remainingMileage / totalEasyRuns) * 10) / 10;
-
-  return {
-    longRunDistance,
-    easyRunDistance,
-    totalEasyRuns,
-  };
 }
 
 /**
@@ -275,15 +371,15 @@ function scoreTimeWindow(
 
 /**
  * Find the best time window for a run on a given day.
+ * Uses 10am-3pm window for all run types.
  */
 function findBestTimeWindow(
   dayWeather: WeatherData,
   preferences: WeatherPreference[],
   runType: RunType
 ): ScoredTimeWindow | null {
-  const isLongRun = runType === "LONG_RUN";
-  const startHour = isLongRun ? LONG_RUN_START_HOUR : EASY_RUN_START_HOUR;
-  const endHour = isLongRun ? LONG_RUN_END_HOUR : EASY_RUN_END_HOUR;
+  const startHour = RUN_START_HOUR;
+  const endHour = RUN_END_HOUR;
 
   // If no hourly data, use daily data
   if (!dayWeather.hourly || dayWeather.hourly.length === 0) {
@@ -315,11 +411,12 @@ function findBestTimeWindow(
     };
   }
 
-  // Try different 2-hour windows within the allowed time range and find the best
+  // Try different 2-hour windows within 10am-3pm and find the best
   let bestWindow: ScoredTimeWindow | null = null;
   let bestScore = -1;
 
-  // Window size: 2 hours for easy runs, 3 hours for long runs
+  // Window size: 2 hours for short runs, 3 hours for long runs
+  const isLongRun = runType === "LONG_RUN";
   const windowSize = isLongRun ? 3 : 2;
 
   for (let windowStart = startHour; windowStart <= endHour - windowSize; windowStart++) {
@@ -377,9 +474,9 @@ function generateReason(runType: RunType, score: number, weather: WeatherSummary
 
   if (runType === "LONG_RUN") {
     if (score >= 60) {
-      return `Best weekend conditions for your long run (${score}/100). ${weather.condition}, ${weather.temperature}°C with ${weather.precipitation}% precipitation chance.`;
+      return `Best conditions for your long run (${score}/100). ${weather.condition}, ${weather.temperature}°C with ${weather.precipitation}% precipitation chance.`;
     }
-    return `Scheduled for weekend as required. ${weather.condition} with ${weather.precipitation}% precipitation chance. Consider adjusting pace if needed.`;
+    return `Scheduled based on weather. ${weather.condition} with ${weather.precipitation}% precipitation chance. Consider adjusting pace if needed.`;
   }
 
   return `${quality.charAt(0).toUpperCase() + quality.slice(1)} conditions (${score}/100). ${weather.condition}, ${weather.temperature}°C.`;
@@ -412,131 +509,225 @@ function createSuggestion(
 /**
  * Generate optimal run suggestions based on weather and training plan.
  *
- * Rules:
- * - Long runs: Weekend only, always scheduled, 2-day rest after
- * - Easy runs: Best hourly weather, 1-day rest after
- * - Generates 5-6 suggestions with at least 2 long runs (requires 14 days of forecast)
+ * New Algorithm:
+ * - Suggestions start from tomorrow, respecting rest gaps
+ * - New suggestions appear only after last accepted run
+ * - Long runs on Sunday or Monday (best weather between the two)
+ * - 2 short runs (6km each) per week, scheduled after long run with proper rest
+ * - Long run distance progresses from longest completed run
  */
 export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
-  const { forecast, trainingPlan, preferences, existingRuns } = input;
+  const {
+    forecast,
+    preferences,
+    existingRuns,
+    acceptedRuns = [],
+    longestCompletedDistance = 0,
+    lastCompletedRun = null,
+  } = input;
 
   if (forecast.length === 0) {
     return [];
   }
 
-  const runsNeeded = getRunsNeeded(trainingPlan);
-  const existingRunDates = new Set<string>(existingRuns.map((run) => formatDateKey(run.date)));
   const suggestions: Suggestion[] = [];
   const usedDates = new Set<string>();
-  const restDates = new Set<string>(); // Dates that must be rest days
+  const restDates = new Set<string>();
 
-  // Step 1: Find all weekend days for long runs
-  const weekendDays = forecast.filter((day) => isWeekend(day.datetime));
+  // Step 1: Calculate start date for new suggestions
+  const startDate = calculateSuggestionStartDate(lastCompletedRun, acceptedRuns);
 
-  // Sort weekend days: prefer Sunday, then by weather score
-  const scoredWeekends = weekendDays
-    .map((day) => {
-      const window = findBestTimeWindow(day, preferences, "LONG_RUN");
-      return { day, window };
-    })
-    .filter((item) => item.window !== null)
-    .sort((a, b) => {
-      // First, group by week (days within 7 days of each other)
-      // Then within each week, prefer Sunday over Saturday
-      // Then prefer better weather
-      const aIsSunday = isSunday(a.day.datetime);
-      const bIsSunday = isSunday(b.day.datetime);
+  // Step 2: Mark existing run dates and accepted run dates as used
+  const existingRunDates = new Set<string>(existingRuns.map((run) => formatDateKey(run.date)));
 
-      if (aIsSunday && !bIsSunday) return -1;
-      if (bIsSunday && !aIsSunday) return 1;
-      return b.window!.score - a.window!.score;
-    });
+  // Mark accepted run dates as used and calculate their rest days
+  for (const run of acceptedRuns) {
+    if (run.completed) continue; // Skip completed runs
 
-  // Step 2: Schedule long runs on weekends (aim for 2 long runs across 14 days)
-  // One long run per weekend
-  const scheduledWeekends = new Set<number>(); // Track which "week number" has a long run
-
-  for (const { day, window } of scoredWeekends) {
-    if (!window) continue;
-
-    const dateKey = formatDateKey(day.datetime);
-    if (existingRunDates.has(dateKey) || usedDates.has(dateKey) || restDates.has(dateKey)) {
-      continue;
-    }
-
-    // Calculate week number (0 = first week, 1 = second week, etc.)
-    const daysSinceStart = Math.floor(
-      (day.datetime.getTime() - forecast[0]!.datetime.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const weekNum = Math.floor(daysSinceStart / 7);
-
-    // Only one long run per weekend/week
-    if (scheduledWeekends.has(weekNum)) continue;
-
-    // Schedule this long run
-    suggestions.push(createSuggestion(window, "LONG_RUN", runsNeeded.longRunDistance));
+    const dateKey = formatDateKey(run.date);
     usedDates.add(dateKey);
-    scheduledWeekends.add(weekNum);
 
-    // Mark 2 rest days after the long run
-    for (let i = 1; i <= REST_DAYS_AFTER_LONG_RUN; i++) {
-      const restDay = addDays(day.datetime, i);
-      restDates.add(formatDateKey(restDay));
-    }
-
-    // Stop after 2 long runs
-    if (suggestions.filter((s) => s.runType === "LONG_RUN").length >= 2) {
-      break;
+    // Mark rest days after accepted runs
+    const restDaysNeeded =
+      run.distance >= LONG_RUN_THRESHOLD ? REST_DAYS_AFTER_LONG_RUN : REST_DAYS_AFTER_SHORT_RUN;
+    for (let i = 1; i <= restDaysNeeded; i++) {
+      restDates.add(formatDateKey(addDays(new Date(run.date), i)));
     }
   }
 
-  // Step 3: Schedule easy runs on weekdays
-  // Find all non-weekend, non-rest days
-  const availableDays = forecast.filter((day) => {
-    const dateKey = formatDateKey(day.datetime);
-    return (
-      !isWeekend(day.datetime) &&
-      !existingRunDates.has(dateKey) &&
-      !usedDates.has(dateKey) &&
-      !restDates.has(dateKey)
+  // Step 3: Schedule short runs after accepted long runs
+  // This ensures short runs are generated even when the long run was already accepted
+  const acceptedLongRuns = acceptedRuns.filter(
+    (run) => !run.completed && run.distance >= LONG_RUN_THRESHOLD
+  );
+
+  for (const longRun of acceptedLongRuns) {
+    const longRunDate = new Date(longRun.date);
+
+    // First short run: 3 days after long run (2 rest + 1)
+    const firstShortDate = addDays(longRunDate, REST_DAYS_AFTER_LONG_RUN + 1);
+    const firstShortDateKey = formatDateKey(firstShortDate);
+
+    // Find weather data for first short run date
+    const firstShortForecast = forecast.find(
+      (d) => formatDateKey(d.datetime) === firstShortDateKey
     );
+
+    if (
+      firstShortForecast &&
+      !existingRunDates.has(firstShortDateKey) &&
+      !usedDates.has(firstShortDateKey) &&
+      !restDates.has(firstShortDateKey)
+    ) {
+      const window = findBestTimeWindow(firstShortForecast, preferences, "EASY_RUN");
+      if (window) {
+        suggestions.push(createSuggestion(window, "EASY_RUN", SHORT_RUN_DISTANCE));
+        usedDates.add(firstShortDateKey);
+
+        // Mark 1 rest day after short run
+        restDates.add(formatDateKey(addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN)));
+
+        // Second short run: 2 days after first short run (1 rest + 1)
+        const secondShortDate = addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN + 1);
+        const secondShortDateKey = formatDateKey(secondShortDate);
+
+        const secondShortForecast = forecast.find(
+          (d) => formatDateKey(d.datetime) === secondShortDateKey
+        );
+
+        if (
+          secondShortForecast &&
+          !existingRunDates.has(secondShortDateKey) &&
+          !usedDates.has(secondShortDateKey) &&
+          !restDates.has(secondShortDateKey)
+        ) {
+          const window2 = findBestTimeWindow(secondShortForecast, preferences, "EASY_RUN");
+          if (window2) {
+            suggestions.push(createSuggestion(window2, "EASY_RUN", SHORT_RUN_DISTANCE));
+            usedDates.add(secondShortDateKey);
+            restDates.add(formatDateKey(addDays(secondShortDate, REST_DAYS_AFTER_SHORT_RUN)));
+          }
+        }
+      }
+    }
+  }
+
+  // Step 4: Filter forecast to valid dates (>= startDate)
+  const validForecast = forecast.filter((day) => {
+    const dayDate = new Date(day.datetime);
+    dayDate.setHours(0, 0, 0, 0);
+    return dayDate >= startDate;
   });
 
-  // Score all available days and sort by date (chronological order)
-  // This ensures earlier days are scheduled first, avoiding issues where
-  // a later day with slightly better weather blocks an earlier day
-  const scoredDays = availableDays
-    .map((day) => ({
-      day,
-      window: findBestTimeWindow(day, preferences, "EASY_RUN"),
-    }))
-    .filter((item) => item.window !== null)
-    .sort((a, b) => a.day.datetime.getTime() - b.day.datetime.getTime());
+  if (validForecast.length === 0 && suggestions.length === 0) {
+    return [];
+  }
 
-  // Schedule easy runs with 1-day rest between them
-  let easyRunsScheduled = 0;
-  const targetEasyRuns = Math.max(runsNeeded.totalEasyRuns, 5); // At least 5 easy runs for 7 total (ensures 6 after filtering today)
+  // Step 5: Group forecast days by week (week starts Sunday)
+  const weekMap = new Map<string, WeatherData[]>();
+  for (const day of validForecast) {
+    const weekStart = getWeekStart(day.datetime);
+    const weekKey = formatDateKey(weekStart);
+    if (!weekMap.has(weekKey)) weekMap.set(weekKey, []);
+    weekMap.get(weekKey)!.push(day);
+  }
 
-  for (const { day, window } of scoredDays) {
-    if (!window) continue;
-    if (easyRunsScheduled >= targetEasyRuns) break;
+  // Step 5: For each week, schedule 1 long run + 2 short runs
+  let longRunDistance = calculateNextLongRunDistance(longestCompletedDistance);
 
-    const dateKey = formatDateKey(day.datetime);
+  // Sort weeks chronologically
+  const sortedWeeks = Array.from(weekMap.entries()).sort(
+    (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+  );
 
-    // Check if this day is a rest day (marked by a previous run)
-    if (restDates.has(dateKey)) continue;
+  for (const [, weekDays] of sortedWeeks) {
+    // Find best day for long run (Sunday or Monday only)
+    const longRunCandidates = weekDays.filter((day) => {
+      const dateKey = formatDateKey(day.datetime);
+      return (
+        isSundayOrMonday(day.datetime) &&
+        !existingRunDates.has(dateKey) &&
+        !usedDates.has(dateKey) &&
+        !restDates.has(dateKey)
+      );
+    });
 
-    // Check if this day is already used
-    if (usedDates.has(dateKey)) continue;
+    // Score 10am-3pm window for each candidate
+    let bestLongRunDay: WeatherData | null = null;
+    let bestLongRunScore = -1;
+    let bestLongRunWindow: ScoredTimeWindow | null = null;
 
-    // Schedule this easy run
-    suggestions.push(createSuggestion(window, "EASY_RUN", runsNeeded.easyRunDistance));
-    usedDates.add(dateKey);
-    easyRunsScheduled++;
+    for (const day of longRunCandidates) {
+      const window = findBestTimeWindow(day, preferences, "LONG_RUN");
+      if (window && window.score > bestLongRunScore) {
+        bestLongRunScore = window.score;
+        bestLongRunDay = day;
+        bestLongRunWindow = window;
+      }
+    }
 
-    // Mark 1 rest day after the easy run
-    const restDay = addDays(day.datetime, REST_DAYS_AFTER_EASY_RUN);
-    restDates.add(formatDateKey(restDay));
+    // Schedule long run if found
+    if (bestLongRunDay && bestLongRunWindow) {
+      const dateKey = formatDateKey(bestLongRunDay.datetime);
+      suggestions.push(createSuggestion(bestLongRunWindow, "LONG_RUN", longRunDistance));
+      usedDates.add(dateKey);
+
+      // Mark 2 rest days after long run
+      for (let i = 1; i <= REST_DAYS_AFTER_LONG_RUN; i++) {
+        restDates.add(formatDateKey(addDays(bestLongRunDay.datetime, i)));
+      }
+
+      // Increment distance for next long run
+      longRunDistance += 1;
+
+      // Schedule 2 short runs after long run
+      // First short run: 3 days after long run (2 rest + 1)
+      const firstShortDate = addDays(bestLongRunDay.datetime, REST_DAYS_AFTER_LONG_RUN + 1);
+      const firstShortDateKey = formatDateKey(firstShortDate);
+
+      // Find weather data for first short run date
+      const firstShortForecast = forecast.find(
+        (d) => formatDateKey(d.datetime) === firstShortDateKey
+      );
+
+      if (
+        firstShortForecast &&
+        !existingRunDates.has(firstShortDateKey) &&
+        !usedDates.has(firstShortDateKey) &&
+        !restDates.has(firstShortDateKey)
+      ) {
+        const window = findBestTimeWindow(firstShortForecast, preferences, "EASY_RUN");
+        if (window) {
+          suggestions.push(createSuggestion(window, "EASY_RUN", SHORT_RUN_DISTANCE));
+          usedDates.add(firstShortDateKey);
+
+          // Mark 1 rest day after short run
+          restDates.add(formatDateKey(addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN)));
+
+          // Second short run: 2 days after first short run (1 rest + 1)
+          const secondShortDate = addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN + 1);
+          const secondShortDateKey = formatDateKey(secondShortDate);
+
+          const secondShortForecast = forecast.find(
+            (d) => formatDateKey(d.datetime) === secondShortDateKey
+          );
+
+          if (
+            secondShortForecast &&
+            !existingRunDates.has(secondShortDateKey) &&
+            !usedDates.has(secondShortDateKey) &&
+            !restDates.has(secondShortDateKey)
+          ) {
+            const window2 = findBestTimeWindow(secondShortForecast, preferences, "EASY_RUN");
+            if (window2) {
+              suggestions.push(createSuggestion(window2, "EASY_RUN", SHORT_RUN_DISTANCE));
+              usedDates.add(secondShortDateKey);
+              restDates.add(formatDateKey(addDays(secondShortDate, REST_DAYS_AFTER_SHORT_RUN)));
+            }
+          }
+        }
+      }
+    }
   }
 
   // Sort suggestions by date

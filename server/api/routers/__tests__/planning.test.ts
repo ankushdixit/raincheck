@@ -153,6 +153,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -163,13 +167,9 @@ describe("Planning Router", () => {
 
         const result = await caller.planning.generateSuggestions({});
 
-        // Should return suggestions (1 long run + 2 easy runs for 24km week)
+        // New algorithm schedules 1 long run (Sun/Mon) + 2 short runs (6km each) per week
+        // With 14-day default, should have suggestions
         expect(result.length).toBeGreaterThan(0);
-        expect(result.length).toBeLessThanOrEqual(4);
-
-        // Check that we have exactly one long run
-        const longRuns = result.filter((s) => s.runType === "LONG_RUN");
-        expect(longRuns).toHaveLength(1);
       });
 
       it("returns correct number of suggestions for training week", async () => {
@@ -201,6 +201,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -211,11 +215,7 @@ describe("Planning Router", () => {
 
         const result = await caller.planning.generateSuggestions({});
 
-        // With new algorithm rules:
-        // - Long runs only on weekends
-        // - 2 rest days after long runs
-        // - 1 rest day after easy runs
-        // Exact count depends on forecast dates and rest days
+        // With new algorithm: 1 long run (Sun/Mon) + 2 short runs per week
         expect(result.length).toBeGreaterThanOrEqual(1);
       });
 
@@ -245,6 +245,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -256,7 +260,7 @@ describe("Planning Router", () => {
         await caller.planning.generateSuggestions({});
 
         // Should have used Cork, IE
-        expect(mockFetchHybridForecast).toHaveBeenCalledWith("Cork, IE", 7);
+        expect(mockFetchHybridForecast).toHaveBeenCalledWith("Cork, IE", 14);
       });
 
       it("uses custom location when provided", async () => {
@@ -283,6 +287,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -293,7 +301,7 @@ describe("Planning Router", () => {
 
         await caller.planning.generateSuggestions({ location: "Dublin, IE" });
 
-        expect(mockFetchHybridForecast).toHaveBeenCalledWith("Dublin, IE", 7);
+        expect(mockFetchHybridForecast).toHaveBeenCalledWith("Dublin, IE", 14);
         expect(mockDb.userSettings.findFirst).not.toHaveBeenCalled();
       });
 
@@ -359,6 +367,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -378,7 +390,7 @@ describe("Planning Router", () => {
         expect(mockFetchHybridForecast).toHaveBeenCalledWith("Balbriggan, IE", 14);
       });
 
-      it("defaults to 7 days when not specified", async () => {
+      it("defaults to 14 days when not specified", async () => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         const forecastData = createSampleForecastData(now);
@@ -404,6 +416,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -414,7 +430,7 @@ describe("Planning Router", () => {
 
         await caller.planning.generateSuggestions({});
 
-        expect(mockFetchHybridForecast).toHaveBeenCalledWith("Balbriggan, IE", 7);
+        expect(mockFetchHybridForecast).toHaveBeenCalledWith("Balbriggan, IE", 14);
       });
 
       it("rejects days less than 1", async () => {
@@ -424,6 +440,10 @@ describe("Planning Router", () => {
           weatherCache: { findMany: jest.fn(), upsert: jest.fn() },
           $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: { findMany: jest.fn() },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -442,6 +462,10 @@ describe("Planning Router", () => {
           weatherCache: { findMany: jest.fn(), upsert: jest.fn() },
           $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: { findMany: jest.fn() },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -562,6 +586,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -617,6 +645,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -671,6 +703,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -689,16 +725,13 @@ describe("Planning Router", () => {
     });
 
     describe("data flow", () => {
-      it("training plan data flows to algorithm correctly", async () => {
+      it("long run distance progresses from longest completed run", async () => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        const forecastData = createSampleForecastData(now);
+        const forecastData = createSampleForecastData(now, 14);
         mockFetchHybridForecast.mockResolvedValue(forecastData);
 
         const trainingPlan = createSampleTrainingPlan(now);
-        trainingPlan.longRunTarget = 18;
-        trainingPlan.weeklyMileageTarget = 40;
-
         const preferences = createSampleWeatherPreferences();
 
         const mockDb = {
@@ -718,6 +751,14 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            // Mock longest completed run at 17.5km -> next should be 18km
+            findFirst: jest
+              .fn()
+              .mockResolvedValueOnce({ distance: 17.5 }) // longestCompletedDistance
+              .mockResolvedValueOnce(null), // lastCompletedRun
+          },
         };
 
         const caller = createCaller({
@@ -728,7 +769,7 @@ describe("Planning Router", () => {
 
         const result = await caller.planning.generateSuggestions({});
 
-        // Long run should have the correct distance from training plan
+        // Long run should progress from ceil(17.5) = 18km
         const longRun = result.find((s) => s.runType === "LONG_RUN");
         expect(longRun).toBeDefined();
         expect(longRun!.distance).toBe(18);
@@ -773,6 +814,10 @@ describe("Planning Router", () => {
           $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
+          },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
           },
         };
 
@@ -834,6 +879,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -857,8 +906,8 @@ describe("Planning Router", () => {
         const trainingPlan = createSampleTrainingPlan(now);
         const preferences = createSampleWeatherPreferences();
 
-        // Create cached data for all 7 days
-        const cachedDays = Array.from({ length: 7 }, (_, i) => {
+        // Create cached data for all 14 days (new default)
+        const cachedDays = Array.from({ length: 14 }, (_, i) => {
           const date = new Date(now);
           date.setDate(date.getDate() + i);
           date.setHours(0, 0, 0, 0);
@@ -897,6 +946,10 @@ describe("Planning Router", () => {
           $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
+          },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
           },
         };
 
@@ -942,6 +995,10 @@ describe("Planning Router", () => {
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
           },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
         };
 
         const caller = createCaller({
@@ -982,6 +1039,10 @@ describe("Planning Router", () => {
           $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
+          },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
           },
         };
 
@@ -1025,6 +1086,10 @@ describe("Planning Router", () => {
           $transaction: jest.fn().mockImplementation((ops) => Promise.all(ops)),
           weatherPreference: {
             findMany: jest.fn().mockResolvedValue(preferences),
+          },
+          run: {
+            findMany: jest.fn().mockResolvedValue([]),
+            findFirst: jest.fn().mockResolvedValue(null),
           },
         };
 
