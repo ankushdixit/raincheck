@@ -269,6 +269,7 @@ function parseOpenMeteoResponse(data: OpenMeteoResponse, location: string): Weat
   const days: WeatherData[] = [];
   const hoursPerDay = 24;
   const totalDays = Math.floor(data.hourly.time.length / hoursPerDay);
+  const timezone = data.timezone;
 
   for (let dayIndex = 0; dayIndex < totalDays; dayIndex++) {
     const startHour = dayIndex * hoursPerDay;
@@ -308,6 +309,7 @@ function parseOpenMeteoResponse(data: OpenMeteoResponse, location: string): Weat
       latitude: data.latitude,
       longitude: data.longitude,
       datetime: new Date(data.hourly.time[startHour]),
+      timezone,
       condition,
       description: condition,
       temperature: Math.round(avgTemp * 10) / 10,
@@ -327,6 +329,8 @@ function parseOpenMeteoResponse(data: OpenMeteoResponse, location: string): Weat
  * Parse current weather from Open-Meteo response
  */
 function parseCurrentWeather(data: OpenMeteoResponse, location: string): WeatherData {
+  const timezone = data.timezone;
+
   if (!data.current) {
     // Fall back to first hour of hourly data
     const condition = wmoCodeToCondition(data.hourly.weather_code[0]);
@@ -335,6 +339,7 @@ function parseCurrentWeather(data: OpenMeteoResponse, location: string): Weather
       latitude: data.latitude,
       longitude: data.longitude,
       datetime: new Date(data.hourly.time[0]),
+      timezone,
       condition,
       description: condition,
       temperature: data.hourly.temperature_2m[0],
@@ -352,6 +357,7 @@ function parseCurrentWeather(data: OpenMeteoResponse, location: string): Weather
     latitude: data.latitude,
     longitude: data.longitude,
     datetime: new Date(data.current.time),
+    timezone,
     condition,
     description: condition,
     temperature: data.current.temperature_2m,

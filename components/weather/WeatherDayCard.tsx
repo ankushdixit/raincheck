@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface WeatherDayCardProps {
   datetime: Date;
+  timezone: string;
   condition: string;
   temperature: number;
   precipitation: number;
@@ -14,17 +15,17 @@ interface WeatherDayCardProps {
 }
 
 /**
- * Format date to day name (Mon, Tue, etc.)
+ * Format date to day name (Mon, Tue, etc.) in the specified timezone
  */
-function getDayName(date: Date): string {
-  return date.toLocaleDateString("en-US", { weekday: "short" });
+function getDayName(date: Date, timezone: string): string {
+  return date.toLocaleDateString("en-US", { weekday: "short", timeZone: timezone });
 }
 
 /**
- * Format date to short date (Nov 25)
+ * Format date to short date (Nov 25) in the specified timezone
  */
-function getShortDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function getShortDate(date: Date, timezone: string): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: timezone });
 }
 
 /**
@@ -34,6 +35,7 @@ function getShortDate(date: Date): string {
  */
 export function WeatherDayCard({
   datetime,
+  timezone,
   condition,
   temperature,
   precipitation,
@@ -55,10 +57,10 @@ export function WeatherDayCard({
       aria-pressed={isSelected}
     >
       {/* Day name */}
-      <span className="text-white text-sm font-semibold">{getDayName(datetime)}</span>
+      <span className="text-white text-sm font-semibold">{getDayName(datetime, timezone)}</span>
 
       {/* Date */}
-      <span className="text-white/60 text-xs mb-2">{getShortDate(datetime)}</span>
+      <span className="text-white/60 text-xs mb-2">{getShortDate(datetime, timezone)}</span>
 
       {/* Weather icon */}
       <div className="my-2">

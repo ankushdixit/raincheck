@@ -153,6 +153,7 @@ export function WeatherForecast({
         <WeatherDayCard
           key={day.datetime.toISOString()}
           datetime={day.datetime}
+          timezone={day.timezone}
           condition={day.condition}
           temperature={day.temperature}
           precipitation={day.precipitation}

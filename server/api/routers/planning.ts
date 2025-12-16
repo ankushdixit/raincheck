@@ -72,6 +72,7 @@ async function getWeatherForecast(
         latitude: cached.latitude,
         longitude: cached.longitude,
         datetime: cached.datetime,
+        timezone: cached.timezone,
         condition: cached.condition,
         description: cached.description,
         temperature: cached.temperature,
@@ -123,6 +124,7 @@ async function getWeatherForecast(
             update: {
               latitude: dayData.latitude,
               longitude: dayData.longitude,
+              timezone: dayData.timezone,
               condition: dayData.condition,
               description: dayData.description,
               temperature: dayData.temperature,
@@ -139,6 +141,7 @@ async function getWeatherForecast(
               latitude: dayData.latitude,
               longitude: dayData.longitude,
               datetime: dayData.datetime,
+              timezone: dayData.timezone,
               condition: dayData.condition,
               description: dayData.description,
               temperature: dayData.temperature,

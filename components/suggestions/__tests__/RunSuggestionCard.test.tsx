@@ -7,6 +7,7 @@ const createMockSuggestion = (
   overrides?: Partial<RunSuggestionCardProps["suggestion"]>
 ): RunSuggestionCardProps["suggestion"] => ({
   date: new Date("2024-11-25T00:00:00Z"),
+  timezone: "Europe/Dublin",
   runType: "EASY_RUN",
   distance: 8,
   weatherScore: 75,
