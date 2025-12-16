@@ -33,7 +33,7 @@
     "autoprefixer": "10.4.22",
     "clsx": "2.1.1",
     "lucide-react": "0.555.0",
-    "next": "16.0.7",
+    "next": "16.0.10",
     "next-auth": "5.0.0-beta.30",
     "prisma": "6.19.0",
     "react": "19.2.1",
