@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Run cards on Settings page now display properly on mobile devices with stacked layout
 - Weather dates now display in the location's timezone instead of the browser's timezone
 - Added `timezone` field to `WeatherData` type, parsed from Open-Meteo API response
 - Added `timezone` column to `WeatherCache` database table with migration
