@@ -116,7 +116,7 @@ function LocationSettings() {
             <button
               onClick={handleSave}
               disabled={updateMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Check className="h-4 w-4" />
               {updateMutation.isPending ? "Saving..." : "Save"}
@@ -124,7 +124,7 @@ function LocationSettings() {
             <button
               onClick={handleCancel}
               disabled={updateMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
               Cancel
@@ -136,7 +136,7 @@ function LocationSettings() {
           <p className="text-white">{settings?.defaultLocation ?? "Not set"}</p>
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors cursor-pointer"
           >
             <Edit2 className="h-3.5 w-3.5" />
             Edit
@@ -254,7 +254,7 @@ function RaceSettings() {
             <button
               onClick={handleSave}
               disabled={updateMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Check className="h-4 w-4" />
               {updateMutation.isPending ? "Saving..." : "Save"}
@@ -262,7 +262,7 @@ function RaceSettings() {
             <button
               onClick={handleCancel}
               disabled={updateMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
               Cancel
@@ -283,7 +283,7 @@ function RaceSettings() {
             </div>
             <button
               onClick={() => setIsEditing(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors cursor-pointer"
             >
               <Edit2 className="h-3.5 w-3.5" />
               Edit
@@ -400,7 +400,7 @@ function RunsManagement() {
                     <button
                       onClick={() => handleToggleComplete(run)}
                       disabled={toggleCompleteMutation.isPending}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors cursor-pointer ${
                         run.completed
                           ? "text-green-400 hover:bg-green-500/20"
                           : "text-white/50 hover:bg-white/10"
@@ -411,7 +411,7 @@ function RunsManagement() {
                     </button>
                     <button
                       onClick={() => setEditingRun(run)}
-                      className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                      className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                       title="Edit run"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -421,14 +421,14 @@ function RunsManagement() {
                         <button
                           onClick={() => handleDelete(run.id)}
                           disabled={deleteMutation.isPending}
-                          className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                          className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors cursor-pointer"
                           title="Confirm delete"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => setDeletingId(null)}
-                          className="p-2 text-white/50 hover:bg-white/10 rounded-lg transition-colors"
+                          className="p-2 text-white/50 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                           title="Cancel"
                         >
                           <X className="h-4 w-4" />
@@ -437,7 +437,7 @@ function RunsManagement() {
                     ) : (
                       <button
                         onClick={() => setDeletingId(run.id)}
-                        className="p-2 text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="p-2 text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Delete run"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -508,14 +508,14 @@ function EditRunForm({
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-1 px-3 py-1 bg-green-600/80 hover:bg-green-600 text-white rounded text-sm disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1 bg-green-600/80 hover:bg-green-600 text-white rounded text-sm disabled:opacity-50 cursor-pointer"
         >
           <Check className="h-3.5 w-3.5" />
           Save
         </button>
         <button
           onClick={onCancel}
-          className="flex items-center gap-1 px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-sm"
+          className="flex items-center gap-1 px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-sm cursor-pointer"
         >
           <X className="h-3.5 w-3.5" />
           Cancel

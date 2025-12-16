@@ -37,6 +37,7 @@ export function EffectsToggle({ className = "" }: EffectsToggleProps) {
         transition-all duration-200
         hover:bg-surface hover:border-white/20
         focus:outline-none focus:ring-2 focus:ring-amber-400/50
+        cursor-pointer
         ${effectsEnabled ? "text-amber-400" : "text-text-secondary"}
         ${className}
       `}

@@ -149,6 +149,7 @@ function ActionButton({
         transition-all duration-200
         hover:bg-white/25
         focus:outline-none focus:ring-2 focus:ring-amber-400/50
+        cursor-pointer
         ${isActive ? "text-amber-400 bg-white/20" : "text-white bg-white/10"}
       `}
       aria-label={label}

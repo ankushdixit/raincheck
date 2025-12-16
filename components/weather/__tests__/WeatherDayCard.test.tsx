@@ -222,8 +222,8 @@ describe("WeatherDayCard", () => {
       render(<WeatherDayCard {...defaultProps} />);
 
       const card = screen.getByTestId("weather-day-card");
-      // Padding is now set via Tailwind classes py-5 px-4
-      expect(card).toHaveClass("py-5", "px-4");
+      // Padding is now set via Tailwind classes py-6 px-4
+      expect(card).toHaveClass("py-6", "px-4");
     });
 
     it("uses shadow inset for selected state", () => {

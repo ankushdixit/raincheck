@@ -11,7 +11,7 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { fetchCurrentWeather, fetchForecast } from "@/lib/weather-client";
-import { WeatherAPIError, WeatherData } from "@/types/weather";
+import { WeatherAPIError, WeatherData, HourlyWeather } from "@/types/weather";
 
 // Cache TTL in milliseconds (1 hour)
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -347,6 +347,103 @@ export const weatherRouter = createTRPCRouter({
         }
 
         // Unknown error
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Weather service unavailable",
+        });
+      }
+    }),
+
+  /**
+   * Get hourly weather forecast for today
+   *
+   * Returns current hour + next 6 hours (7 total) of hourly weather data.
+   * Uses the daily forecast data which includes hourly breakdowns.
+   */
+  getHourlyForecast: publicProcedure
+    .input(
+      z.object({
+        location: z.string().optional(),
+        hours: z.number().min(1).max(24).default(7),
+      })
+    )
+    .query(async ({ ctx, input }): Promise<HourlyWeather[]> => {
+      // Get location from input or default from UserSettings
+      let location = input.location;
+
+      if (!location) {
+        const settings = await ctx.db.userSettings.findFirst();
+        location = settings?.defaultLocation ?? "Balbriggan, IE";
+      }
+
+      try {
+        // Fetch today's forecast which includes hourly data
+        const forecastData = await fetchForecast(location, 2);
+
+        if (!forecastData || forecastData.length === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "No forecast data available",
+          });
+        }
+
+        // Combine hourly data from today and tomorrow to ensure we have enough hours
+        const allHourly: HourlyWeather[] = [];
+        for (const day of forecastData) {
+          if (day.hourly) {
+            allHourly.push(...day.hourly);
+          }
+        }
+
+        if (allHourly.length === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "No hourly data available",
+          });
+        }
+
+        // Find the current hour and return the requested number of hours
+        const now = new Date();
+        const currentHour = now.getHours();
+
+        // Find the index of the current hour in today's data
+        const currentHourIndex = allHourly.findIndex((h) => {
+          const hourTime = new Date(h.time);
+          return (
+            hourTime.getDate() === now.getDate() &&
+            hourTime.getMonth() === now.getMonth() &&
+            hourTime.getHours() >= currentHour
+          );
+        });
+
+        if (currentHourIndex === -1) {
+          // Fallback to first available hours
+          return allHourly.slice(0, input.hours);
+        }
+
+        // Return current hour + next hours
+        return allHourly.slice(currentHourIndex, currentHourIndex + input.hours);
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        if (error instanceof WeatherAPIError) {
+          const statusCode = error.statusCode ?? 500;
+
+          if (statusCode === 404 || error.message === "Location not found") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Location not found",
+            });
+          }
+
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Weather service unavailable",
+          });
+        }
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Weather service unavailable",

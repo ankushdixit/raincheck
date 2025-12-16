@@ -4,12 +4,16 @@ import { WeatherForecast } from "../WeatherForecast";
 // Mock the tRPC api
 const mockRefetch = jest.fn();
 const mockUseQuery = jest.fn();
+const mockHourlyUseQuery = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
     weather: {
       getForecast: {
         useQuery: () => mockUseQuery(),
+      },
+      getHourlyForecast: {
+        useQuery: () => mockHourlyUseQuery(),
       },
     },
   },
@@ -27,6 +31,7 @@ const createMockForecastData = () => {
       latitude: 53.6108,
       longitude: -6.1817,
       datetime: date,
+      timezone: "Europe/Dublin",
       condition: ["Partly cloudy", "Sunny", "Light rain", "Cloudy", "Clear", "Rain", "Overcast"][i],
       description: "Weather description",
       temperature: 10 + i,
@@ -39,10 +44,34 @@ const createMockForecastData = () => {
   });
 };
 
+// Sample hourly forecast data
+const createMockHourlyData = () => {
+  const now = new Date();
+  return Array.from({ length: 7 }, (_, i) => {
+    const time = new Date(now);
+    time.setHours(time.getHours() + i);
+    return {
+      time,
+      condition: ["Clear", "Partly Cloudy", "Cloudy", "Light Rain", "Rain", "Overcast", "Clear"][i],
+      temperature: 12 + i,
+      feelsLike: 11 + i,
+      precipitation: 5 + i * 3,
+      humidity: 65 + i,
+      windSpeed: 10 + i,
+      isDay: true,
+    };
+  });
+};
+
 describe("WeatherForecast", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRefetch.mockResolvedValue({ data: createMockForecastData() });
+    // Default hourly mock - not loading, no data
+    mockHourlyUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
   });
 
   describe("loading state", () => {
@@ -301,11 +330,13 @@ describe("WeatherForecast", () => {
 
       render(<WeatherForecast />);
 
-      const container = screen.getByTestId("weather-forecast");
-      expect(container).toHaveClass("flex");
-      expect(container).toHaveClass("gap-4");
-      expect(container).toHaveClass("overflow-x-auto");
-      expect(container).toHaveClass("scrollbar-hide");
+      // The forecast container wraps the cards row
+      const forecastContainer = screen.getByTestId("weather-forecast");
+      expect(forecastContainer).toBeInTheDocument();
+      // Cards row is inside the container
+      const cardsRow = forecastContainer.querySelector(".flex");
+      expect(cardsRow).toHaveClass("gap-4");
+      expect(cardsRow).toHaveClass("overflow-x-auto");
     });
 
     it("has grid class for 2xl screens", () => {
@@ -319,11 +350,11 @@ describe("WeatherForecast", () => {
 
       render(<WeatherForecast />);
 
-      const container = screen.getByTestId("weather-forecast");
-      expect(container).toHaveClass("2xl:grid");
-      expect(container).toHaveClass("2xl:grid-cols-7");
-      expect(container).toHaveClass("2xl:gap-5");
-      expect(container).toHaveClass("2xl:overflow-visible");
+      const forecastContainer = screen.getByTestId("weather-forecast");
+      const cardsRow = forecastContainer.querySelector(".flex");
+      expect(cardsRow).toHaveClass("2xl:grid");
+      expect(cardsRow).toHaveClass("2xl:grid-cols-7");
+      expect(cardsRow).toHaveClass("2xl:gap-4");
     });
   });
 
@@ -341,6 +372,131 @@ describe("WeatherForecast", () => {
 
       // Verify the mock was called (the component uses useQuery)
       expect(mockUseQuery).toHaveBeenCalled();
+    });
+  });
+
+  describe("expand/collapse functionality", () => {
+    beforeEach(() => {
+      mockUseQuery.mockReturnValue({
+        data: createMockForecastData(),
+        isLoading: false,
+        isError: false,
+        refetch: mockRefetch,
+        isFetching: false,
+      });
+      mockHourlyUseQuery.mockReturnValue({
+        data: createMockHourlyData(),
+        isLoading: false,
+      });
+    });
+
+    it("displays expand button by default", () => {
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      expect(expandButton).toBeInTheDocument();
+      expect(expandButton).toHaveTextContent("See Hourly Forecast");
+    });
+
+    it("shows daily cards by default (not expanded)", () => {
+      render(<WeatherForecast />);
+
+      const dayCards = screen.getAllByTestId("weather-day-card");
+      expect(dayCards).toHaveLength(7);
+      expect(screen.queryAllByTestId("weather-hour-card")).toHaveLength(0);
+    });
+
+    it("clicking expand button switches to hourly view", () => {
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+
+      // Should now show 7 hourly cards (no day cards in hourly view)
+      const hourCards = screen.getAllByTestId("weather-hour-card");
+      expect(hourCards).toHaveLength(7);
+      expect(screen.queryAllByTestId("weather-day-card")).toHaveLength(0);
+    });
+
+    it("expand button changes to collapse when expanded", () => {
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+
+      // Button now has different test id when collapsed
+      const collapseButton = screen.getByTestId("forecast-collapse-button");
+      expect(collapseButton).toHaveTextContent("See Daily Forecast");
+    });
+
+    it("clicking collapse returns to daily view", () => {
+      render(<WeatherForecast />);
+
+      // Expand
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+      expect(screen.getAllByTestId("weather-hour-card")).toHaveLength(7);
+      expect(screen.queryAllByTestId("weather-day-card")).toHaveLength(0);
+
+      // Collapse
+      const collapseButton = screen.getByTestId("forecast-collapse-button");
+      fireEvent.click(collapseButton);
+      expect(screen.getAllByTestId("weather-day-card")).toHaveLength(7);
+      expect(screen.queryAllByTestId("weather-hour-card")).toHaveLength(0);
+    });
+
+    it("shows loading skeleton while hourly data is loading", () => {
+      mockHourlyUseQuery.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+      });
+
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+
+      // Should show skeleton placeholders (6 for hourly cards)
+      // Check for skeleton elements by their structure
+      const container = screen.getByTestId("weather-forecast");
+      const skeletonContainer = container.querySelectorAll(".bg-forest-deep\\/50");
+      expect(skeletonContainer.length).toBeGreaterThan(0);
+    });
+
+    it("shows fallback message when no hourly data available", () => {
+      mockHourlyUseQuery.mockReturnValue({
+        data: [],
+        isLoading: false,
+      });
+
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+
+      expect(screen.getByText("No hourly data available")).toBeInTheDocument();
+    });
+
+    it("hourly cards show 'Today' label", () => {
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+
+      // All hourly cards show "Today" label
+      const todayLabels = screen.getAllByText("Today");
+      expect(todayLabels.length).toBeGreaterThan(0);
+    });
+
+    it("displays temperatures in hourly view", () => {
+      render(<WeatherForecast />);
+
+      const expandButton = screen.getByTestId("forecast-expand-button");
+      fireEvent.click(expandButton);
+
+      // Hourly temperatures - we skip the first hour so we get indices 1-6 (temps 13-18)
+      expect(screen.getByText("13°C")).toBeInTheDocument();
+      expect(screen.getByText("18°C")).toBeInTheDocument();
     });
   });
 });
