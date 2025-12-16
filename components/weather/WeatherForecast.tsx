@@ -254,7 +254,7 @@ export function WeatherForecast({
       <button
         onClick={handleToggleExpand}
         disabled={!isExpanded && isHourlyLoading}
-        className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-lg bg-amber-500/50 hover:bg-amber-500/60 backdrop-blur-md text-white text-xs font-medium transition-all duration-200 disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-lg bg-amber-500/50 hover:bg-amber-500/70 backdrop-blur-md text-white text-xs font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         data-testid={isExpanded ? "forecast-collapse-button" : "forecast-expand-button"}
       >
         {isExpanded ? (
