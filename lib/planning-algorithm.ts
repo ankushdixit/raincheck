@@ -85,6 +85,8 @@ export interface WeatherSummary {
 export interface Suggestion {
   /** Date for the suggested run */
   date: Date;
+  /** IANA timezone for the location, e.g., "Europe/Dublin" */
+  timezone: string;
   /** Type of run to do on this day */
   runType: RunType;
   /** Suggested distance in km */
@@ -106,6 +108,7 @@ export interface Suggestion {
  */
 interface ScoredTimeWindow {
   date: Date;
+  timezone: string;
   dateKey: string;
   startHour: number;
   endHour: number;
@@ -298,6 +301,7 @@ function findBestTimeWindow(
 
     return {
       date: dayWeather.datetime,
+      timezone: dayWeather.timezone,
       dateKey: formatDateKey(dayWeather.datetime),
       startHour,
       endHour,
@@ -331,6 +335,7 @@ function findBestTimeWindow(
       bestScore = score;
       bestWindow = {
         date: dayWeather.datetime,
+        timezone: dayWeather.timezone,
         dateKey: formatDateKey(dayWeather.datetime),
         startHour: windowStart,
         endHour: windowStart + windowSize,
@@ -351,6 +356,7 @@ function findBestTimeWindow(
     );
     return {
       date: dayWeather.datetime,
+      timezone: dayWeather.timezone,
       dateKey: formatDateKey(dayWeather.datetime),
       startHour,
       endHour,
@@ -389,6 +395,7 @@ function createSuggestion(
 ): Suggestion {
   return {
     date: window.date,
+    timezone: window.timezone,
     runType,
     distance,
     weatherScore: window.score,

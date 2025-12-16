@@ -15,6 +15,7 @@ export type AcceptState = "idle" | "loading" | "success" | "error";
 export interface RunSuggestionCardProps {
   suggestion: {
     date: Date;
+    timezone: string;
     runType: RunType;
     distance: number;
     weatherScore: number;
@@ -108,17 +109,17 @@ function getRunTypeLabel(runType: RunType): string {
 }
 
 /**
- * Format date to day name (Mon, Tue, etc.)
+ * Format date to day name (Mon, Tue, etc.) in the specified timezone
  */
-function getDayName(date: Date): string {
-  return date.toLocaleDateString("en-US", { weekday: "short" });
+function getDayName(date: Date, timezone: string): string {
+  return date.toLocaleDateString("en-US", { weekday: "short", timeZone: timezone });
 }
 
 /**
- * Format date to short date (Nov 25)
+ * Format date to short date (Nov 25) in the specified timezone
  */
-function getShortDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function getShortDate(date: Date, timezone: string): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: timezone });
 }
 
 /**
@@ -132,7 +133,8 @@ export function RunSuggestionCard({
   acceptState = "idle",
   acceptError,
 }: RunSuggestionCardProps) {
-  const { date, runType, distance, weatherScore, reason, weather, timeRange } = suggestion;
+  const { date, timezone, runType, distance, weatherScore, reason, weather, timeRange } =
+    suggestion;
   const isAccepted = acceptState === "success";
   const isLoading = acceptState === "loading";
   const hasError = acceptState === "error";
@@ -206,10 +208,10 @@ export function RunSuggestionCard({
         )}
 
       {/* Day name */}
-      <span className="text-white text-sm font-semibold">{getDayName(date)}</span>
+      <span className="text-white text-sm font-semibold">{getDayName(date, timezone)}</span>
 
       {/* Date */}
-      <span className="text-white/60 text-xs mb-1">{getShortDate(date)}</span>
+      <span className="text-white/60 text-xs mb-1">{getShortDate(date, timezone)}</span>
 
       {/* Time range */}
       {timeRange && (

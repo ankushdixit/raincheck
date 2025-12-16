@@ -25,6 +25,7 @@ model WeatherCache {
   latitude      Float
   longitude     Float
   datetime      DateTime // Forecast timestamp
+  timezone      String   @default("Europe/Dublin") // IANA timezone, e.g., "Europe/Dublin"
   condition     String   // Weather condition, e.g., "Clear", "Light Rain", "Heavy Snow"
   description   String   // Detailed weather description
   temperature   Float    // Temperature in Celsius

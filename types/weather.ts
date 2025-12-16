@@ -27,6 +27,7 @@ export interface WeatherData {
   latitude: number;
   longitude: number;
   datetime: Date; // Forecast date (midnight)
+  timezone: string; // IANA timezone, e.g., "Europe/Dublin"
   condition: string; // Weather condition, e.g., "Clear", "Light Rain"
   description: string; // Detailed weather description
   temperature: number; // Average temperature in Celsius

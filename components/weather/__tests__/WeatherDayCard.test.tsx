@@ -4,6 +4,7 @@ import { WeatherDayCard } from "../WeatherDayCard";
 // Sample day card props
 const defaultProps = {
   datetime: new Date("2024-11-25T00:00:00Z"),
+  timezone: "Europe/Dublin",
   condition: "Partly cloudy",
   temperature: 12.5,
   precipitation: 20,

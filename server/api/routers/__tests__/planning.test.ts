@@ -54,6 +54,7 @@ function createSampleForecastData(baseDate: Date, days: number = 7): WeatherData
       latitude: 53.6108,
       longitude: -6.1817,
       datetime: date,
+      timezone: "Europe/Dublin",
       condition: conditions[i % conditions.length] ?? "Clear",
       description: conditions[i % conditions.length] ?? "Clear",
       temperature: 10 + i,

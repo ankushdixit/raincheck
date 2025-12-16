@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Weather dates now display in the location's timezone instead of the browser's timezone
+- Added `timezone` field to `WeatherData` type, parsed from Open-Meteo API response
+- Added `timezone` column to `WeatherCache` database table with migration
+- Updated `WeatherDayCard` and `RunSuggestionCard` to format dates using location timezone
+- Updated planning algorithm to include timezone in run suggestions
+- When viewing Balbriggan weather from Paris, dates now correctly show in Dublin time
+
 ### Added
 
 - Comprehensive design system with Tailwind CSS v4 theme (`@theme` directive in globals.css)

@@ -55,6 +55,7 @@ function createWeatherData(date: Date, overrides: Partial<WeatherData> = {}): We
     latitude: 53.6108,
     longitude: -6.1817,
     datetime: date,
+    timezone: "Europe/Dublin",
     condition: "Clear",
     description: "Clear sky",
     temperature: 12,
@@ -237,6 +238,7 @@ describe("validateNoLargeGaps", () => {
     const suggestions: Suggestion[] = [
       {
         date: new Date("2025-11-30"),
+        timezone: "Europe/Dublin",
         runType: RunType.LONG_RUN,
         distance: 12,
         weatherScore: 75,
@@ -253,6 +255,7 @@ describe("validateNoLargeGaps", () => {
     const suggestions: Suggestion[] = [
       {
         date: new Date("2025-11-30"),
+        timezone: "Europe/Dublin",
         runType: RunType.LONG_RUN,
         distance: 12,
         weatherScore: 75,
@@ -263,6 +266,7 @@ describe("validateNoLargeGaps", () => {
       },
       {
         date: new Date("2025-12-03"),
+        timezone: "Europe/Dublin",
         runType: RunType.EASY_RUN,
         distance: 6,
         weatherScore: 70,
@@ -279,6 +283,7 @@ describe("validateNoLargeGaps", () => {
     const suggestions: Suggestion[] = [
       {
         date: new Date("2025-11-30"),
+        timezone: "Europe/Dublin",
         runType: RunType.LONG_RUN,
         distance: 12,
         weatherScore: 75,
@@ -289,6 +294,7 @@ describe("validateNoLargeGaps", () => {
       },
       {
         date: new Date("2025-12-06"),
+        timezone: "Europe/Dublin",
         runType: RunType.EASY_RUN,
         distance: 6,
         weatherScore: 70,
@@ -307,6 +313,7 @@ describe("validateNoBackToBackHardDays", () => {
     const suggestions: Suggestion[] = [
       {
         date: new Date("2025-11-30"),
+        timezone: "Europe/Dublin",
         runType: RunType.LONG_RUN,
         distance: 12,
         weatherScore: 75,
@@ -317,6 +324,7 @@ describe("validateNoBackToBackHardDays", () => {
       },
       {
         date: new Date("2025-12-03"),
+        timezone: "Europe/Dublin",
         runType: RunType.EASY_RUN,
         distance: 6,
         weatherScore: 70,
