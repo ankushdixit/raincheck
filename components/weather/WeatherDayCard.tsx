@@ -12,6 +12,8 @@ interface WeatherDayCardProps {
   windSpeed: number;
   isSelected: boolean;
   onSelect: () => void;
+  /** Index of the day (0 = today, 1 = tomorrow, 2+ = show date) */
+  dayIndex?: number;
 }
 
 /**
@@ -29,8 +31,18 @@ function getShortDate(date: Date, timezone: string): string {
 }
 
 /**
+ * Get the subtitle based on day index
+ * 0 = "Today", 1 = "Tomorrow", 2+ = date
+ */
+function getSubtitle(date: Date, timezone: string, dayIndex?: number): string {
+  if (dayIndex === 0) return "Today";
+  if (dayIndex === 1) return "Tomorrow";
+  return getShortDate(date, timezone);
+}
+
+/**
  * Individual weather card for a single day
- * Displays day name, date, weather icon, temperature, precipitation, and wind
+ * Displays day name, date/label, weather icon, temperature, precipitation, and wind
  * Supports hover and click interactions with selected state
  */
 export function WeatherDayCard({
@@ -42,13 +54,14 @@ export function WeatherDayCard({
   windSpeed,
   isSelected,
   onSelect,
+  dayIndex,
 }: WeatherDayCardProps) {
   return (
     <button
       onClick={onSelect}
       className={cn(
-        "flex flex-col items-center backdrop-blur-md shadow-none transition-all duration-200 ease-out focus:outline-none",
-        "min-w-[130px] py-5 px-4 rounded-lg mx-1",
+        "flex flex-col items-center backdrop-blur-md shadow-none transition-all duration-200 ease-out focus:outline-none cursor-pointer",
+        "min-w-[130px] 2xl:min-w-0 2xl:w-full py-6 px-4 rounded-lg",
         isSelected
           ? "bg-forest-deep/75 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.4)]"
           : "bg-forest-deep/50 hover:bg-forest-deep/65"
@@ -59,8 +72,10 @@ export function WeatherDayCard({
       {/* Day name */}
       <span className="text-white text-sm font-semibold">{getDayName(datetime, timezone)}</span>
 
-      {/* Date */}
-      <span className="text-white/60 text-xs mb-2">{getShortDate(datetime, timezone)}</span>
+      {/* Date or Today/Tomorrow label */}
+      <span className="text-white/60 text-xs mb-2">
+        {getSubtitle(datetime, timezone, dayIndex)}
+      </span>
 
       {/* Weather icon */}
       <div className="my-2">

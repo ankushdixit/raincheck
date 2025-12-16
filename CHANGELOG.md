@@ -7,9 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Hourly weather forecast view with expand/collapse functionality
+- "See Hourly Forecast" button below weather cards to toggle between daily and hourly views
+- `WeatherHourCard` component for displaying individual hourly forecasts
+- `getHourlyForecast` tRPC endpoint returning current hour + next 6 hours of weather data
+- Hourly cards show "Today" or "Tomorrow" labels based on the hour's date
+- Clicking hourly cards triggers background weather effects like daily cards
+- Slide animation when transitioning between daily and hourly views
+- "Today" label on first daily card, "Tomorrow" on second, dates on rest for consistency
+
+### Security
+
+- Updated @trpc/client, @trpc/next, @trpc/react-query, and @trpc/server from 11.7.1 to 11.8.0 to fix prototype pollution vulnerability (GHSA-43p4-m455-4f4j)
+
 ### Fixed
 
 - Run cards on Settings page now display properly on mobile devices with stacked layout
+- Added `cursor-pointer` to all interactive buttons (effects toggle, logout, weather cards, run suggestion cards, settings page buttons)
 - Weather dates now display in the location's timezone instead of the browser's timezone
 - Added `timezone` field to `WeatherData` type, parsed from Open-Meteo API response
 - Added `timezone` column to `WeatherCache` database table with migration

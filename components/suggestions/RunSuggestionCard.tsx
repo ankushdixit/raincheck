@@ -178,7 +178,7 @@ export function RunSuggestionCard({
       {/* Info icon for reasoning tooltip - positioned in top right corner */}
       <button
         ref={buttonRef}
-        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center transition-colors bg-white/15 text-white/70 text-[10px]"
+        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center transition-colors bg-white/15 text-white/70 text-[10px] cursor-pointer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         onFocus={() => setShowTooltip(true)}
@@ -268,9 +268,10 @@ export function RunSuggestionCard({
             onClick={onAccept}
             disabled={isLoading || isAccepted}
             className={cn(
-              "w-full py-1.5 text-white rounded text-xs font-medium border-none flex items-center justify-center gap-1.5",
+              "w-full py-1.5 text-white rounded text-xs font-medium border-none flex items-center justify-center gap-1.5 cursor-pointer",
               isAccepted ? "bg-green-500/60" : "bg-green-500/30 hover:bg-green-500/50",
-              isLoading && "opacity-70 cursor-not-allowed"
+              isLoading && "opacity-70 cursor-not-allowed",
+              isAccepted && "cursor-default"
             )}
             data-testid="accept-button"
           >
