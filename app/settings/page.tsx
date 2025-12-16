@@ -307,6 +307,7 @@ function RunsManagement() {
     onSuccess: () => {
       utils.runs.getAll.invalidate();
       utils.runs.getByDateRange.invalidate();
+      utils.planning.generateSuggestions.invalidate();
       setDeletingId(null);
     },
   });
@@ -315,6 +316,7 @@ function RunsManagement() {
     onSuccess: () => {
       utils.runs.getAll.invalidate();
       utils.runs.getByDateRange.invalidate();
+      utils.planning.generateSuggestions.invalidate();
     },
   });
 
@@ -322,6 +324,7 @@ function RunsManagement() {
     onSuccess: () => {
       utils.runs.getAll.invalidate();
       utils.runs.getByDateRange.invalidate();
+      utils.planning.generateSuggestions.invalidate();
       setEditingRun(null);
     },
   });

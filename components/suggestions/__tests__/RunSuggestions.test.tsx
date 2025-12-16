@@ -8,12 +8,18 @@ const mockMutateAsync = jest.fn();
 const mockInvalidate = jest.fn();
 
 const mockGetAllRuns = jest.fn();
+const mockGetWeatherForecast = jest.fn();
 
 jest.mock("@/lib/api", () => ({
   api: {
     planning: {
       generateSuggestions: {
         useQuery: () => mockUseQuery(),
+      },
+    },
+    weather: {
+      getForecast: {
+        useQuery: () => mockGetWeatherForecast(),
       },
     },
     runs: {
@@ -34,6 +40,11 @@ jest.mock("@/lib/api", () => ({
       runs: {
         getAll: {
           invalidate: mockInvalidate,
+        },
+      },
+      planning: {
+        generateSuggestions: {
+          invalidate: jest.fn(),
         },
       },
     }),
@@ -97,6 +108,8 @@ describe("RunSuggestions", () => {
     mockMutateAsync.mockResolvedValue({ id: "run-1" });
     // Default: no existing scheduled runs
     mockGetAllRuns.mockReturnValue({ data: [] });
+    // Default: empty weather forecast
+    mockGetWeatherForecast.mockReturnValue({ data: [] });
   });
 
   describe("loading state", () => {

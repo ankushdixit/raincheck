@@ -253,17 +253,20 @@ export const planningRouter = createTRPCRouter({
    * 1. Fetching current training plan week
    * 2. Getting weather forecast (with cache)
    * 3. Loading weather preferences
-   * 4. Calling the planning algorithm
-   * 5. Returning formatted suggestions
+   * 4. Loading accepted runs (scheduled but not completed)
+   * 5. Getting longest completed distance (for progression)
+   * 6. Getting last completed run (for rest calculation)
+   * 7. Calling the planning algorithm
+   * 8. Returning formatted suggestions
    *
-   * @param days - Number of days to plan (1-21, default 7)
+   * @param days - Number of days to plan (1-21, default 14)
    * @param location - Location for weather forecast (defaults to user settings)
    * @returns Array of run suggestions
    */
   generateSuggestions: publicProcedure
     .input(
       z.object({
-        days: z.number().min(1).max(21).default(7),
+        days: z.number().min(1).max(21).default(14),
         location: z.string().optional(),
       })
     )
@@ -298,14 +301,46 @@ export const planningRouter = createTRPCRouter({
       // 4. Get weather preferences
       const preferences = await ctx.db.weatherPreference.findMany();
 
-      // 5. Generate and return suggestions
-      // Note: existingRuns would come from a Runs table if we had one
-      // For now, we pass an empty array as the spec doesn't define a Run model
+      // 5. Get accepted runs (scheduled but not completed)
+      const acceptedRuns = await ctx.db.run.findMany({
+        where: { completed: false },
+        orderBy: { date: "asc" },
+      });
+
+      // 6. Get longest run distance from ALL runs (completed + scheduled) for progression
+      const longestRun = await ctx.db.run.findFirst({
+        orderBy: { distance: "desc" },
+        select: { distance: true },
+      });
+      const longestCompletedDistance = longestRun?.distance ?? 0;
+
+      // 7. Get last completed run (for rest calculation)
+      const lastCompletedRun = await ctx.db.run.findFirst({
+        where: { completed: true },
+        orderBy: { date: "desc" },
+        select: { date: true, distance: true },
+      });
+
+      // 8. Generate and return suggestions
       const suggestions = generateSuggestions({
         forecast,
         trainingPlan,
         preferences,
         existingRuns: [],
+        acceptedRuns: acceptedRuns.map((r) => ({
+          id: r.id,
+          date: r.date,
+          runType: r.type,
+          completed: r.completed,
+          distance: r.distance,
+        })),
+        longestCompletedDistance,
+        lastCompletedRun: lastCompletedRun
+          ? {
+              date: lastCompletedRun.date,
+              distance: lastCompletedRun.distance,
+            }
+          : null,
       });
 
       return suggestions;

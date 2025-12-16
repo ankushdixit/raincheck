@@ -88,22 +88,23 @@ const IDEAL_TEMPERATURE = 12.5;
 /**
  * Scoring weights for each weather factor.
  * Total must equal 100 for easy interpretation.
+ * Prioritizes precipitation and wind as primary run-blocking factors.
  */
 const SCORING_WEIGHTS = {
-  precipitation: 40, // Most important factor
-  wind: 25, // Second most important
-  temperature: 20, // Third most important
-  condition: 15, // Penalty for bad conditions
+  precipitation: 60, // Most important factor - rain ruins runs
+  wind: 30, // Second most important - high wind is uncomfortable
+  temperature: 5, // Minor factor - runners adapt to temperature
+  condition: 5, // Minor factor - general condition warnings
 } as const;
 
 /**
  * Calculate a weather quality score from 0-100.
  *
  * The score starts at 100 (perfect conditions) and deducts points based on:
- * - Precipitation probability (0-40 points)
- * - Wind speed (0-25 points)
- * - Temperature deviation from ideal (0-20 points)
- * - Bad weather conditions (0-15 points)
+ * - Precipitation probability (0-60 points) - primary factor
+ * - Wind speed (0-30 points) - secondary factor
+ * - Temperature deviation from ideal (0-5 points) - minor factor
+ * - Bad weather conditions (0-5 points) - minor factor
  *
  * @param weather - Weather data to score
  * @param preference - Weather preference thresholds for comparison
