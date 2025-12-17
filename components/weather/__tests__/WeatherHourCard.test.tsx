@@ -2,8 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { WeatherHourCard } from "../WeatherHourCard";
 
 describe("WeatherHourCard", () => {
+  // Use dynamic dates to ensure tests don't fail when date changes
+  const today = new Date();
+  today.setHours(14, 0, 0, 0); // 2 PM today
+
   const defaultProps = {
-    time: new Date("2025-12-16T14:00:00"),
+    time: today,
     condition: "Partly Cloudy",
     temperature: 15,
     precipitation: 20,
@@ -69,25 +73,33 @@ describe("WeatherHourCard", () => {
 
   describe("time formatting", () => {
     it("formats morning hours correctly", () => {
-      render(<WeatherHourCard {...defaultProps} time={new Date("2025-12-16T09:00:00")} />);
+      const morning = new Date();
+      morning.setHours(9, 0, 0, 0);
+      render(<WeatherHourCard {...defaultProps} time={morning} />);
 
       expect(screen.getByText("9 AM")).toBeInTheDocument();
     });
 
     it("formats noon correctly", () => {
-      render(<WeatherHourCard {...defaultProps} time={new Date("2025-12-16T12:00:00")} />);
+      const noon = new Date();
+      noon.setHours(12, 0, 0, 0);
+      render(<WeatherHourCard {...defaultProps} time={noon} />);
 
       expect(screen.getByText("12 PM")).toBeInTheDocument();
     });
 
     it("formats midnight correctly", () => {
-      render(<WeatherHourCard {...defaultProps} time={new Date("2025-12-16T00:00:00")} />);
+      const midnight = new Date();
+      midnight.setHours(0, 0, 0, 0);
+      render(<WeatherHourCard {...defaultProps} time={midnight} />);
 
       expect(screen.getByText("12 AM")).toBeInTheDocument();
     });
 
     it("formats evening hours correctly", () => {
-      render(<WeatherHourCard {...defaultProps} time={new Date("2025-12-16T21:00:00")} />);
+      const evening = new Date();
+      evening.setHours(21, 0, 0, 0);
+      render(<WeatherHourCard {...defaultProps} time={evening} />);
 
       expect(screen.getByText("9 PM")).toBeInTheDocument();
     });

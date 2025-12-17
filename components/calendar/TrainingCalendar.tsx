@@ -160,7 +160,8 @@ export function TrainingCalendarSkeleton() {
           {[0, 1, 2, 3, 4, 5, 6].map((col) => (
             <div key={col} className="min-h-[60px] sm:min-h-[80px] p-1">
               <div className="h-3 w-4 bg-white/20 rounded animate-pulse mb-1" />
-              {Math.random() > 0.7 && (
+              {/* Deterministic pattern to avoid hydration mismatch (was Math.random()) */}
+              {(row + col) % 4 === 0 && (
                 <div className="h-5 w-full bg-white/10 rounded animate-pulse" />
               )}
             </div>
