@@ -634,6 +634,57 @@ describe("generateSuggestions", () => {
 
       expect(runOnExistingDate).toBeUndefined();
     });
+
+    it("schedules second short run when first short run is already accepted", () => {
+      // Regression test for bug where second short run was not scheduled
+      // when the first short run was already accepted
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const longRunDate = addDays(tomorrow, daysUntilSunday); // Sunday
+
+      // First short run is 3 days after long run (2 rest + 1)
+      const firstShortDate = addDays(longRunDate, 3);
+      // Second short run is 2 days after first short (1 rest + 1)
+      const secondShortDate = addDays(firstShortDate, 2);
+
+      const input: AlgorithmInput = {
+        forecast: create14DayForecast(longRunDate),
+        trainingPlan: createTrainingPlan(),
+        preferences: createWeatherPreferences(),
+        existingRuns: [],
+        acceptedRuns: [
+          // Long run accepted
+          {
+            id: "1",
+            date: longRunDate,
+            runType: RunType.LONG_RUN,
+            completed: false,
+            distance: 14,
+          },
+          // First short run also accepted
+          {
+            id: "2",
+            date: firstShortDate,
+            runType: RunType.EASY_RUN,
+            completed: false,
+            distance: 6,
+          },
+        ],
+        longestCompletedDistance: 14,
+        lastCompletedRun: null,
+      };
+
+      const result = generateSuggestions(input);
+
+      // The second short run should still be scheduled even though first is accepted
+      const secondShortRun = result.find(
+        (s) =>
+          formatDateKey(s.date) === formatDateKey(secondShortDate) && s.runType === RunType.EASY_RUN
+      );
+
+      expect(secondShortRun).toBeDefined();
+      expect(secondShortRun?.distance).toBe(6);
+    });
   });
 
   describe("edge cases", () => {

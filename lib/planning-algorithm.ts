@@ -557,6 +557,7 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
 
   // Step 3: Schedule short runs after accepted long runs
   // This ensures short runs are generated even when the long run was already accepted
+  // IMPORTANT: Handle cases where first short run is already accepted but second is not
   const acceptedLongRuns = acceptedRuns.filter(
     (run) => !run.completed && run.distance >= LONG_RUN_THRESHOLD
   );
@@ -568,11 +569,15 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
     const firstShortDate = addDays(longRunDate, REST_DAYS_AFTER_LONG_RUN + 1);
     const firstShortDateKey = formatDateKey(firstShortDate);
 
+    // Track if first short run exists (either we schedule it or it's already accepted)
+    let firstShortScheduled = usedDates.has(firstShortDateKey);
+
     // Find weather data for first short run date
     const firstShortForecast = forecast.find(
       (d) => formatDateKey(d.datetime) === firstShortDateKey
     );
 
+    // Try to schedule first short run if not already scheduled
     if (
       firstShortForecast &&
       !existingRunDates.has(firstShortDateKey) &&
@@ -583,30 +588,35 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
       if (window) {
         suggestions.push(createSuggestion(window, "EASY_RUN", SHORT_RUN_DISTANCE));
         usedDates.add(firstShortDateKey);
+        firstShortScheduled = true;
 
         // Mark 1 rest day after short run
         restDates.add(formatDateKey(addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN)));
+      }
+    }
 
-        // Second short run: 2 days after first short run (1 rest + 1)
-        const secondShortDate = addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN + 1);
-        const secondShortDateKey = formatDateKey(secondShortDate);
+    // Second short run: 2 days after first short run (1 rest + 1)
+    // Schedule this REGARDLESS of whether we just scheduled the first short run
+    // (it might have been accepted earlier)
+    if (firstShortScheduled) {
+      const secondShortDate = addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN + 1);
+      const secondShortDateKey = formatDateKey(secondShortDate);
 
-        const secondShortForecast = forecast.find(
-          (d) => formatDateKey(d.datetime) === secondShortDateKey
-        );
+      const secondShortForecast = forecast.find(
+        (d) => formatDateKey(d.datetime) === secondShortDateKey
+      );
 
-        if (
-          secondShortForecast &&
-          !existingRunDates.has(secondShortDateKey) &&
-          !usedDates.has(secondShortDateKey) &&
-          !restDates.has(secondShortDateKey)
-        ) {
-          const window2 = findBestTimeWindow(secondShortForecast, preferences, "EASY_RUN");
-          if (window2) {
-            suggestions.push(createSuggestion(window2, "EASY_RUN", SHORT_RUN_DISTANCE));
-            usedDates.add(secondShortDateKey);
-            restDates.add(formatDateKey(addDays(secondShortDate, REST_DAYS_AFTER_SHORT_RUN)));
-          }
+      if (
+        secondShortForecast &&
+        !existingRunDates.has(secondShortDateKey) &&
+        !usedDates.has(secondShortDateKey) &&
+        !restDates.has(secondShortDateKey)
+      ) {
+        const window2 = findBestTimeWindow(secondShortForecast, preferences, "EASY_RUN");
+        if (window2) {
+          suggestions.push(createSuggestion(window2, "EASY_RUN", SHORT_RUN_DISTANCE));
+          usedDates.add(secondShortDateKey);
+          restDates.add(formatDateKey(addDays(secondShortDate, REST_DAYS_AFTER_SHORT_RUN)));
         }
       }
     }
@@ -685,6 +695,9 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
       const firstShortDate = addDays(bestLongRunDay.datetime, REST_DAYS_AFTER_LONG_RUN + 1);
       const firstShortDateKey = formatDateKey(firstShortDate);
 
+      // Track if first short run is scheduled (for second short run logic)
+      let firstShortScheduledInStep5 = false;
+
       // Find weather data for first short run date
       const firstShortForecast = forecast.find(
         (d) => formatDateKey(d.datetime) === firstShortDateKey
@@ -700,30 +713,34 @@ export function generateSuggestions(input: AlgorithmInput): Suggestion[] {
         if (window) {
           suggestions.push(createSuggestion(window, "EASY_RUN", SHORT_RUN_DISTANCE));
           usedDates.add(firstShortDateKey);
+          firstShortScheduledInStep5 = true;
 
           // Mark 1 rest day after short run
           restDates.add(formatDateKey(addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN)));
+        }
+      }
 
-          // Second short run: 2 days after first short run (1 rest + 1)
-          const secondShortDate = addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN + 1);
-          const secondShortDateKey = formatDateKey(secondShortDate);
+      // Second short run: 2 days after first short run (1 rest + 1)
+      // Only schedule if first short run was scheduled in this iteration
+      if (firstShortScheduledInStep5) {
+        const secondShortDate = addDays(firstShortDate, REST_DAYS_AFTER_SHORT_RUN + 1);
+        const secondShortDateKey = formatDateKey(secondShortDate);
 
-          const secondShortForecast = forecast.find(
-            (d) => formatDateKey(d.datetime) === secondShortDateKey
-          );
+        const secondShortForecast = forecast.find(
+          (d) => formatDateKey(d.datetime) === secondShortDateKey
+        );
 
-          if (
-            secondShortForecast &&
-            !existingRunDates.has(secondShortDateKey) &&
-            !usedDates.has(secondShortDateKey) &&
-            !restDates.has(secondShortDateKey)
-          ) {
-            const window2 = findBestTimeWindow(secondShortForecast, preferences, "EASY_RUN");
-            if (window2) {
-              suggestions.push(createSuggestion(window2, "EASY_RUN", SHORT_RUN_DISTANCE));
-              usedDates.add(secondShortDateKey);
-              restDates.add(formatDateKey(addDays(secondShortDate, REST_DAYS_AFTER_SHORT_RUN)));
-            }
+        if (
+          secondShortForecast &&
+          !existingRunDates.has(secondShortDateKey) &&
+          !usedDates.has(secondShortDateKey) &&
+          !restDates.has(secondShortDateKey)
+        ) {
+          const window2 = findBestTimeWindow(secondShortForecast, preferences, "EASY_RUN");
+          if (window2) {
+            suggestions.push(createSuggestion(window2, "EASY_RUN", SHORT_RUN_DISTANCE));
+            usedDates.add(secondShortDateKey);
+            restDates.add(formatDateKey(addDays(secondShortDate, REST_DAYS_AFTER_SHORT_RUN)));
           }
         }
       }

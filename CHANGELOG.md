@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed bug where second short run was not scheduled when first short run was already accepted
+- Algorithm now correctly schedules remaining short runs even when some runs in the week are already accepted
+- WeatherHourCard tests now use dynamic dates instead of hardcoded dates to prevent test failures on date change
+- Fixed React hydration error in TrainingCalendar skeleton by replacing `Math.random()` with deterministic pattern
 - Run cards on Settings page now display properly on mobile devices with stacked layout
 - Added `cursor-pointer` to all interactive buttons (effects toggle, logout, weather cards, run suggestion cards, settings page buttons)
 - Weather dates now display in the location's timezone instead of the browser's timezone
