@@ -9,10 +9,30 @@ import { api } from "@/lib/api";
 import { useIsAuthenticated, useEffectsPreference } from "@/hooks";
 
 /**
- * Get current time parts (hours and minutes)
+ * Get current time parts (hours and minutes) in the specified timezone
+ * @param timezone - IANA timezone string (e.g., "Asia/Kolkata", "Europe/Dublin")
  */
-function getTimeParts(): { hours: string; minutes: string } {
+function getTimeParts(timezone?: string): { hours: string; minutes: string } {
   const now = new Date();
+
+  if (timezone) {
+    try {
+      const formatter = new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: timezone,
+      });
+      const parts = formatter.formatToParts(now);
+      const hours = parts.find((p) => p.type === "hour")?.value ?? "00";
+      const minutes = parts.find((p) => p.type === "minute")?.value ?? "00";
+      return { hours, minutes };
+    } catch {
+      // Fallback to local time if timezone is invalid
+    }
+  }
+
+  // Fallback: use local browser time
   const hours = now.getHours().toString().padStart(2, "0");
   const minutes = now.getMinutes().toString().padStart(2, "0");
   return { hours, minutes };
@@ -37,22 +57,23 @@ function WeatherInfoSkeleton() {
 /**
  * Live clock component with blinking colon
  * Uses useEffect to avoid hydration mismatch (server/client time difference)
+ * @param timezone - IANA timezone string to display time in (e.g., "Asia/Kolkata")
  */
-function LiveClock() {
+function LiveClock({ timezone }: { timezone?: string }) {
   const [time, setTime] = useState<{ hours: string; minutes: string } | null>(null);
   const [colonVisible, setColonVisible] = useState(true);
 
   useEffect(() => {
     // Set initial time on client only to avoid hydration mismatch
-    setTime(getTimeParts());
+    setTime(getTimeParts(timezone));
 
     const interval = setInterval(() => {
-      setTime(getTimeParts());
+      setTime(getTimeParts(timezone));
       setColonVisible((prev) => !prev);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [timezone]);
 
   // Show placeholder during SSR to avoid hydration mismatch
   if (!time) {
@@ -109,8 +130,8 @@ function WeatherInfo() {
         <span className="hidden sm:inline">{weather.location}</span>
       </span>
 
-      {/* Time */}
-      <LiveClock />
+      {/* Time - displayed in the location's timezone */}
+      <LiveClock timezone={weather.timezone} />
 
       {/* Weather stats - compact on mobile */}
       <span className="text-xs sm:text-sm text-white whitespace-nowrap">
