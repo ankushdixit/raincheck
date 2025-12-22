@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "RainCheck - Weather-aware half-marathon training",
   description:
     "RainCheck helps you plan your half-marathon training around the weather, so you can run in optimal conditions.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [{ rel: "icon", url: "/icon.svg", type: "image/svg+xml" }],
 };
 
 export default function RootLayout({
