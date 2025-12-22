@@ -1,28 +1,18 @@
-import Image from "next/image";
-import Link from "next/link";
+"use client";
+
+import Script from "next/script";
 
 /**
  * Solokit Badge Component
  *
- * Displays "Built with [logo] solokit" badge that links to getsolokit.com
+ * Loads the badge script from getsolokit.com and renders the badge.
+ * Automatically handles dark/light mode.
  */
 export function SolokitBadge() {
   return (
-    <Link
-      href="https://www.getsolokit.com/"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-white/70 hover:text-white/90 transition-colors text-sm"
-    >
-      <span>Built with</span>
-      <Image
-        src="/images/solokit-logo.svg"
-        alt="Solokit"
-        width={18}
-        height={18}
-        className="opacity-60"
-      />
-      <span className="font-medium">solokit</span>
-    </Link>
+    <>
+      <Script src="https://getsolokit.com/badge.js" strategy="lazyOnload" />
+      <div id="solokit-badge" />
+    </>
   );
 }
