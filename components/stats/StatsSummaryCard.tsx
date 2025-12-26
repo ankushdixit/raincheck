@@ -14,7 +14,7 @@ interface SummaryCardProps {
  */
 function SummaryCard({ label, value, icon }: SummaryCardProps) {
   return (
-    <div className="bg-forest-dark border border-forest-medium rounded-lg p-4 flex items-center gap-4">
+    <div className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-4 flex items-center gap-4">
       <div className="text-amber-500">{icon}</div>
       <div>
         <p className="text-text-secondary text-sm">{label}</p>
@@ -31,10 +31,7 @@ function SummaryCardsSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="summary-skeleton">
       {[1, 2, 3, 4].map((i) => (
-        <div
-          key={i}
-          className="bg-forest-dark border border-forest-medium rounded-lg p-4 animate-pulse"
-        >
+        <div key={i} className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-4 animate-pulse">
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 bg-forest-deep/50 rounded" />
             <div className="flex-1">
@@ -54,7 +51,7 @@ function SummaryCardsSkeleton() {
 function EmptyState() {
   return (
     <div
-      className="bg-forest-dark border border-forest-medium rounded-lg p-6 text-center"
+      className="bg-forest-deep/50 backdrop-blur-md rounded-lg p-6 text-center"
       data-testid="summary-empty-state"
     >
       <p className="text-text-secondary">

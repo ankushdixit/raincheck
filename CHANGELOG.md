@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Standardized card component styling across all pages (homepage, stats, training-phases)
+- Unified background color to `bg-forest-deep/50` (removed `bg-forest-dark`, `bg-black/40`, `bg-black/20`)
+- Unified backdrop blur to `backdrop-blur-md` (removed `backdrop-blur-sm`)
+- Unified border radius to `rounded-lg` (removed `rounded-xl` on cards)
+- Removed all card borders (`border-white/10`, `border-forest-medium`, `border-amber-600/30`)
+- Updated 11 component files with 37 styling changes for visual consistency
+
 ### Added
 
 - Training Phases detail page at `/training-phases` showing comprehensive training plan overview

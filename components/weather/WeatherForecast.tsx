@@ -19,7 +19,7 @@ function ForecastSkeleton() {
       {Array.from({ length: 7 }).map((_, index) => (
         <div
           key={index}
-          className="flex min-w-[120px] flex-col items-center gap-2 rounded-xl bg-[rgba(26,46,26,0.7)] backdrop-blur-sm p-4 animate-pulse"
+          className="flex min-w-[120px] flex-col items-center gap-2 rounded-lg bg-forest-deep/50 backdrop-blur-md p-4 animate-pulse"
         >
           {/* Day name placeholder */}
           <div className="h-4 w-10 rounded bg-forest-deep/50" />
@@ -43,7 +43,7 @@ function ForecastSkeleton() {
 function ForecastError({ onRetry, isRetrying }: { onRetry: () => void; isRetrying: boolean }) {
   return (
     <div
-      className="flex flex-col items-center gap-4 rounded-xl bg-[rgba(26,46,26,0.7)] backdrop-blur-sm p-6"
+      className="flex flex-col items-center gap-4 rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
       data-testid="forecast-error"
     >
       <span className="text-4xl" role="img" aria-label="Warning">
@@ -68,7 +68,7 @@ function ForecastError({ onRetry, isRetrying }: { onRetry: () => void; isRetryin
 function ForecastEmpty() {
   return (
     <div
-      className="flex flex-col items-center gap-4 rounded-xl bg-[rgba(26,46,26,0.7)] backdrop-blur-sm p-6"
+      className="flex flex-col items-center gap-4 rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
       data-testid="forecast-empty"
     >
       <span className="text-4xl" role="img" aria-label="No data">
@@ -182,7 +182,7 @@ export function WeatherForecast({
               Array.from({ length: 7 }).map((_, index) => (
                 <div
                   key={index}
-                  className="flex flex-col items-center gap-2 rounded-lg bg-forest-deep/50 backdrop-blur-sm py-6 px-4 animate-pulse"
+                  className="flex flex-col items-center gap-2 rounded-lg bg-forest-deep/50 backdrop-blur-md py-6 px-4 animate-pulse"
                   style={{
                     animation: `slideInFromLeft 0.3s ease-out ${index * 0.05}s both`,
                   }}

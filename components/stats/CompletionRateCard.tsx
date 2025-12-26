@@ -51,7 +51,7 @@ export function CompletionRateCard() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
+      <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
         <div className="flex gap-6">
           <div className="w-20 h-20 rounded-full bg-white/10" />
           <div className="flex-1 space-y-3">
@@ -66,7 +66,7 @@ export function CompletionRateCard() {
 
   if (error || !data) {
     return (
-      <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5">
+      <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-5">
         <p className="text-red-400 text-sm">Failed to load completion rate</p>
       </div>
     );
@@ -77,7 +77,7 @@ export function CompletionRateCard() {
   const isOnTrack = data.rate >= targetRate;
 
   return (
-    <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5">
+    <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-5">
       <div className="flex gap-6">
         {/* Circular Progress */}
         <CircularProgress percentage={data.rate} />

@@ -21,7 +21,7 @@ type Phase = "BASE_BUILDING" | "BASE_EXTENSION" | "SPEED_DEVELOPMENT" | "PEAK_TA
  * Shared box container styles
  */
 function InfoBox({ children }: { children: React.ReactNode }) {
-  return <div className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5">{children}</div>;
+  return <div className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5">{children}</div>;
 }
 
 /**
@@ -29,7 +29,7 @@ function InfoBox({ children }: { children: React.ReactNode }) {
  */
 function InfoBoxSkeleton() {
   return (
-    <div className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
+    <div className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
       <div className="h-full flex items-center justify-center">
         <div className="h-8 w-32 rounded bg-white/10" />
       </div>
@@ -64,7 +64,7 @@ function PhaseInfoBox() {
   return (
     <Link
       href="/training-phases"
-      className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
+      className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
     >
       <div className="flex h-full">
         {/* Current Phase - Left Side */}
@@ -202,7 +202,12 @@ function RaceCountdownBox() {
   const { mainName, subtitle } = splitRaceName(raceName);
 
   return (
-    <InfoBox>
+    <a
+      href={RACE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
+    >
       <div className="flex h-full items-center">
         {/* Left: Days Count */}
         <div className="flex flex-col items-center pr-6">
@@ -219,18 +224,12 @@ function RaceCountdownBox() {
           )}
         </div>
 
-        {/* External Link Icon */}
-        <a
-          href={RACE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-          aria-label="View race details"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        {/* Hover indicator */}
+        <div className="flex items-center ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <ExternalLink className="h-4 w-4 text-white/60" />
+        </div>
       </div>
-    </InfoBox>
+    </a>
   );
 }
 
