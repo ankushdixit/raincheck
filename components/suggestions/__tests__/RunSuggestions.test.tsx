@@ -47,6 +47,11 @@ jest.mock("@/lib/api", () => ({
           invalidate: jest.fn(),
         },
       },
+      stats: {
+        getTrainingPhases: {
+          invalidate: jest.fn(),
+        },
+      },
     }),
   },
 }));

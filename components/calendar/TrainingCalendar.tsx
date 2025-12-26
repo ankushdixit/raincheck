@@ -250,6 +250,8 @@ export function TrainingCalendar() {
       utils.runs.getByDateRange.invalidate();
       // Invalidate suggestions to regenerate based on moved run
       utils.planning.generateSuggestions.invalidate();
+      // Invalidate stats to update training phases page
+      utils.stats.getTrainingPhases.invalidate();
     },
   });
 

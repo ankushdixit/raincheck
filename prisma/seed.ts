@@ -4,7 +4,7 @@
  * Seeds the database with initial data for the RainCheck application.
  * This creates:
  * - UserSettings: Singleton record with default race configuration
- * - TrainingPlan: 24 weeks of half-marathon training (Nov 30, 2025 - May 16, 2026)
+ * - TrainingPlan: 34 weeks of half-marathon training (Sep 21, 2025 - May 16, 2026)
  * - WeatherPreference: Weather tolerance thresholds for each run type
  * - Run: 22 historical runs from Sept-Nov 2025 (pre-training data)
  *
@@ -13,10 +13,10 @@
  * - Easy runs on Wednesdays and Fridays
  *
  * Phases:
- * - BASE_BUILDING (Weeks 1-6): Build from 12km → 14km long runs
- * - BASE_EXTENSION (Weeks 7-14): Extend to 15km → 18km long runs
- * - SPEED_DEVELOPMENT (Weeks 15-21): Peak at 20km long runs
- * - PEAK_TAPER (Weeks 22-24): Taper for race, 16km → 8km long runs
+ * - BASE_BUILDING (Weeks 1-15): Build from 7km → 14km long runs
+ * - BASE_EXTENSION (Weeks 16-23): Extend to 15km → 18km long runs
+ * - SPEED_DEVELOPMENT (Weeks 24-30): Peak at 20km long runs
+ * - PEAK_TAPER (Weeks 31-34): Taper for race, 16km → 5km long runs
  *
  * Historical Runs (Sept-Nov 2025):
  * - 22 completed runs showing fitness progression
@@ -24,7 +24,7 @@
  * - Distances from 5km to 12km
  * - Paces from 5:30 to 7:00 per km
  *
- * Race: May 17, 2026 (Sunday after week 24)
+ * Race: May 17, 2026 (Sunday after week 34)
  *
  * Usage:
  *   npx prisma db seed
@@ -34,15 +34,14 @@ import { PrismaClient, Phase, RunType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Training plan start date: November 23, 2025 (Sunday, 25 weeks before race on May 17, 2026)
+// Training plan start date: September 21, 2025 (Sunday, 34 weeks before race on May 17, 2026)
 // Weeks run Sunday to Saturday
-// Note: Adjusted to ensure current date falls within a training week for testing
-const TRAINING_START = new Date("2025-11-23T00:00:00.000Z");
+const TRAINING_START = new Date("2025-09-21T00:00:00.000Z");
 
 /**
- * Training plan data for 24 weeks
- * Based on actual training progression from runs.csv
- * Current fitness: ~12km long run (as of Nov 23, 2025)
+ * Training plan data for 34 weeks
+ * Based on actual training progression
+ * Current fitness: ~14km long run (as of Dec 2025)
  * Weekly structure: Long run (Sun) + Easy run (Wed) + Easy run (Fri)
  */
 const trainingPlanData: Array<{
@@ -52,101 +51,93 @@ const trainingPlanData: Array<{
   weeklyMileageTarget: number;
   notes?: string;
 }> = [
-  // BASE_BUILDING (Weeks 1-6): Building consistency, 12km → 14km long runs
+  // BASE_BUILDING (Weeks 1-15): Building consistency, 7km → 14km long runs
+  { weekNumber: 1, phase: Phase.BASE_BUILDING, longRunTarget: 7, weeklyMileageTarget: 15 },
+  { weekNumber: 2, phase: Phase.BASE_BUILDING, longRunTarget: 8, weeklyMileageTarget: 16 },
+  { weekNumber: 3, phase: Phase.BASE_BUILDING, longRunTarget: 8, weeklyMileageTarget: 17 },
+  { weekNumber: 4, phase: Phase.BASE_BUILDING, longRunTarget: 9, weeklyMileageTarget: 18 },
+  { weekNumber: 5, phase: Phase.BASE_BUILDING, longRunTarget: 9, weeklyMileageTarget: 19 },
+  { weekNumber: 6, phase: Phase.BASE_BUILDING, longRunTarget: 10, weeklyMileageTarget: 20 },
+  { weekNumber: 7, phase: Phase.BASE_BUILDING, longRunTarget: 10, weeklyMileageTarget: 21 },
+  { weekNumber: 8, phase: Phase.BASE_BUILDING, longRunTarget: 11, weeklyMileageTarget: 22 },
+  { weekNumber: 9, phase: Phase.BASE_BUILDING, longRunTarget: 11, weeklyMileageTarget: 23 },
+  { weekNumber: 10, phase: Phase.BASE_BUILDING, longRunTarget: 12, weeklyMileageTarget: 24 },
+  { weekNumber: 11, phase: Phase.BASE_BUILDING, longRunTarget: 12, weeklyMileageTarget: 25 },
+  { weekNumber: 12, phase: Phase.BASE_BUILDING, longRunTarget: 13, weeklyMileageTarget: 26 },
+  { weekNumber: 13, phase: Phase.BASE_BUILDING, longRunTarget: 13, weeklyMileageTarget: 26 },
+  { weekNumber: 14, phase: Phase.BASE_BUILDING, longRunTarget: 14, weeklyMileageTarget: 27 },
   {
-    weekNumber: 1,
-    phase: Phase.BASE_BUILDING,
-    longRunTarget: 12,
-    weeklyMileageTarget: 24,
-    notes: "First structured week, maintain current fitness",
-  },
-  { weekNumber: 2, phase: Phase.BASE_BUILDING, longRunTarget: 12, weeklyMileageTarget: 24 },
-  { weekNumber: 3, phase: Phase.BASE_BUILDING, longRunTarget: 13, weeklyMileageTarget: 25 },
-  {
-    weekNumber: 4,
-    phase: Phase.BASE_BUILDING,
-    longRunTarget: 13,
-    weeklyMileageTarget: 25,
-    notes: "Christmas week - maintain consistency",
-  },
-  {
-    weekNumber: 5,
+    weekNumber: 15,
     phase: Phase.BASE_BUILDING,
     longRunTarget: 14,
-    weeklyMileageTarget: 26,
-    notes: "New Year week",
-  },
-  {
-    weekNumber: 6,
-    phase: Phase.BASE_BUILDING,
-    longRunTarget: 14,
-    weeklyMileageTarget: 26,
+    weeklyMileageTarget: 27,
     notes: "Base building complete",
   },
 
-  // BASE_EXTENSION (Weeks 7-14): Extending endurance, 15km → 18km long runs
-  { weekNumber: 7, phase: Phase.BASE_EXTENSION, longRunTarget: 15, weeklyMileageTarget: 28 },
-  { weekNumber: 8, phase: Phase.BASE_EXTENSION, longRunTarget: 15, weeklyMileageTarget: 28 },
-  { weekNumber: 9, phase: Phase.BASE_EXTENSION, longRunTarget: 16, weeklyMileageTarget: 30 },
-  { weekNumber: 10, phase: Phase.BASE_EXTENSION, longRunTarget: 16, weeklyMileageTarget: 30 },
-  { weekNumber: 11, phase: Phase.BASE_EXTENSION, longRunTarget: 17, weeklyMileageTarget: 32 },
+  // BASE_EXTENSION (Weeks 16-23): Extending endurance, 15km → 18km long runs
+  { weekNumber: 16, phase: Phase.BASE_EXTENSION, longRunTarget: 15, weeklyMileageTarget: 28 },
+  { weekNumber: 17, phase: Phase.BASE_EXTENSION, longRunTarget: 15, weeklyMileageTarget: 29 },
+  { weekNumber: 18, phase: Phase.BASE_EXTENSION, longRunTarget: 16, weeklyMileageTarget: 30 },
+  { weekNumber: 19, phase: Phase.BASE_EXTENSION, longRunTarget: 16, weeklyMileageTarget: 31 },
+  { weekNumber: 20, phase: Phase.BASE_EXTENSION, longRunTarget: 17, weeklyMileageTarget: 32 },
   {
-    weekNumber: 12,
+    weekNumber: 21,
     phase: Phase.BASE_EXTENSION,
     longRunTarget: 15,
     weeklyMileageTarget: 28,
     notes: "Recovery week - reduce volume",
   },
-  { weekNumber: 13, phase: Phase.BASE_EXTENSION, longRunTarget: 17, weeklyMileageTarget: 32 },
+  { weekNumber: 22, phase: Phase.BASE_EXTENSION, longRunTarget: 17, weeklyMileageTarget: 33 },
   {
-    weekNumber: 14,
+    weekNumber: 23,
     phase: Phase.BASE_EXTENSION,
     longRunTarget: 18,
     weeklyMileageTarget: 34,
     notes: "Base extension complete",
   },
 
-  // SPEED_DEVELOPMENT (Weeks 15-21): Race-specific training, peak at 20km
-  { weekNumber: 15, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 18, weeklyMileageTarget: 35 },
-  { weekNumber: 16, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 19, weeklyMileageTarget: 36 },
+  // SPEED_DEVELOPMENT (Weeks 24-30): Race-specific training, peak at 20km
+  { weekNumber: 24, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 18, weeklyMileageTarget: 35 },
+  { weekNumber: 25, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 19, weeklyMileageTarget: 36 },
   {
-    weekNumber: 17,
+    weekNumber: 26,
     phase: Phase.SPEED_DEVELOPMENT,
     longRunTarget: 16,
     weeklyMileageTarget: 30,
     notes: "Recovery week",
   },
-  { weekNumber: 18, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 19, weeklyMileageTarget: 37 },
+  { weekNumber: 27, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 19, weeklyMileageTarget: 37 },
   {
-    weekNumber: 19,
+    weekNumber: 28,
     phase: Phase.SPEED_DEVELOPMENT,
     longRunTarget: 20,
     weeklyMileageTarget: 38,
     notes: "Peak long run - race distance simulation",
   },
-  { weekNumber: 20, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 18, weeklyMileageTarget: 35 },
+  { weekNumber: 29, phase: Phase.SPEED_DEVELOPMENT, longRunTarget: 18, weeklyMileageTarget: 35 },
   {
-    weekNumber: 21,
+    weekNumber: 30,
     phase: Phase.SPEED_DEVELOPMENT,
     longRunTarget: 20,
     weeklyMileageTarget: 38,
     notes: "Final peak week",
   },
 
-  // PEAK_TAPER (Weeks 22-24): Taper for race day
+  // PEAK_TAPER (Weeks 31-34): Taper for race day
   {
-    weekNumber: 22,
+    weekNumber: 31,
     phase: Phase.PEAK_TAPER,
     longRunTarget: 16,
     weeklyMileageTarget: 30,
     notes: "Begin taper - reduce volume, maintain intensity",
   },
-  { weekNumber: 23, phase: Phase.PEAK_TAPER, longRunTarget: 12, weeklyMileageTarget: 24 },
+  { weekNumber: 32, phase: Phase.PEAK_TAPER, longRunTarget: 12, weeklyMileageTarget: 24 },
+  { weekNumber: 33, phase: Phase.PEAK_TAPER, longRunTarget: 8, weeklyMileageTarget: 16 },
   {
-    weekNumber: 24,
+    weekNumber: 34,
     phase: Phase.PEAK_TAPER,
-    longRunTarget: 8,
-    weeklyMileageTarget: 16,
+    longRunTarget: 5,
+    weeklyMileageTarget: 10,
     notes: "Race week - rest and prepare, race is Sunday May 17",
   },
 ];
@@ -426,7 +417,7 @@ async function seedTrainingPlan() {
   // Delete existing training plan entries to allow re-seeding
   await prisma.trainingPlan.deleteMany({});
 
-  // Create all 24 weeks of training plan
+  // Create all 34 weeks of training plan
   const createdPlans = await Promise.all(
     trainingPlanData.map((data) => {
       const { weekStart, weekEnd } = getWeekDates(data.weekNumber);
