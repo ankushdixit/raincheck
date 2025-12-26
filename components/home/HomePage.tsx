@@ -209,7 +209,7 @@ export function HomePage() {
       {showAutoDisableToast && (
         <div
           className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50
-            px-4 py-3 bg-surface/95 backdrop-blur-sm rounded-lg
+            px-4 py-3 bg-surface/95 backdrop-blur-md rounded-lg
             border border-amber-400/30 shadow-lg
             text-sm text-text-primary
             animate-in fade-in slide-in-from-bottom-4 duration-300"

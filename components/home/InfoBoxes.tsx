@@ -21,7 +21,7 @@ type Phase = "BASE_BUILDING" | "BASE_EXTENSION" | "SPEED_DEVELOPMENT" | "PEAK_TA
  * Shared box container styles
  */
 function InfoBox({ children }: { children: React.ReactNode }) {
-  return <div className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5">{children}</div>;
+  return <div className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5">{children}</div>;
 }
 
 /**
@@ -29,7 +29,7 @@ function InfoBox({ children }: { children: React.ReactNode }) {
  */
 function InfoBoxSkeleton() {
   return (
-    <div className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
+    <div className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
       <div className="h-full flex items-center justify-center">
         <div className="h-8 w-32 rounded bg-white/10" />
       </div>
@@ -64,7 +64,7 @@ function PhaseInfoBox() {
   return (
     <Link
       href="/training-phases"
-      className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
+      className="flex-1 rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
     >
       <div className="flex h-full">
         {/* Current Phase - Left Side */}

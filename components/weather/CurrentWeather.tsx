@@ -8,7 +8,10 @@ import { WeatherIcon } from "./WeatherIcon";
  */
 function WeatherSkeleton() {
   return (
-    <div className="w-full max-w-sm rounded-xl bg-forest-dark p-6" data-testid="weather-skeleton">
+    <div
+      className="w-full max-w-sm rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
+      data-testid="weather-skeleton"
+    >
       <div className="flex flex-col items-center gap-4 animate-pulse">
         {/* Icon placeholder */}
         <div className="h-16 w-16 rounded-full bg-forest-deep/50" />
@@ -34,7 +37,10 @@ function WeatherSkeleton() {
  */
 function WeatherError({ onRetry, isRetrying }: { onRetry: () => void; isRetrying: boolean }) {
   return (
-    <div className="w-full max-w-sm rounded-xl bg-forest-dark p-6" data-testid="weather-error">
+    <div
+      className="w-full max-w-sm rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
+      data-testid="weather-error"
+    >
       <div className="flex flex-col items-center gap-4 text-center">
         {/* Warning icon */}
         <span className="text-5xl" role="img" aria-label="Warning">
@@ -81,7 +87,10 @@ export function CurrentWeather() {
 
   // Success state - display weather data
   return (
-    <div className="w-full max-w-sm rounded-xl bg-forest-dark p-6" data-testid="weather-card">
+    <div
+      className="w-full max-w-sm rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
+      data-testid="weather-card"
+    >
       <div className="flex flex-col items-center gap-3">
         {/* Weather icon */}
         <WeatherIcon condition={weather.condition} className="text-6xl" />

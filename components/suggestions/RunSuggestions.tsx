@@ -11,7 +11,7 @@ import type { AcceptState } from "./RunSuggestionCard";
 function NoSuggestionsState() {
   return (
     <div
-      className="flex flex-col items-center gap-4 rounded-xl py-8 bg-forest-dark/70"
+      className="flex flex-col items-center gap-4 rounded-lg py-8 bg-forest-deep/50 backdrop-blur-md"
       data-testid="suggestions-empty"
     >
       <span className="text-4xl" role="img" aria-label="Calendar">
@@ -31,7 +31,7 @@ function NoSuggestionsState() {
 function SuggestionsError({ onRetry, isRetrying }: { onRetry: () => void; isRetrying: boolean }) {
   return (
     <div
-      className="flex flex-col items-center gap-4 rounded-xl py-8 bg-forest-dark/70"
+      className="flex flex-col items-center gap-4 rounded-lg py-8 bg-forest-deep/50 backdrop-blur-md"
       data-testid="suggestions-error"
     >
       <span className="text-4xl" role="img" aria-label="Warning">

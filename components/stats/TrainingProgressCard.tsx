@@ -34,7 +34,7 @@ export function TrainingProgressCard() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
+      <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
         <div className="flex gap-8 mb-6">
           <div>
             <div className="h-3 w-24 rounded bg-white/10 mb-2" />
@@ -76,7 +76,7 @@ export function TrainingProgressCard() {
   return (
     <Link
       href="/training-phases"
-      className="block rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
+      className="block rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
     >
       <div className="flex gap-8 mb-6">
         {/* Current Phase */}

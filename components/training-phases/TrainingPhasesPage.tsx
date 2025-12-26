@@ -289,14 +289,14 @@ export default function TrainingPhasesPage() {
           <>
             {/* Summary Stats Row */}
             <div className="mb-6 grid grid-cols-2 gap-4 px-4 sm:grid-cols-4 sm:px-6 lg:px-10">
-              <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm">
+              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
                 <div className="text-sm text-white/60">Total Weeks</div>
                 <div className="mt-1 text-2xl font-bold text-white">
                   {data.summary?.totalWeeks ?? 0}
                 </div>
                 <div className="text-xs text-white/40">in training plan</div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm">
+              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
                 <div className="text-sm text-white/60">Weeks Completed</div>
                 <div className="mt-1 text-2xl font-bold text-emerald-400">
                   {data.summary?.weeksCompleted ?? 0}
@@ -305,7 +305,7 @@ export default function TrainingPhasesPage() {
                   of {data.summary?.totalWeeks ?? 0} weeks
                 </div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm">
+              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
                 <div className="text-sm text-white/60">Completion Rate</div>
                 <div className="mt-1 text-2xl font-bold text-emerald-400">
                   {data.summary?.overallCompletionRate ?? 0}%
@@ -314,7 +314,7 @@ export default function TrainingPhasesPage() {
                   {(data.summary?.overallCompletionRate ?? 0) >= 80 ? "On Track" : "Keep Going"}
                 </div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm">
+              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
                 <div className="text-sm text-white/60">Race Day</div>
                 <div className="mt-1 text-2xl font-bold text-amber-400">
                   {data.summary?.daysUntilRace ?? 0}
@@ -325,7 +325,7 @@ export default function TrainingPhasesPage() {
 
             {/* Phase Timeline */}
             <div className="mb-6 px-4 sm:px-6 lg:px-10">
-              <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40 p-6 backdrop-blur-sm">
+              <div className="overflow-hidden rounded-lg bg-forest-deep/50 p-6 backdrop-blur-md">
                 <h2 className="mb-6 text-lg font-semibold text-white">Training Timeline</h2>
 
                 {/* Phase range bars - proportional to weeks */}
@@ -437,7 +437,7 @@ export default function TrainingPhasesPage() {
             {/* Current Phase Highlight */}
             {data.currentPhase && (
               <div className="mb-6 px-4 sm:px-6 lg:px-10">
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 backdrop-blur-sm">
+                <div className="rounded-lg bg-emerald-500/10 p-6 backdrop-blur-md">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="mb-1 flex items-center gap-2">
@@ -461,7 +461,7 @@ export default function TrainingPhasesPage() {
 
                   {/* This week's targets */}
                   <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg bg-black/20 p-4">
+                    <div className="rounded-lg bg-forest-deep/30 p-4 backdrop-blur-md">
                       <div className="flex items-center gap-2 text-sm text-white/60">
                         <Target className="h-4 w-4" />
                         Weekly Mileage Target
@@ -475,7 +475,7 @@ export default function TrainingPhasesPage() {
                         </div>
                       )}
                     </div>
-                    <div className="rounded-lg bg-black/20 p-4">
+                    <div className="rounded-lg bg-forest-deep/30 p-4 backdrop-blur-md">
                       <div className="flex items-center gap-2 text-sm text-white/60">
                         <TrendingUp className="h-4 w-4" />
                         Long Run Target
@@ -500,10 +500,8 @@ export default function TrainingPhasesPage() {
                 return (
                   <div
                     key={phase.id}
-                    className={`overflow-hidden rounded-xl border backdrop-blur-sm transition-all ${
-                      phase.status === "in_progress"
-                        ? `${colors.border} ${colors.bg}`
-                        : "border-white/10 bg-black/40"
+                    className={`overflow-hidden rounded-lg backdrop-blur-md transition-all ${
+                      phase.status === "in_progress" ? colors.bg : "bg-forest-deep/50"
                     }`}
                   >
                     {/* Phase Header - Clickable */}
@@ -672,7 +670,7 @@ export default function TrainingPhasesPage() {
 
             {/* Race Day Card */}
             <div className="mt-8 px-4 sm:px-6 lg:px-10">
-              <div className="rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-6 backdrop-blur-sm">
+              <div className="rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-6 backdrop-blur-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="rounded-lg bg-amber-500/20 p-3">

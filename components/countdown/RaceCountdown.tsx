@@ -131,7 +131,10 @@ function TaperReminder({ message }: { message: string }) {
  */
 function CountdownSkeleton() {
   return (
-    <div className="w-full max-w-sm rounded-xl bg-forest-dark p-6" data-testid="countdown-skeleton">
+    <div
+      className="w-full max-w-sm rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
+      data-testid="countdown-skeleton"
+    >
       <div className="flex flex-col items-center gap-4 animate-pulse">
         {/* Days number placeholder */}
         <div className="h-16 w-24 rounded bg-forest-deep/50" />
@@ -156,7 +159,10 @@ function CountdownSkeleton() {
  */
 function CountdownError({ onRetry, isRetrying }: { onRetry: () => void; isRetrying: boolean }) {
   return (
-    <div className="w-full max-w-sm rounded-xl bg-forest-dark p-6" data-testid="countdown-error">
+    <div
+      className="w-full max-w-sm rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
+      data-testid="countdown-error"
+    >
       <div className="flex flex-col items-center gap-4 text-center">
         <span className="text-5xl" role="img" aria-label="Warning">
           &#x26A0;&#xFE0F;
@@ -242,7 +248,7 @@ export function RaceCountdown() {
 
   return (
     <div
-      className="w-full max-w-sm rounded-xl bg-forest-dark p-6 border border-amber-600/30"
+      className="w-full max-w-sm rounded-lg bg-forest-deep/50 backdrop-blur-md p-6"
       data-testid="countdown-card"
     >
       <div className="flex flex-col items-center gap-2 text-center">
