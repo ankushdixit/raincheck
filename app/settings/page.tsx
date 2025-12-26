@@ -308,6 +308,7 @@ function RunsManagement() {
       utils.runs.getAll.invalidate();
       utils.runs.getByDateRange.invalidate();
       utils.planning.generateSuggestions.invalidate();
+      utils.stats.getTrainingPhases.invalidate();
       setDeletingId(null);
     },
   });
@@ -317,6 +318,7 @@ function RunsManagement() {
       utils.runs.getAll.invalidate();
       utils.runs.getByDateRange.invalidate();
       utils.planning.generateSuggestions.invalidate();
+      utils.stats.getTrainingPhases.invalidate();
     },
   });
 
@@ -325,6 +327,7 @@ function RunsManagement() {
       utils.runs.getAll.invalidate();
       utils.runs.getByDateRange.invalidate();
       utils.planning.generateSuggestions.invalidate();
+      utils.stats.getTrainingPhases.invalidate();
       setEditingRun(null);
     },
   });

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { calculateDaysUntil } from "@/components/countdown/RaceCountdown";
 
@@ -72,7 +74,10 @@ export function TrainingProgressCard() {
   const phaseColor = PHASE_COLORS[currentPhase] ?? "bg-blue-500/30 text-blue-400";
 
   return (
-    <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-5">
+    <Link
+      href="/training-phases"
+      className="block rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
+    >
       <div className="flex gap-8 mb-6">
         {/* Current Phase */}
         <div>
@@ -99,6 +104,11 @@ export function TrainingProgressCard() {
             </p>
           </div>
         )}
+
+        {/* Hover indicator */}
+        <div className="flex items-center ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronRight className="h-5 w-5 text-white/60" />
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -114,6 +124,6 @@ export function TrainingProgressCard() {
           <span className="text-white/50 text-xs">{progressPercent}%</span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

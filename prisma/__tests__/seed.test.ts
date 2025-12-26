@@ -131,24 +131,24 @@ describeFn("Database Seed", () => {
   });
 
   describe("TrainingPlan", () => {
-    it("creates exactly 24 TrainingPlan entries", async () => {
+    it("creates exactly 34 TrainingPlan entries", async () => {
       const count = await db.trainingPlan.count();
-      expect(count).toBe(24);
+      expect(count).toBe(34);
     });
 
-    it("creates unique week numbers 1-24", async () => {
+    it("creates unique week numbers 1-34", async () => {
       const plans = await db.trainingPlan.findMany({
         select: { weekNumber: true },
         orderBy: { weekNumber: "asc" },
       });
 
       const weekNumbers = plans.map((p) => p.weekNumber);
-      expect(weekNumbers).toHaveLength(24);
+      expect(weekNumbers).toHaveLength(34);
       expect(weekNumbers[0]).toBe(1);
-      expect(weekNumbers[23]).toBe(24);
+      expect(weekNumbers[33]).toBe(34);
 
       // Check all week numbers are unique and sequential
-      for (let i = 0; i < 24; i++) {
+      for (let i = 0; i < 34; i++) {
         expect(weekNumbers[i]).toBe(i + 1);
       }
     });
@@ -159,43 +159,44 @@ describeFn("Database Seed", () => {
         orderBy: { weekNumber: "asc" },
       });
 
-      // Weeks 1-6: BASE_BUILDING
-      for (let i = 0; i < 6; i++) {
+      // Weeks 1-15: BASE_BUILDING
+      for (let i = 0; i < 15; i++) {
         expect(plans[i]?.phase).toBe("BASE_BUILDING");
       }
 
-      // Weeks 7-14: BASE_EXTENSION
-      for (let i = 6; i < 14; i++) {
+      // Weeks 16-23: BASE_EXTENSION
+      for (let i = 15; i < 23; i++) {
         expect(plans[i]?.phase).toBe("BASE_EXTENSION");
       }
 
-      // Weeks 15-21: SPEED_DEVELOPMENT
-      for (let i = 14; i < 21; i++) {
+      // Weeks 24-30: SPEED_DEVELOPMENT
+      for (let i = 23; i < 30; i++) {
         expect(plans[i]?.phase).toBe("SPEED_DEVELOPMENT");
       }
 
-      // Weeks 22-24: PEAK_TAPER
-      for (let i = 21; i < 24; i++) {
+      // Weeks 31-34: PEAK_TAPER
+      for (let i = 30; i < 34; i++) {
         expect(plans[i]?.phase).toBe("PEAK_TAPER");
       }
     });
 
-    it("has week dates spanning Nov 23, 2025 to May 9, 2026", async () => {
+    it("has week dates spanning Sep 21, 2025 to May 16, 2026", async () => {
       const firstWeek = await db.trainingPlan.findFirst({
         where: { weekNumber: 1 },
       });
       const lastWeek = await db.trainingPlan.findFirst({
-        where: { weekNumber: 24 },
+        where: { weekNumber: 34 },
       });
 
-      // Week 1 starts on Nov 23, 2025 (Sunday)
-      expect(firstWeek?.weekStart).toEqual(new Date("2025-11-23T00:00:00.000Z"));
+      // Week 1 starts on Sep 21, 2025 (Sunday)
+      expect(firstWeek?.weekStart).toEqual(new Date("2025-09-21T00:00:00.000Z"));
 
-      // Week 24 ends 23*7+6 days after the start date
-      const expectedLastWeekEnd = new Date("2025-11-23T00:00:00.000Z");
-      expectedLastWeekEnd.setDate(expectedLastWeekEnd.getDate() + 23 * 7 + 6);
-      expectedLastWeekEnd.setHours(23, 59, 59, 999);
-      expect(lastWeek?.weekEnd).toEqual(expectedLastWeekEnd);
+      // Week 34 ends on May 16, 2026 (Saturday)
+      // Check the date portion only (time may vary based on seeding)
+      const lastWeekEndDate = lastWeek?.weekEnd ? new Date(lastWeek.weekEnd) : null;
+      expect(lastWeekEndDate?.getUTCFullYear()).toBe(2026);
+      expect(lastWeekEndDate?.getUTCMonth()).toBe(4); // May is month 4 (0-indexed)
+      expect(lastWeekEndDate?.getUTCDate()).toBe(16);
     });
 
     it("has appropriate long run targets for each phase", async () => {
@@ -204,9 +205,9 @@ describeFn("Database Seed", () => {
         orderBy: { weekNumber: "asc" },
       });
 
-      // BASE_BUILDING: 12km → 14km
+      // BASE_BUILDING: 7km → 14km
       const baseBuildingPlans = plans.filter((p) => p.phase === "BASE_BUILDING");
-      expect(baseBuildingPlans[0]?.longRunTarget).toBe(12);
+      expect(baseBuildingPlans[0]?.longRunTarget).toBe(7);
       expect(baseBuildingPlans[baseBuildingPlans.length - 1]?.longRunTarget).toBe(14);
 
       // BASE_EXTENSION: 15km → 18km
@@ -219,9 +220,9 @@ describeFn("Database Seed", () => {
       const maxLongRun = Math.max(...speedDevPlans.map((p) => p.longRunTarget));
       expect(maxLongRun).toBe(20);
 
-      // PEAK_TAPER: ends at 8km (race week)
+      // PEAK_TAPER: ends at 5km (race week)
       const peakTaperPlans = plans.filter((p) => p.phase === "PEAK_TAPER");
-      expect(peakTaperPlans[peakTaperPlans.length - 1]?.longRunTarget).toBe(8);
+      expect(peakTaperPlans[peakTaperPlans.length - 1]?.longRunTarget).toBe(5);
     });
 
     it("has appropriate weekly mileage targets", async () => {
@@ -230,14 +231,14 @@ describeFn("Database Seed", () => {
         orderBy: { weekNumber: "asc" },
       });
 
-      // BASE_BUILDING: 24-26km
+      // BASE_BUILDING: 15km → 27km
       const baseBuildingPlans = plans.filter((p) => p.phase === "BASE_BUILDING");
-      expect(baseBuildingPlans[0]?.weeklyMileageTarget).toBe(24);
-      expect(baseBuildingPlans[baseBuildingPlans.length - 1]?.weeklyMileageTarget).toBe(26);
+      expect(baseBuildingPlans[0]?.weeklyMileageTarget).toBe(15);
+      expect(baseBuildingPlans[baseBuildingPlans.length - 1]?.weeklyMileageTarget).toBe(27);
 
-      // PEAK_TAPER: ends at 16km (race week)
+      // PEAK_TAPER: ends at 10km (race week)
       const peakTaperPlans = plans.filter((p) => p.phase === "PEAK_TAPER");
-      expect(peakTaperPlans[peakTaperPlans.length - 1]?.weeklyMileageTarget).toBe(16);
+      expect(peakTaperPlans[peakTaperPlans.length - 1]?.weeklyMileageTarget).toBe(10);
     });
   });
 

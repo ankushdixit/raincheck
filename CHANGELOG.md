@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Training Phases detail page at `/training-phases` showing comprehensive training plan overview
+- `TrainingPhasesPage` component with weather-reactive background matching home/stats pages
+- Phase timeline visualization with proportional range bars for each training phase
+- Current week position marker on timeline with "Week N" indicator
+- Expandable phase cards showing weekly breakdown with targets vs actuals
+- Current phase highlight card with this week's mileage and long run targets
+- Summary stats row (total weeks, completed weeks, completion rate, days until race)
+- Race day card with countdown at bottom of page
+- `stats.getTrainingPhases` tRPC procedure returning all phases with weekly data and actuals
+- Phase metadata (descriptions, focus areas, colors) for each training phase
+- Clickable phase cards on homepage and stats page linking to training phases detail
+- Hover states with subtle scale and brightness effects on clickable cards
+- ChevronRight indicator appearing on hover to show clickability
+- Cache invalidation for `stats.getTrainingPhases` on run create/update/delete/complete
+
+### Changed
+
+- Updated training plan from 24 weeks to 34 weeks (Sep 21, 2025 - May 16, 2026)
+- Base Building phase extended to 15 weeks (was 6 weeks)
+- Training plan now starts at 7km long run target (was 12km)
+- Seed data updated to reflect 34-week training structure
+- Seed tests updated to match new training plan structure
+
 ### Changed
 
 - Overhauled run suggestion algorithm with smarter scheduling logic

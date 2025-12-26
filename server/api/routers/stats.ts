@@ -101,6 +101,63 @@ function calculateLongRunTarget(weekNum: number): number {
   return raceDistance * 0.8;
 }
 
+/**
+ * Phase metadata for display
+ */
+const PHASE_METADATA: Record<
+  Phase,
+  { name: string; description: string; focus: string[]; color: string }
+> = {
+  [Phase.BASE_BUILDING]: {
+    name: "Base Building",
+    description:
+      "Establish your aerobic foundation with consistent, easy-paced running. Focus on building weekly mileage gradually while keeping intensity low.",
+    focus: [
+      "Build aerobic base",
+      "Establish running habit",
+      "Gradual mileage increase",
+      "Easy conversational pace",
+    ],
+    color: "emerald",
+  },
+  [Phase.BASE_EXTENSION]: {
+    name: "Base Extension",
+    description:
+      "Extend your endurance capacity with longer runs and increased weekly volume. Introduce variety while maintaining aerobic focus.",
+    focus: [
+      "Extend long run distance",
+      "Increase weekly volume",
+      "Build mental toughness",
+      "Practice race nutrition",
+    ],
+    color: "blue",
+  },
+  [Phase.SPEED_DEVELOPMENT]: {
+    name: "Speed Development",
+    description:
+      "Develop race-specific fitness with tempo runs, intervals, and race-pace work. Build confidence in your target pace.",
+    focus: [
+      "Tempo runs at race pace",
+      "Interval training",
+      "Build speed endurance",
+      "Race simulation runs",
+    ],
+    color: "amber",
+  },
+  [Phase.PEAK_TAPER]: {
+    name: "Peak & Taper",
+    description:
+      "Reach peak fitness then gradually reduce volume while maintaining intensity. Arrive at race day fresh and ready.",
+    focus: [
+      "Final long run (21km)",
+      "Gradual volume reduction",
+      "Maintain sharpness",
+      "Race day preparation",
+    ],
+    color: "purple",
+  },
+};
+
 export const statsRouter = createTRPCRouter({
   /**
    * Get weekly mileage data with targets
@@ -546,6 +603,203 @@ export const statsRouter = createTRPCRouter({
       avgPace,
       streak,
       longestRun,
+    };
+  }),
+
+  /**
+   * Get all training phases with weekly breakdown and actuals
+   *
+   * Returns comprehensive phase data including:
+   * - Phase metadata (name, description, focus areas)
+   * - Date ranges and duration
+   * - Weekly targets vs actuals
+   * - Completion rates per phase
+   */
+  getTrainingPhases: publicProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const currentWeekNum = getWeekNumberForDate(now);
+
+    // Fetch all training plan weeks and completed runs in parallel
+    const [trainingPlans, completedRuns, settings] = await Promise.all([
+      ctx.db.trainingPlan.findMany({
+        orderBy: { weekNumber: "asc" },
+      }),
+      ctx.db.run.findMany({
+        where: { completed: true },
+        select: { date: true, distance: true, type: true },
+      }),
+      ctx.db.userSettings.findFirst(),
+    ]);
+
+    if (trainingPlans.length === 0) {
+      return { phases: [], currentPhase: null, summary: null };
+    }
+
+    // Build a map of runs by week number for efficient lookup
+    const runsByWeek = new Map<number, { totalDistance: number; longRunDistance: number }>();
+    for (const run of completedRuns) {
+      const weekNum = getWeekNumberForDate(run.date);
+      const existing = runsByWeek.get(weekNum) ?? { totalDistance: 0, longRunDistance: 0 };
+      existing.totalDistance += run.distance;
+      if (run.type === RunType.LONG_RUN && run.distance > existing.longRunDistance) {
+        existing.longRunDistance = run.distance;
+      }
+      runsByWeek.set(weekNum, existing);
+    }
+
+    // Group training plans by phase
+    const phaseGroups = new Map<Phase, typeof trainingPlans>();
+    for (const plan of trainingPlans) {
+      const existing = phaseGroups.get(plan.phase) ?? [];
+      existing.push(plan);
+      phaseGroups.set(plan.phase, existing);
+    }
+
+    // Build phase data
+    const phaseOrder: Phase[] = [
+      Phase.BASE_BUILDING,
+      Phase.BASE_EXTENSION,
+      Phase.SPEED_DEVELOPMENT,
+      Phase.PEAK_TAPER,
+    ];
+
+    const phases = phaseOrder
+      .filter((phase) => phaseGroups.has(phase))
+      .map((phase) => {
+        const weeks = phaseGroups.get(phase)!;
+        const metadata = PHASE_METADATA[phase];
+
+        // Calculate phase date range
+        const startDate = weeks[0]!.weekStart;
+        const endDate = weeks[weeks.length - 1]!.weekEnd;
+
+        // Determine phase status
+        let status: "completed" | "in_progress" | "upcoming";
+        if (currentWeekNum > weeks[weeks.length - 1]!.weekNumber) {
+          status = "completed";
+        } else if (currentWeekNum >= weeks[0]!.weekNumber) {
+          status = "in_progress";
+        } else {
+          status = "upcoming";
+        }
+
+        // Build weekly data with actuals
+        const weeklyData = weeks.map((week) => {
+          const actuals = runsByWeek.get(week.weekNumber);
+          let weekStatus: "completed" | "current" | "upcoming";
+          if (week.weekNumber < currentWeekNum) {
+            weekStatus = "completed";
+          } else if (week.weekNumber === currentWeekNum) {
+            weekStatus = "current";
+          } else {
+            weekStatus = "upcoming";
+          }
+
+          return {
+            weekNumber: week.weekNumber,
+            weekStart: week.weekStart,
+            weekEnd: week.weekEnd,
+            longRunTarget: week.longRunTarget,
+            longRunActual: actuals?.longRunDistance ?? null,
+            weeklyMileageTarget: week.weeklyMileageTarget,
+            weeklyMileageActual: actuals ? Math.round(actuals.totalDistance * 100) / 100 : null,
+            status: weekStatus,
+          };
+        });
+
+        // Calculate completion rate for this phase
+        const completedWeeks = weeklyData.filter(
+          (w) => w.status === "completed" && w.weeklyMileageActual !== null
+        );
+        const weeksWithMileage = completedWeeks.filter((w) => (w.weeklyMileageActual ?? 0) > 0);
+        const completionRate =
+          completedWeeks.length > 0
+            ? Math.round((weeksWithMileage.length / completedWeeks.length) * 100)
+            : null;
+
+        // Calculate mileage and long run ranges
+        const mileageMin = Math.min(...weeks.map((w) => w.weeklyMileageTarget));
+        const mileageMax = Math.max(...weeks.map((w) => w.weeklyMileageTarget));
+        const longRunMin = Math.min(...weeks.map((w) => w.longRunTarget));
+        const longRunMax = Math.max(...weeks.map((w) => w.longRunTarget));
+
+        return {
+          id: phase,
+          name: metadata.name,
+          description: metadata.description,
+          focus: metadata.focus,
+          color: metadata.color,
+          status,
+          startDate,
+          endDate,
+          duration: `${weeks.length} weeks`,
+          weekCount: weeks.length,
+          mileageRange:
+            mileageMin === mileageMax
+              ? `${mileageMin} km/week`
+              : `${mileageMin}-${mileageMax} km/week`,
+          longRunRange:
+            longRunMin === longRunMax ? `${longRunMin} km` : `${longRunMin}-${longRunMax} km`,
+          completionRate,
+          weeks: weeklyData,
+        };
+      });
+
+    // Find current phase
+    const currentPhaseData = phases.find((p) => p.status === "in_progress") ?? null;
+
+    // Calculate summary stats
+    const totalWeeks = trainingPlans.length;
+    const weeksCompleted = Math.min(currentWeekNum - 1, totalWeeks);
+    const totalCompletedRuns = completedRuns.length;
+
+    // Calculate days until race
+    const raceDate = settings?.raceDate ?? new Date("2026-05-17");
+    const daysUntilRace = Math.max(
+      0,
+      Math.ceil((raceDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    );
+
+    // Get overall completion rate from completed phases
+    const completedPhaseWeeks = phases
+      .filter((p) => p.status === "completed" || p.status === "in_progress")
+      .flatMap((p) => p.weeks)
+      .filter((w) => w.status === "completed");
+    const weeksWithActivity = completedPhaseWeeks.filter((w) => (w.weeklyMileageActual ?? 0) > 0);
+    const overallCompletionRate =
+      completedPhaseWeeks.length > 0
+        ? Math.round((weeksWithActivity.length / completedPhaseWeeks.length) * 100)
+        : 0;
+
+    // Current week info
+    const currentWeekPlan = trainingPlans.find((p) => p.weekNumber === currentWeekNum);
+    const currentWeekActuals = runsByWeek.get(currentWeekNum);
+
+    return {
+      phases,
+      currentPhase: currentPhaseData
+        ? {
+            ...currentPhaseData,
+            currentWeekNumber: currentWeekNum,
+            weekInPhase:
+              currentWeekNum -
+              (phases.find((p) => p.status === "in_progress")?.weeks[0]?.weekNumber ?? 1) +
+              1,
+            thisWeekTarget: currentWeekPlan?.weeklyMileageTarget ?? 0,
+            thisWeekLongRunTarget: currentWeekPlan?.longRunTarget ?? 0,
+            thisWeekActual: currentWeekActuals?.totalDistance ?? 0,
+          }
+        : null,
+      summary: {
+        totalWeeks,
+        weeksCompleted: Math.max(0, weeksCompleted),
+        currentWeek: currentWeekNum,
+        overallCompletionRate,
+        daysUntilRace,
+        raceDate,
+        raceName: settings?.raceName ?? "Half Marathon",
+        totalRuns: totalCompletedRuns,
+      },
     };
   }),
 });

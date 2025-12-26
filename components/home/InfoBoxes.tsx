@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   calculateDistanceProgress,
@@ -48,6 +49,7 @@ function formatDateRange(start: Date, end: Date): string {
 /**
  * Box 1: Phase Info
  * Shows current phase and next two phases with date ranges
+ * Links to the Training Phases detail page
  */
 function PhaseInfoBox() {
   const { data: phaseData, isLoading } = api.planning.getCurrentPhase.useQuery();
@@ -60,7 +62,10 @@ function PhaseInfoBox() {
   const nextPhases = phaseData?.nextPhases ?? [];
 
   return (
-    <InfoBox>
+    <Link
+      href="/training-phases"
+      className="flex-1 rounded-xl bg-forest-deep/50 backdrop-blur-md p-5 transition-all duration-200 hover:bg-forest-deep/70 hover:scale-[1.01] group"
+    >
       <div className="flex h-full">
         {/* Current Phase - Left Side */}
         <div className="flex-1">
@@ -84,8 +89,13 @@ function PhaseInfoBox() {
             <p className="text-sm text-white/80">Final Phase</p>
           )}
         </div>
+
+        {/* Hover indicator */}
+        <div className="flex items-center ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronRight className="h-5 w-5 text-white/60" />
+        </div>
       </div>
-    </InfoBox>
+    </Link>
   );
 }
 
