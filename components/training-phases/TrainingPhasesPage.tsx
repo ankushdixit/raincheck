@@ -23,11 +23,15 @@ import {
   Zap,
   Mountain,
   ArrowLeft,
+  ExternalLink,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { getTrailImage, getTintColor, getNightTint } from "@/components/trail";
 import { WeatherEffectLayer } from "@/components/weather-effects";
 import { SolokitBadge } from "@/components/common";
+
+/** Race registration page URL */
+const RACE_URL = "https://eventmaster.ie/event/RQeJHL5h76";
 
 /** Format date to readable string */
 function formatDate(date: Date): string {
@@ -670,7 +674,12 @@ export default function TrainingPhasesPage() {
 
             {/* Race Day Card */}
             <div className="mt-8 px-4 sm:px-6 lg:px-10">
-              <div className="rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-6 backdrop-blur-md">
+              <a
+                href={RACE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-6 backdrop-blur-md transition-all duration-200 hover:from-amber-500/20 hover:to-orange-500/20 hover:scale-[1.01] group"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="rounded-lg bg-amber-500/20 p-3">
@@ -683,23 +692,29 @@ export default function TrainingPhasesPage() {
                       <p className="text-white/60">Half Marathon • 21.1km</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-4xl font-bold text-amber-400">
-                      {data.summary?.daysUntilRace ?? 0}
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-4xl font-bold text-amber-400">
+                        {data.summary?.daysUntilRace ?? 0}
+                      </div>
+                      <div className="text-sm text-white/60">days to go</div>
+                      <div className="mt-1 text-sm font-medium text-amber-400">
+                        {data.summary?.raceDate
+                          ? new Date(data.summary.raceDate).toLocaleDateString("en-IE", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "May 17, 2026"}
+                      </div>
                     </div>
-                    <div className="text-sm text-white/60">days to go</div>
-                    <div className="mt-1 text-sm font-medium text-amber-400">
-                      {data.summary?.raceDate
-                        ? new Date(data.summary.raceDate).toLocaleDateString("en-IE", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : "May 17, 2026"}
+                    {/* Hover indicator */}
+                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="h-5 w-5 text-white/60" />
                     </div>
                   </div>
                 </div>
-              </div>
+              </a>
             </div>
 
             {/* Footer */}
