@@ -14,18 +14,6 @@ jest.mock("next/link", () => {
   };
 });
 
-// Mock trail background utilities
-jest.mock("@/components/trail", () => ({
-  getTrailImage: jest.fn(() => "default-trail.webp"),
-  getTintColor: jest.fn(() => "rgba(10, 15, 10, 0.6)"),
-  getNightTint: jest.fn(() => "transparent"),
-}));
-
-// Mock WeatherEffectLayer
-jest.mock("@/components/weather-effects", () => ({
-  WeatherEffectLayer: () => <div data-testid="weather-effects" />,
-}));
-
 // Mock stats components
 jest.mock("@/components/stats", () => ({
   SummaryStatsRow: () => <div data-testid="summary-stats-row">Summary Stats</div>,
@@ -153,9 +141,11 @@ describe("StatsPage", () => {
       expect(main).toHaveClass("w-full");
     });
 
-    it("renders weather effects layer", () => {
+    it("renders dark background", () => {
       render(<StatsPage />);
-      expect(screen.getByTestId("weather-effects")).toBeInTheDocument();
+      const main = screen.getByRole("main");
+      const background = main.querySelector(".bg-forest-deep");
+      expect(background).toBeInTheDocument();
     });
   });
 });
