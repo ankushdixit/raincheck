@@ -12,7 +12,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ChevronDown,
-  ChevronRight,
   CheckCircle2,
   Circle,
   Clock,
@@ -26,9 +25,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { getTrailImage, getTintColor, getNightTint } from "@/components/trail";
-import { WeatherEffectLayer } from "@/components/weather-effects";
 import { SolokitBadge } from "@/components/common";
+import { PhaseExpandedContent } from "./PhaseExpandedContent";
 
 /** Race registration page URL */
 const RACE_URL = "https://eventmaster.ie/event/RQeJHL5h76";
@@ -194,53 +192,12 @@ function StatusBadge({ status }: { status: "completed" | "in_progress" | "upcomi
   }
 }
 
-/** Week status icon */
-function WeekStatusIcon({ status }: { status: "completed" | "current" | "upcoming" }) {
-  switch (status) {
-    case "completed":
-      return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
-    case "current":
-      return <Clock className="h-4 w-4 text-blue-400" />;
-    case "upcoming":
-      return <Circle className="h-4 w-4 text-white/30" />;
-  }
-}
-
 export default function TrainingPhasesPage() {
   // Fetch training phases data
   const { data, isLoading } = api.stats.getTrainingPhases.useQuery();
 
-  // Fetch current weather for dynamic background
-  const { data: currentWeather } = api.weather.getCurrentWeather.useQuery({});
-
   // Expanded phase state
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
-
-  // Background state
-  const [backgroundImage, setBackgroundImage] = useState(getTrailImage("default"));
-  const [backgroundTint, setBackgroundTint] = useState(getTintColor("default"));
-  const [displayedCondition, setDisplayedCondition] = useState("");
-
-  // Night overlay state
-  const [nightTint, setNightTint] = useState<string>("transparent");
-
-  // Set initial night tint on client and update every minute
-  useEffect(() => {
-    const updateNightTint = () => setNightTint(getNightTint());
-    updateNightTint();
-    const interval = setInterval(updateNightTint, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Update background when weather loads
-  useEffect(() => {
-    if (currentWeather) {
-      const condition = currentWeather.condition;
-      setBackgroundImage(getTrailImage(condition));
-      setBackgroundTint(getTintColor(condition));
-      setDisplayedCondition(condition);
-    }
-  }, [currentWeather]);
 
   // Auto-expand current phase
   useEffect(() => {
@@ -255,26 +212,8 @@ export default function TrainingPhasesPage() {
 
   return (
     <main className="relative min-h-screen w-full">
-      {/* Dynamic Background */}
-      <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
-        style={{
-          backgroundImage: `linear-gradient(${backgroundTint}, ${backgroundTint}), url('/images/trails/${backgroundImage}')`,
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Weather Effects Layer */}
-      {displayedCondition && <WeatherEffectLayer condition={displayedCondition} />}
-
-      {/* Night Overlay */}
-      {nightTint !== "transparent" && (
-        <div
-          className="pointer-events-none fixed inset-0 z-[5] transition-opacity duration-1000"
-          style={{ backgroundColor: nightTint }}
-          aria-hidden="true"
-        />
-      )}
+      {/* Dark Background */}
+      <div className="fixed inset-0 z-0 bg-forest-deep" aria-hidden="true" />
 
       {/* Content */}
       <div className="relative z-10">
@@ -293,14 +232,14 @@ export default function TrainingPhasesPage() {
           <>
             {/* Summary Stats Row */}
             <div className="mb-6 grid grid-cols-2 gap-4 px-4 sm:grid-cols-4 sm:px-6 lg:px-10">
-              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-sm text-white/60">Total Weeks</div>
                 <div className="mt-1 text-2xl font-bold text-white">
                   {data.summary?.totalWeeks ?? 0}
                 </div>
                 <div className="text-xs text-white/40">in training plan</div>
               </div>
-              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-sm text-white/60">Weeks Completed</div>
                 <div className="mt-1 text-2xl font-bold text-emerald-400">
                   {data.summary?.weeksCompleted ?? 0}
@@ -309,7 +248,7 @@ export default function TrainingPhasesPage() {
                   of {data.summary?.totalWeeks ?? 0} weeks
                 </div>
               </div>
-              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-sm text-white/60">Completion Rate</div>
                 <div className="mt-1 text-2xl font-bold text-emerald-400">
                   {data.summary?.overallCompletionRate ?? 0}%
@@ -318,7 +257,7 @@ export default function TrainingPhasesPage() {
                   {(data.summary?.overallCompletionRate ?? 0) >= 80 ? "On Track" : "Keep Going"}
                 </div>
               </div>
-              <div className="rounded-lg bg-forest-deep/50 p-4 backdrop-blur-md">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-sm text-white/60">Race Day</div>
                 <div className="mt-1 text-2xl font-bold text-amber-400">
                   {data.summary?.daysUntilRace ?? 0}
@@ -329,7 +268,7 @@ export default function TrainingPhasesPage() {
 
             {/* Phase Timeline */}
             <div className="mb-6 px-4 sm:px-6 lg:px-10">
-              <div className="overflow-hidden rounded-lg bg-forest-deep/50 p-6 backdrop-blur-md">
+              <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5 p-6">
                 <h2 className="mb-6 text-lg font-semibold text-white">Training Timeline</h2>
 
                 {/* Phase range bars - proportional to weeks */}
@@ -441,7 +380,7 @@ export default function TrainingPhasesPage() {
             {/* Current Phase Highlight */}
             {data.currentPhase && (
               <div className="mb-6 px-4 sm:px-6 lg:px-10">
-                <div className="rounded-lg bg-emerald-500/10 p-6 backdrop-blur-md">
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-6">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="mb-1 flex items-center gap-2">
@@ -465,7 +404,7 @@ export default function TrainingPhasesPage() {
 
                   {/* This week's targets */}
                   <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg bg-forest-deep/30 p-4 backdrop-blur-md">
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
                       <div className="flex items-center gap-2 text-sm text-white/60">
                         <Target className="h-4 w-4" />
                         Weekly Mileage Target
@@ -479,7 +418,7 @@ export default function TrainingPhasesPage() {
                         </div>
                       )}
                     </div>
-                    <div className="rounded-lg bg-forest-deep/30 p-4 backdrop-blur-md">
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
                       <div className="flex items-center gap-2 text-sm text-white/60">
                         <TrendingUp className="h-4 w-4" />
                         Long Run Target
@@ -504,8 +443,10 @@ export default function TrainingPhasesPage() {
                 return (
                   <div
                     key={phase.id}
-                    className={`overflow-hidden rounded-lg backdrop-blur-md transition-all ${
-                      phase.status === "in_progress" ? colors.bg : "bg-forest-deep/50"
+                    className={`overflow-hidden rounded-lg border transition-all ${
+                      phase.status === "in_progress"
+                        ? `${colors.bg} ${colors.border}`
+                        : "border-white/10 bg-white/5"
                     }`}
                   >
                     {/* Phase Header - Clickable */}
@@ -560,113 +501,8 @@ export default function TrainingPhasesPage() {
                       </div>
                     </button>
 
-                    {/* Expanded Content */}
-                    {isExpanded && (
-                      <div className="border-t border-white/10 p-6">
-                        {/* Description and Focus */}
-                        <div className="mb-6 grid gap-6 sm:grid-cols-2">
-                          <div>
-                            <h4 className="mb-2 text-sm font-medium text-white/60">
-                              About This Phase
-                            </h4>
-                            <p className="text-sm text-white/80">{phase.description}</p>
-                          </div>
-                          <div>
-                            <h4 className="mb-2 text-sm font-medium text-white/60">
-                              Key Focus Areas
-                            </h4>
-                            <ul className="space-y-1">
-                              {phase.focus.map((item, i) => (
-                                <li
-                                  key={i}
-                                  className="flex items-center gap-2 text-sm text-white/80"
-                                >
-                                  <ChevronRight className={`h-3 w-3 ${colors.text}`} />
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-
-                        {/* Weekly Breakdown */}
-                        <div>
-                          <h4 className="mb-3 text-sm font-medium text-white/60">
-                            Weekly Breakdown
-                          </h4>
-                          <div className="overflow-x-auto">
-                            <table className="w-full min-w-[600px] text-sm">
-                              <thead>
-                                <tr className="border-b border-white/10 text-left text-white/60">
-                                  <th className="pb-3 font-medium">Week</th>
-                                  <th className="pb-3 font-medium">Dates</th>
-                                  <th className="pb-3 font-medium">Long Run</th>
-                                  <th className="pb-3 font-medium">Weekly Mileage</th>
-                                  <th className="pb-3 font-medium">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {phase.weeks.map((week) => (
-                                  <tr
-                                    key={week.weekNumber}
-                                    className={`border-b border-white/5 ${
-                                      week.status === "current" ? "bg-blue-500/10" : ""
-                                    }`}
-                                  >
-                                    <td className="py-3 font-medium text-white">
-                                      W{week.weekNumber}
-                                    </td>
-                                    <td className="py-3 text-white/70">
-                                      {formatDate(week.weekStart)} - {formatDate(week.weekEnd)}
-                                    </td>
-                                    <td className="py-3">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-purple-400">
-                                          {week.longRunTarget} km
-                                        </span>
-                                        {week.longRunActual !== null && week.longRunActual > 0 && (
-                                          <span
-                                            className={`text-xs ${
-                                              week.longRunActual >= week.longRunTarget
-                                                ? "text-emerald-400"
-                                                : "text-amber-400"
-                                            }`}
-                                          >
-                                            ({week.longRunActual} km)
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="py-3">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-white">
-                                          {week.weeklyMileageTarget} km
-                                        </span>
-                                        {week.weeklyMileageActual !== null &&
-                                          week.weeklyMileageActual > 0 && (
-                                            <span
-                                              className={`text-xs ${
-                                                week.weeklyMileageActual >= week.weeklyMileageTarget
-                                                  ? "text-emerald-400"
-                                                  : "text-amber-400"
-                                              }`}
-                                            >
-                                              ({week.weeklyMileageActual} km)
-                                            </span>
-                                          )}
-                                      </div>
-                                    </td>
-                                    <td className="py-3">
-                                      <WeekStatusIcon status={week.status} />
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Expanded Content - Phase-specific rich content */}
+                    {isExpanded && <PhaseExpandedContent phase={phase} />}
                   </div>
                 );
               })}
@@ -678,7 +514,7 @@ export default function TrainingPhasesPage() {
                 href={RACE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-6 backdrop-blur-md transition-all duration-200 hover:from-amber-500/20 hover:to-orange-500/20 hover:scale-[1.01] group"
+                className="block rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-6 transition-all duration-200 hover:from-amber-500/20 hover:to-orange-500/20 hover:scale-[1.01] group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">

@@ -12,8 +12,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
-import { getTrailImage, getTintColor, getNightTint } from "@/components/trail";
-import { WeatherEffectLayer } from "@/components/weather-effects";
 import {
   SummaryStatsRow,
   WeeklyMileageChart,
@@ -95,57 +93,10 @@ function StatsHeader() {
 }
 
 export default function StatsPage() {
-  // Fetch current weather for dynamic background
-  const { data: currentWeather } = api.weather.getCurrentWeather.useQuery({});
-
-  // Background state
-  const [backgroundImage, setBackgroundImage] = useState(getTrailImage("default"));
-  const [backgroundTint, setBackgroundTint] = useState(getTintColor("default"));
-  const [displayedCondition, setDisplayedCondition] = useState("");
-
-  // Night overlay state - initialize with "transparent" to avoid hydration mismatch
-  const [nightTint, setNightTint] = useState<string>("transparent");
-
-  // Set initial night tint on client and update every minute
-  useEffect(() => {
-    const updateNightTint = () => setNightTint(getNightTint());
-    updateNightTint(); // Set initial value on client
-    const interval = setInterval(updateNightTint, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Update background when weather loads
-  useEffect(() => {
-    if (currentWeather) {
-      const condition = currentWeather.condition;
-      setBackgroundImage(getTrailImage(condition));
-      setBackgroundTint(getTintColor(condition));
-      setDisplayedCondition(condition);
-    }
-  }, [currentWeather]);
-
   return (
     <main className="relative min-h-screen w-full">
-      {/* Dynamic Background */}
-      <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
-        style={{
-          backgroundImage: `linear-gradient(${backgroundTint}, ${backgroundTint}), url('/images/trails/${backgroundImage}')`,
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Weather Effects Layer */}
-      {displayedCondition && <WeatherEffectLayer condition={displayedCondition} />}
-
-      {/* Night Overlay */}
-      {nightTint !== "transparent" && (
-        <div
-          className="fixed inset-0 z-[5] pointer-events-none transition-opacity duration-1000"
-          style={{ backgroundColor: nightTint }}
-          aria-hidden="true"
-        />
-      )}
+      {/* Dark Background */}
+      <div className="fixed inset-0 z-0 bg-forest-deep" aria-hidden="true" />
 
       {/* Content */}
       <div className="relative z-10">
@@ -162,7 +113,7 @@ export default function StatsPage() {
           {/* Left Column: Weekly Mileage Chart - height matches right column */}
           <div className="flex flex-col">
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">WEEKLY MILEAGE</p>
-            <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4 flex-1">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex-1">
               <WeeklyMileageChart />
             </div>
           </div>
@@ -187,7 +138,7 @@ export default function StatsPage() {
         <div className="px-4 sm:px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">PACE PROGRESSION</p>
-            <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               <PaceProgressionChart />
             </div>
           </div>
@@ -196,7 +147,7 @@ export default function StatsPage() {
             <p className="text-white/50 text-xs font-bold tracking-wide mb-2">
               LONG RUN PROGRESSION
             </p>
-            <div className="rounded-xl bg-forest-deep/50 backdrop-blur-md p-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               <LongRunProgressionChart />
             </div>
           </div>
