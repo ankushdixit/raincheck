@@ -102,12 +102,52 @@ function calculateLongRunTarget(weekNum: number): number {
 }
 
 /**
- * Phase metadata for display
+ * External resource link for phase content
  */
-const PHASE_METADATA: Record<
-  Phase,
-  { name: string; description: string; focus: string[]; color: string }
-> = {
+interface PhaseResource {
+  title: string;
+  url: string;
+  source: string;
+}
+
+/**
+ * Table column configuration for phase-specific display
+ */
+type TableColumnKey =
+  | "week"
+  | "dates"
+  | "longRun"
+  | "weeklyMileage"
+  | "runsCompleted"
+  | "volumeTrend"
+  | "qualityWorkouts"
+  | "avgPace"
+  | "volumePercent"
+  | "status";
+
+/**
+ * Extended phase metadata for rich content display
+ */
+interface PhaseMetadata {
+  name: string;
+  description: string;
+  focus: string[];
+  color: string;
+  // Rich content
+  science: string;
+  successCriteria: string[];
+  commonMistakes: string[];
+  coachTip: string;
+  // Table configuration
+  tableColumns: TableColumnKey[];
+  // External resources
+  resources: PhaseResource[];
+}
+
+/**
+ * Phase metadata for display - extended with rich content
+ */
+const PHASE_METADATA: Record<Phase, PhaseMetadata> = {
   [Phase.BASE_BUILDING]: {
     name: "Base Building",
     description:
@@ -119,6 +159,35 @@ const PHASE_METADATA: Record<
       "Easy conversational pace",
     ],
     color: "emerald",
+    science:
+      "Zone 2 training builds mitochondrial density and capillary networks, improving oxygen delivery to muscles. This aerobic foundation is the bedrock of endurance performance - research shows 80% of training should be at conversational pace.",
+    successCriteria: [
+      "Complete 80%+ of scheduled runs",
+      "Maintain conversational pace on easy days",
+      "Increase weekly mileage by no more than 10%",
+      "Build consistent weekly running habit",
+    ],
+    commonMistakes: [
+      "Running too fast (most common mistake!)",
+      "Increasing volume too quickly",
+      "Skipping rest days",
+      "Comparing pace to others",
+    ],
+    coachTip:
+      "If you can't hold a conversation while running, you're going too fast. Slow down - the aerobic benefits come from time on feet, not speed.",
+    tableColumns: ["week", "dates", "longRun", "weeklyMileage", "runsCompleted", "status"],
+    resources: [
+      {
+        title: "The Science of Aerobic Base Training",
+        url: "https://www.trainingpeaks.com/blog/science-of-aerobic-base-training/",
+        source: "TrainingPeaks",
+      },
+      {
+        title: "Why Zone 2 Training Matters",
+        url: "https://www.trainingpeaks.com/blog/zone-2-training-for-endurance-athletes/",
+        source: "TrainingPeaks",
+      },
+    ],
   },
   [Phase.BASE_EXTENSION]: {
     name: "Base Extension",
@@ -131,6 +200,35 @@ const PHASE_METADATA: Record<
       "Practice race nutrition",
     ],
     color: "blue",
+    science:
+      "This phase extends aerobic capacity by gradually increasing training volume. The body adapts to longer efforts, improving fat oxidation and mental resilience for race day.",
+    successCriteria: [
+      "Reach 16-18km long runs",
+      "Maintain 3+ runs per week consistently",
+      "Practice race-day nutrition on long runs",
+      "Build to target weekly volume",
+    ],
+    commonMistakes: [
+      "Neglecting recovery between long runs",
+      "Not practicing nutrition strategy",
+      "Ignoring early fatigue signs",
+      "Increasing long run and volume simultaneously",
+    ],
+    coachTip:
+      "Start experimenting with gels and hydration on runs over 13km. Race day is not the time to try something new!",
+    tableColumns: ["week", "dates", "longRun", "weeklyMileage", "volumeTrend", "status"],
+    resources: [
+      {
+        title: "Half Marathon Nutrition Guide",
+        url: "https://marathonhandbook.com/half-marathon-nutrition/",
+        source: "Marathon Handbook",
+      },
+      {
+        title: "Building Endurance Safely",
+        url: "https://www.runnersworld.com/training/a20843627/half-marathon-training-for-beginners/",
+        source: "Runner's World",
+      },
+    ],
   },
   [Phase.SPEED_DEVELOPMENT]: {
     name: "Speed Development",
@@ -143,6 +241,35 @@ const PHASE_METADATA: Record<
       "Race simulation runs",
     ],
     color: "amber",
+    science:
+      "Tempo and interval training improves lactate threshold and VO2max. These workouts teach your body to run faster more efficiently by recruiting fast-twitch muscle fibers and improving running economy.",
+    successCriteria: [
+      "Complete 1-2 quality workouts per week",
+      "Hit target paces in tempo/interval sessions",
+      "Maintain long run distance",
+      "Feel confident at goal race pace",
+    ],
+    commonMistakes: [
+      "Too many hard days in a row",
+      "Treating easy days as tempo days",
+      "Neglecting recovery between quality sessions",
+      "Sacrificing long runs for speedwork",
+    ],
+    coachTip:
+      "The magic happens in recovery. Your hard days should be HARD, and your easy days should be genuinely EASY.",
+    tableColumns: ["week", "dates", "longRun", "weeklyMileage", "avgPace", "status"],
+    resources: [
+      {
+        title: "VDOT Running Calculator",
+        url: "https://runsmartproject.com/calculator/",
+        source: "Jack Daniels",
+      },
+      {
+        title: "Understanding Tempo Runs",
+        url: "https://www.runnersworld.com/training/a20812270/tempo-runs-made-easy/",
+        source: "Runner's World",
+      },
+    ],
   },
   [Phase.PEAK_TAPER]: {
     name: "Peak & Taper",
@@ -155,6 +282,35 @@ const PHASE_METADATA: Record<
       "Race day preparation",
     ],
     color: "purple",
+    science:
+      "Tapering reduces training volume while maintaining intensity, allowing muscles to repair and glycogen stores to maximize. Research shows optimal tapers improve race performance by 2-3%. Fitness doesn't disappear - fatigue does.",
+    successCriteria: [
+      "Reduce volume by 40-60% over 2-3 weeks",
+      "Maintain some intensity (strides, short tempos)",
+      "Arrive at race day feeling fresh and eager",
+      "Complete race prep logistics",
+    ],
+    commonMistakes: [
+      "Panicking about 'losing fitness' (you won't!)",
+      "Doing extra runs 'just in case'",
+      "Trying new gear or nutrition race week",
+      "Not trusting the taper process",
+    ],
+    coachTip:
+      "Feeling restless and full of energy during taper? That's exactly how you should feel. Trust the process - your body is absorbing all that hard work.",
+    tableColumns: ["week", "dates", "longRun", "volumePercent", "status"],
+    resources: [
+      {
+        title: "Master Your Half Marathon Taper",
+        url: "https://lauranorrisrunning.com/taper-half-marathon/",
+        source: "Laura Norris Running",
+      },
+      {
+        title: "The Science of Tapering",
+        url: "https://www.runnersworld.com/advanced/a20851566/the-art-and-science-of-the-taper/",
+        source: "Runner's World",
+      },
+    ],
   },
 };
 
@@ -729,6 +885,14 @@ export const statsRouter = createTRPCRouter({
           description: metadata.description,
           focus: metadata.focus,
           color: metadata.color,
+          // New rich content fields
+          science: metadata.science,
+          successCriteria: metadata.successCriteria,
+          commonMistakes: metadata.commonMistakes,
+          coachTip: metadata.coachTip,
+          tableColumns: metadata.tableColumns,
+          resources: metadata.resources,
+          // Existing computed fields
           status,
           startDate,
           endDate,
@@ -803,3 +967,6 @@ export const statsRouter = createTRPCRouter({
     };
   }),
 });
+
+// Export types for frontend use
+export type { PhaseResource, PhaseMetadata, TableColumnKey };

@@ -12,7 +12,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, unit, change, changeColor = "text-green-400" }: StatCardProps) {
   return (
-    <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-5">
+    <div className="rounded-lg border border-white/10 bg-white/5 p-5">
       <p className="text-white/60 text-xs uppercase tracking-wide mb-2">{label}</p>
       <div className="flex items-baseline gap-2">
         <span className="text-white text-3xl font-bold">{value}</span>
@@ -25,7 +25,7 @@ function StatCard({ label, value, unit, change, changeColor = "text-green-400" }
 
 function StatCardSkeleton() {
   return (
-    <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-5 animate-pulse">
+    <div className="rounded-lg border border-white/10 bg-white/5 p-5 animate-pulse">
       <div className="h-3 w-20 rounded bg-white/10 mb-3" />
       <div className="h-8 w-24 rounded bg-white/10 mb-2" />
       <div className="h-4 w-28 rounded bg-white/10" />
@@ -56,7 +56,7 @@ export function SummaryStatsRow() {
 
   if (!data) {
     return (
-      <div className="rounded-lg bg-forest-deep/50 backdrop-blur-md p-6 text-center">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-6 text-center">
         <p className="text-white/60">No training data available yet.</p>
       </div>
     );

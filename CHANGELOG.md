@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Phase-specific rich content for all training phases (Base Building, Base Extension, Speed Development, Peak & Taper)
+- Science explanations for each training phase with research-backed information
+- Success criteria checklists for each phase showing what good progress looks like
+- Common mistakes warnings for each phase to help avoid training pitfalls
+- Coach's tip callout boxes with actionable advice per phase
+- External resource links to credible sources (TrainingPeaks, Jack Daniels VDOT, Marathon Handbook, Laura Norris, Runner's World)
+- Phase-specific table columns that adapt based on training focus:
+  - Base Building: Runs Completed column showing activity status
+  - Base Extension: Volume Trend column (when data available)
+  - Speed Development: Average Pace column
+  - Peak & Taper: Volume % column (when data available)
+- `PhaseExpandedContent` component for structured phase content display
+- `PhaseTableColumns` module with configurable column definitions and renderers
+- `PhaseWeeklyTable` component for dynamic phase-specific table rendering
+- Type exports for `PhaseResource`, `PhaseMetadata`, and `TableColumnKey` from stats router
+
+### Changed
+
+- Training phases page now uses dark solid background instead of dynamic trail image
+- Stats page now uses dark solid background instead of dynamic trail image
+- Updated all card components to use visible borders (`border-white/10`) on dark backgrounds
+- Card backgrounds changed from `bg-forest-deep/50` to `bg-white/5` for better visibility
+- Phase cards now show colored borders when in-progress, white borders when upcoming
+- Coach's tip and resource link buttons now have phase-colored borders
+
+### Fixed
+
+- React hydration error caused by browser extensions adding attributes to body tag (added `suppressHydrationWarning`)
+- Card visibility issues on training-phases and stats pages with dark backgrounds
+
 ### Fixed
 
 - Run suggestions now correctly show 6 cards (3 scheduled + 3 new suggestions) instead of only showing scheduled runs
