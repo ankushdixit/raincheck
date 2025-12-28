@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Run suggestions now correctly show 6 cards (3 scheduled + 3 new suggestions) instead of only showing scheduled runs
+- Fixed `calculateSuggestionStartDate` pushing start date beyond 21-day forecast window when many runs were accepted
+- Fixed `generateSuggestions` returning empty array when no training plan exists for current week (now uses defaults)
+- Fixed `getCurrentPhase` failing to find training plan due to timezone edge cases
+- Phase card now correctly shows upcoming phases (Base Extension, Speed Development, etc.) instead of "Final Phase"
+
 ### Changed
 
 - Standardized card component styling across all pages (homepage, stats, training-phases)

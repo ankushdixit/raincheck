@@ -13,7 +13,7 @@
  * 5. After a short run, 1 rest day is enforced
  * 6. Time window: 10am-3pm for all runs
  * 7. Suggestions start from tomorrow, respecting rest gaps from completed runs
- * 8. New suggestions only appear after the last accepted (scheduled) run
+ * 8. Already-scheduled runs are skipped (algorithm fills gaps between them)
  *
  * @example
  * ```typescript
@@ -244,34 +244,20 @@ export function calculateNextLongRunDistance(longestCompletedDistance: number): 
  * Takes into account:
  * - Must be at least tomorrow
  * - Must respect rest days after last completed run
- * - Must be after last accepted (scheduled) run
+ *
+ * NOTE: Accepted/scheduled runs are handled separately via usedDates and restDates
+ * in the main algorithm. This allows suggestions to fill gaps between scheduled runs
+ * rather than only generating suggestions after the last scheduled run.
  */
 export function calculateSuggestionStartDate(
   lastCompletedRun: LastCompletedRun | null | undefined,
-  acceptedRuns: AcceptedRun[] | undefined
+  _acceptedRuns: AcceptedRun[] | undefined
 ): Date {
   const now = new Date();
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
 
   let startDate = tomorrow;
-
-  // If there are accepted (scheduled but not completed) runs,
-  // suggestions start after the last one
-  if (acceptedRuns && acceptedRuns.length > 0) {
-    const scheduledRuns = acceptedRuns
-      .filter((r) => !r.completed)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    if (scheduledRuns.length > 0) {
-      const lastScheduled = new Date(scheduledRuns[0]!.date);
-      lastScheduled.setHours(0, 0, 0, 0);
-      const dayAfterLastScheduled = addDays(lastScheduled, 1);
-      if (dayAfterLastScheduled > startDate) {
-        startDate = dayAfterLastScheduled;
-      }
-    }
-  }
 
   // Calculate based on rest from last completed run
   if (lastCompletedRun) {

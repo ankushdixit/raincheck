@@ -685,6 +685,57 @@ describe("generateSuggestions", () => {
       expect(secondShortRun).toBeDefined();
       expect(secondShortRun?.distance).toBe(6);
     });
+
+    it("generates suggestions even when accepted runs extend far into future", () => {
+      // Regression test: When user accepts multiple weeks of runs, the algorithm
+      // should still generate suggestions for available slots, not just after the last scheduled run
+      const tomorrow = addDays(new Date(), 1);
+      const daysUntilSunday = (7 - tomorrow.getDay()) % 7;
+      const startDate = addDays(tomorrow, daysUntilSunday);
+
+      // Simulate user having accepted runs for 2 weeks (6 runs total)
+      const week1Long = startDate; // Sun
+      const week1Short1 = addDays(startDate, 3); // Wed
+      const week1Short2 = addDays(startDate, 5); // Fri
+      const week2Long = addDays(startDate, 7); // Next Sun
+      const week2Short1 = addDays(startDate, 10); // Wed
+      const week2Short2 = addDays(startDate, 12); // Fri
+
+      // 21-day forecast should still have room for week 3
+      const forecast = Array.from({ length: 21 }, (_, i) =>
+        createWeatherData(addDays(startDate, i))
+      );
+
+      const input: AlgorithmInput = {
+        forecast,
+        trainingPlan: createTrainingPlan(),
+        preferences: createWeatherPreferences(),
+        existingRuns: [],
+        acceptedRuns: [
+          { id: "1", date: week1Long, runType: RunType.LONG_RUN, completed: false, distance: 14 },
+          { id: "2", date: week1Short1, runType: RunType.EASY_RUN, completed: false, distance: 6 },
+          { id: "3", date: week1Short2, runType: RunType.EASY_RUN, completed: false, distance: 6 },
+          { id: "4", date: week2Long, runType: RunType.LONG_RUN, completed: false, distance: 15 },
+          { id: "5", date: week2Short1, runType: RunType.EASY_RUN, completed: false, distance: 6 },
+          { id: "6", date: week2Short2, runType: RunType.EASY_RUN, completed: false, distance: 6 },
+        ],
+        longestCompletedDistance: 15,
+        lastCompletedRun: null,
+      };
+
+      const result = generateSuggestions(input);
+
+      // Should generate runs for week 3 (starting around day 14)
+      // Week 3 should have a long run on Sun (day 14) and short runs on Wed (day 17) and Fri (day 19)
+      const week3Long = result.find(
+        (s) =>
+          formatDateKey(s.date) === formatDateKey(addDays(startDate, 14)) &&
+          s.runType === RunType.LONG_RUN
+      );
+
+      expect(week3Long).toBeDefined();
+      expect(result.length).toBeGreaterThan(0);
+    });
   });
 
   describe("edge cases", () => {

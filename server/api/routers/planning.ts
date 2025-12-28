@@ -185,26 +185,49 @@ export const planningRouter = createTRPCRouter({
    */
   getCurrentPhase: publicProcedure.query(async ({ ctx }) => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(12, 0, 0, 0); // Use noon to avoid timezone edge cases
 
-    const currentPlan = await ctx.db.trainingPlan.findFirst({
+    // Find plan where today falls between weekStart and weekEnd
+    // Use multiple queries as fallback for timezone robustness
+    let currentPlan = await ctx.db.trainingPlan.findFirst({
       where: {
         weekStart: { lte: today },
         weekEnd: { gte: today },
       },
+      orderBy: { weekNumber: "asc" },
     });
+
+    // Fallback: If no exact match, find the plan with weekEnd >= today (earliest that hasn't ended)
+    if (!currentPlan) {
+      currentPlan = await ctx.db.trainingPlan.findFirst({
+        where: {
+          weekEnd: { gte: today },
+        },
+        orderBy: { weekNumber: "asc" },
+      });
+    }
+
+    // Another fallback: Find the most recent plan that has started
+    if (!currentPlan) {
+      currentPlan = await ctx.db.trainingPlan.findFirst({
+        where: {
+          weekStart: { lte: today },
+        },
+        orderBy: { weekNumber: "desc" },
+      });
+    }
 
     if (!currentPlan) {
       return null;
     }
 
-    // Find all future phases (distinct phases after current plan)
+    // Find all future phases (distinct phases after current plan by week number)
     const futurePlans = await ctx.db.trainingPlan.findMany({
       where: {
-        weekStart: { gt: currentPlan.weekEnd },
+        weekNumber: { gt: currentPlan.weekNumber },
       },
       orderBy: {
-        weekStart: "asc",
+        weekNumber: "asc",
       },
     });
 
@@ -290,10 +313,7 @@ export const planningRouter = createTRPCRouter({
         },
       });
 
-      // If no training plan found, return empty array (graceful degradation)
-      if (!trainingPlan) {
-        return [];
-      }
+      // Training plan is optional - algorithm uses defaults if not found
 
       // 3. Get weather forecast (uses cache)
       const forecast = await getWeatherForecast(ctx.db, input.days, location);
