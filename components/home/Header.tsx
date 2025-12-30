@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Sparkles, EyeOff, LogOut, Settings } from "lucide-react";
+import { Sparkles, EyeOff, LogOut, Settings, Lightbulb } from "lucide-react";
 import { api } from "@/lib/api";
 import { useIsAuthenticated, useEffectsPreference } from "@/hooks";
 
@@ -212,9 +212,16 @@ function HeaderActions() {
         )}
       </ActionButton>
 
-      {/* Settings & Logout - only for authenticated users */}
+      {/* Recommendations, Settings & Logout - only for authenticated users */}
       {!authLoading && isAuthenticated && (
         <>
+          <Link
+            href="/recommendations"
+            className="flex items-center justify-center w-9 h-9 rounded-lg text-white bg-white/10 hover:bg-white/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+            aria-label="Training Recommendations"
+          >
+            <Lightbulb className="h-4 w-4" aria-hidden="true" />
+          </Link>
           <Link
             href="/settings"
             className="flex items-center justify-center w-9 h-9 rounded-lg text-white bg-white/10 hover:bg-white/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
