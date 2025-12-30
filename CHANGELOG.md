@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Training Recommendations page (`/recommendations`) for storing personalized training advice
+- Recommendations organized by training phase (General, Base Building, Base Extension, Speed Development, Peak & Taper)
+- Six recommendation categories: Injury Prevention, Nutrition, Pacing, Recovery, Gear, Mental
+- Priority levels (High, Medium, Low) for recommendations with visual indicators
+- Protected page requiring authentication to view recommendations
+- Recommendations button (lightbulb icon) in header navigation for authenticated users
+- `Recommendation` database model with category, phase, priority, and source fields
+- `recommendationsRouter` tRPC router with full CRUD operations
+- Seed script for initial recommendations (`scripts/seed-recommendations.ts`)
 - Phase-specific rich content for all training phases (Base Building, Base Extension, Speed Development, Peak & Taper)
 - Science explanations for each training phase with research-backed information
 - Success criteria checklists for each phase showing what good progress looks like

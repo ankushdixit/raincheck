@@ -100,3 +100,33 @@ enum Phase {
   SPEED_DEVELOPMENT
   PEAK_TAPER
 }
+
+model Recommendation {
+  id          String                 @id @default(cuid())
+  title       String
+  description String
+  category    RecommendationCategory
+  phase       Phase?
+  priority    RecommendationPriority @default(MEDIUM)
+  source      String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([phase])
+  @@index([category])
+}
+
+enum RecommendationCategory {
+  INJURY_PREVENTION
+  NUTRITION
+  PACING
+  RECOVERY
+  GEAR
+  MENTAL
+}
+
+enum RecommendationPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
