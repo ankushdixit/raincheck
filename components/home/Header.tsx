@@ -212,16 +212,18 @@ function HeaderActions() {
         )}
       </ActionButton>
 
-      {/* Recommendations, Settings & Logout - only for authenticated users */}
+      {/* Recommendations - visible to all users */}
+      <Link
+        href="/recommendations"
+        className="flex items-center justify-center w-9 h-9 rounded-lg text-white bg-white/10 hover:bg-white/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+        aria-label="Training Recommendations"
+      >
+        <Lightbulb className="h-4 w-4" aria-hidden="true" />
+      </Link>
+
+      {/* Settings & Logout - only for authenticated users */}
       {!authLoading && isAuthenticated && (
         <>
-          <Link
-            href="/recommendations"
-            className="flex items-center justify-center w-9 h-9 rounded-lg text-white bg-white/10 hover:bg-white/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
-            aria-label="Training Recommendations"
-          >
-            <Lightbulb className="h-4 w-4" aria-hidden="true" />
-          </Link>
           <Link
             href="/settings"
             className="flex items-center justify-center w-9 h-9 rounded-lg text-white bg-white/10 hover:bg-white/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
