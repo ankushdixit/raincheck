@@ -5,12 +5,10 @@
  *
  * Displays training recommendations grouped by phase.
  * Matches training-phases design with expandable sections.
- * Protected - requires authentication to view.
+ * Public - no authentication required.
  */
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -283,38 +281,10 @@ function PhaseSection({ phase, recommendations, isExpanded, onToggle }: PhaseSec
 }
 
 export default function RecommendationsPage() {
-  const router = useRouter();
-  const { status } = useSession();
-  const { data, isLoading } = api.recommendations.getGroupedByPhase.useQuery(undefined, {
-    enabled: status === "authenticated",
-  });
+  const { data, isLoading } = api.recommendations.getGroupedByPhase.useQuery();
 
   // Track expanded sections
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["GENERAL"]));
-
-  // Redirect unauthenticated users to login
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
-
-  // Show loading state while checking auth
-  if (status === "loading") {
-    return (
-      <main className="relative min-h-screen w-full">
-        <div className="fixed inset-0 z-0 bg-forest-deep" aria-hidden="true" />
-        <div className="relative z-10 flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-        </div>
-      </main>
-    );
-  }
-
-  // Don't render if unauthenticated (will redirect)
-  if (status === "unauthenticated") {
-    return null;
-  }
 
   const toggleSection = (phase: string) => {
     setExpandedSections((prev) => {

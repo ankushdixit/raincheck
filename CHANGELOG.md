@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recommendations organized by training phase (General, Base Building, Base Extension, Speed Development, Peak & Taper)
 - Six recommendation categories: Injury Prevention, Nutrition, Pacing, Recovery, Gear, Mental
 - Priority levels (High, Medium, Low) for recommendations with visual indicators
-- Protected page requiring authentication to view recommendations
-- Recommendations button (lightbulb icon) in header navigation for authenticated users
+- Public access to recommendations page (no authentication required to view)
+- Recommendations button (lightbulb icon) in header navigation
 - `Recommendation` database model with category, phase, priority, and source fields
 - `recommendationsRouter` tRPC router with full CRUD operations
 - Seed script for initial recommendations (`scripts/seed-recommendations.ts`)
