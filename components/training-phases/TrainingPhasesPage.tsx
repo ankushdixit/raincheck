@@ -140,25 +140,36 @@ function PhaseIcon({ color }: { color: string }) {
 
 /** Get color classes based on phase color */
 function getColorClasses(color: string) {
-  const colors: Record<string, { text: string; bg: string; border: string }> = {
+  const colors: Record<
+    string,
+    { text: string; bg: string; bgInProgress: string; bgCompleted: string; border: string }
+  > = {
     emerald: {
       text: "text-emerald-400",
       bg: "bg-emerald-500/20",
+      bgInProgress: "bg-emerald-500/40",
+      bgCompleted: "bg-emerald-500/60",
       border: "border-emerald-500/50",
     },
     blue: {
       text: "text-blue-400",
       bg: "bg-blue-500/20",
+      bgInProgress: "bg-blue-500/40",
+      bgCompleted: "bg-blue-500/60",
       border: "border-blue-500/50",
     },
     amber: {
       text: "text-amber-400",
       bg: "bg-amber-500/20",
+      bgInProgress: "bg-amber-500/40",
+      bgCompleted: "bg-amber-500/60",
       border: "border-amber-500/50",
     },
     purple: {
       text: "text-purple-400",
       bg: "bg-purple-500/20",
+      bgInProgress: "bg-purple-500/40",
+      bgCompleted: "bg-purple-500/60",
       border: "border-purple-500/50",
     },
   };
@@ -287,9 +298,9 @@ export default function TrainingPhasesPage() {
                           key={phase.id}
                           className={`relative flex items-center justify-center ${
                             phase.status === "completed"
-                              ? colors.bg.replace("/20", "/60")
+                              ? colors.bgCompleted
                               : phase.status === "in_progress"
-                                ? colors.bg.replace("/20", "/40")
+                                ? colors.bgInProgress
                                 : "bg-white/10"
                           } ${isFirst ? "rounded-l-lg" : ""} ${isLast ? "rounded-r-lg" : ""}`}
                           style={{ width: `${widthPercent}%` }}
@@ -362,7 +373,7 @@ export default function TrainingPhasesPage() {
                     <span className="text-white/60">Completed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="h-3 w-3 rounded bg-emerald-500/40" />
+                    <div className="h-3 w-3 rounded bg-blue-500/40" />
                     <span className="text-white/60">In Progress</span>
                   </div>
                   <div className="flex items-center gap-1.5">
