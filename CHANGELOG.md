@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Timeline coloring for in-progress phases now displays correctly (Base Extension shows blue instead of gray)
+- Replaced dynamic Tailwind class generation with explicit class names for phase status colors
+- Legend "In Progress" indicator color now matches in-progress phase color (blue instead of green)
+
 ### Added
 
 - Training Recommendations page (`/recommendations`) for storing personalized training advice
