@@ -674,9 +674,16 @@ describe("TrainingCalendar", () => {
     });
 
     it("navigation wraps correctly from December to January", () => {
+      // Set race date far enough in future to allow navigation to December and January
+      const now = new Date();
+      const farFutureDate = new Date(now.getFullYear() + 2, 5, 1); // June of year after next
+      mockSettingsQuery.mockReturnValue({
+        data: { raceDate: farFutureDate },
+        isLoading: false,
+      });
+
       render(<TrainingCalendar />);
 
-      const now = new Date();
       // Navigate to December of current year
       const monthsToDecember = 11 - now.getMonth();
       const nextButton = screen.getByTestId("calendar-next");
