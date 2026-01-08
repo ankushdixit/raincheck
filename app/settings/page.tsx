@@ -633,10 +633,10 @@ export default function SettingsPage() {
           <Image
             src="/images/logo-lockup-1.svg"
             alt="RainCheck"
-            width={200}
-            height={50}
+            width={120}
+            height={30}
             priority
-            className="w-[120px] sm:w-[160px] lg:w-[200px] h-auto"
+            className="w-[72px] sm:w-[96px] lg:w-[120px] h-auto"
           />
         </header>
 

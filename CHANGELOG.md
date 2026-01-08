@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated logo to new whimsical cloud illustration design matching cover art aesthetic
+- Scaled down logo display size to 60% across all pages for better visual balance
+  - Header: 260-350px → 156-210px
+  - Stats page: 200-350px → 120-210px
+  - Training Phases page: 200-350px → 120-210px
+  - Recommendations page: 200-350px → 120-210px
+  - Login page: 180-280px → 108-168px
+  - Settings page: 120-200px → 72-120px
+
 ### Fixed
 
 - Timeline coloring for in-progress phases now displays correctly (Base Extension shows blue instead of gray)

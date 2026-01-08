@@ -115,10 +115,10 @@ export default function LoginPage() {
           <Image
             src="/images/logo-lockup-1.svg"
             alt="RainCheck - Weather-aware Marathon Training"
-            width={280}
-            height={70}
+            width={168}
+            height={42}
             priority
-            className="-ml-2 lg:-ml-3 w-[180px] sm:w-[220px] lg:w-[280px] h-auto"
+            className="-ml-2 lg:-ml-3 w-[108px] sm:w-[132px] lg:w-[168px] h-auto"
           />
         </header>
 

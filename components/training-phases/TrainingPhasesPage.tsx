@@ -82,10 +82,10 @@ function PhasesHeader() {
           <Image
             src="/images/logo-lockup-1.svg"
             alt="RainCheck"
-            width={350}
-            height={88}
+            width={210}
+            height={53}
             priority
-            className="-ml-2 h-auto w-[200px] sm:w-[280px] lg:-ml-3.5 lg:w-[350px]"
+            className="-ml-2 h-auto w-[120px] sm:w-[168px] lg:-ml-3.5 lg:w-[210px]"
           />
         </Link>
         <p className="mt-1 text-sm text-white/60">Training Phases</p>

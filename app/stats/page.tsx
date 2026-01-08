@@ -53,10 +53,10 @@ function StatsHeader() {
           <Image
             src="/images/logo-lockup-1.svg"
             alt="RainCheck"
-            width={350}
-            height={88}
+            width={210}
+            height={53}
             priority
-            className="-ml-2 lg:-ml-3.5 w-[200px] sm:w-[280px] lg:w-[350px] h-auto"
+            className="-ml-2 lg:-ml-3.5 w-[120px] sm:w-[168px] lg:w-[210px] h-auto"
           />
         </Link>
         <p className="text-white/60 text-sm mt-1">Training Statistics</p>

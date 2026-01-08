@@ -254,10 +254,10 @@ export function Header() {
       <Image
         src="/images/logo-lockup-1.svg"
         alt="RainCheck - Weather-aware Marathon Training"
-        width={350}
-        height={88}
+        width={210}
+        height={53}
         priority
-        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[260px] sm:w-[260px] md:w-[280px] lg:w-[350px] h-auto"
+        className="-ml-1 sm:-ml-2 lg:-ml-3.5 w-[156px] sm:w-[156px] md:w-[168px] lg:w-[210px] h-auto"
       />
 
       {/* Right: Actions + Weather info */}
