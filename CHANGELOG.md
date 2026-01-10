@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Public stats API endpoint (`GET /api/public/stats`) for external consumers (e.g., portfolio website)
+  - Returns training statistics: longestRun, totalRuns, totalDistance, updatedAt
+  - CORS enabled for ankushdixit.com, www.ankushdixit.com, and localhost:3000
+  - Cache headers for 5-minute caching with stale-while-revalidate
+  - No authentication required (public read-only data)
+  - Comprehensive test coverage (35 tests, 100% coverage)
 - IT Band recovery recommendations with detailed protocols for stretching, foam rolling, ice treatment, return to running, and warning signs
 - `FormattedDescription` component for markdown-like text formatting in recommendations (supports bold, bullet points, headers, emoji indicators)
 
