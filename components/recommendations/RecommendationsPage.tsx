@@ -222,9 +222,46 @@ interface PhaseSectionProps {
   onToggle: () => void;
 }
 
+/** Group recommendations by category */
+function groupByCategory(
+  recommendations: Recommendation[]
+): Record<RecommendationCategory, Recommendation[]> {
+  const grouped: Record<string, Recommendation[]> = {};
+
+  // Define category order
+  const categoryOrder: RecommendationCategory[] = [
+    "INJURY_PREVENTION",
+    "RECOVERY",
+    "NUTRITION",
+    "PACING",
+    "MENTAL",
+    "GEAR",
+  ];
+
+  // Initialize all categories
+  categoryOrder.forEach((cat) => {
+    grouped[cat] = [];
+  });
+
+  // Group recommendations
+  recommendations.forEach((rec) => {
+    if (grouped[rec.category]) {
+      grouped[rec.category].push(rec);
+    }
+  });
+
+  return grouped as Record<RecommendationCategory, Recommendation[]>;
+}
+
 function PhaseSection({ phase, recommendations, isExpanded, onToggle }: PhaseSectionProps) {
   const colors = getPhaseColorClasses(phase);
   const count = recommendations.length;
+  const groupedByCategory = groupByCategory(recommendations);
+
+  // Get categories that have recommendations
+  const categoriesWithRecs = Object.entries(groupedByCategory).filter(
+    ([, recs]) => recs.length > 0
+  ) as [RecommendationCategory, Recommendation[]][];
 
   return (
     <div
@@ -257,17 +294,39 @@ function PhaseSection({ phase, recommendations, isExpanded, onToggle }: PhaseSec
 
       {isExpanded && count > 0 && (
         <div className="border-t border-white/10 p-4">
-          <div className="space-y-3">
-            {recommendations.map((rec) => (
-              <RecommendationCard
-                key={rec.id}
-                recommendation={rec}
-                getCategoryColorClasses={getCategoryColorClasses}
-                formatCategoryName={formatCategoryName}
-                CategoryIcon={CategoryIcon}
-              />
-            ))}
-          </div>
+          {categoriesWithRecs.map(([category, recs]) => {
+            const catColors = getCategoryColorClasses(category);
+            return (
+              <div key={category} className="mb-6 last:mb-0">
+                {/* Category Header */}
+                <div className="mb-3 flex items-center gap-2">
+                  <span className={`rounded-full p-1.5 ${catColors.bg}`}>
+                    <span className={catColors.text}>
+                      <CategoryIcon category={category} />
+                    </span>
+                  </span>
+                  <h4 className={`text-sm font-semibold ${catColors.text}`}>
+                    {formatCategoryName(category)}
+                  </h4>
+                  <span className="text-xs text-white/40">({recs.length})</span>
+                </div>
+
+                {/* 3-Column Grid of Cards */}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {recs.map((rec) => (
+                    <RecommendationCard
+                      key={rec.id}
+                      recommendation={rec}
+                      getCategoryColorClasses={getCategoryColorClasses}
+                      formatCategoryName={formatCategoryName}
+                      CategoryIcon={CategoryIcon}
+                      hideCategoryBadge
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
