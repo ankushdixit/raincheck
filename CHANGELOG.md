@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- IT Band recovery recommendations with detailed protocols for stretching, foam rolling, ice treatment, return to running, and warning signs
+- `FormattedDescription` component for markdown-like text formatting in recommendations (supports bold, bullet points, headers, emoji indicators)
+
+### Changed
+
+- Recommendations page now displays cards in a responsive 3-column grid layout (3 cols on large screens, 2 on medium, 1 on mobile)
+- Recommendations within each phase are now grouped by category (Injury Prevention, Recovery, Nutrition, Pacing, Mental, Gear)
+- All 15 recommendations reformatted with structured content using headers, bullet points, and bold text for better readability
+- Category badges hidden on cards when already grouped by category to reduce visual redundancy
+- Cards now use flexbox with equal heights for consistent grid appearance
+- Updated seed tests to handle real-world data patterns (skipped runs with 0 distance and "-" for pace/duration, recovery weeks with 0 long run target)
+
+### Fixed
+
+- ESLint error with emoji regex in FormattedDescription (changed character class to non-capturing group)
+
+---
+
+## Previous Changes
+
 ### Changed
 
 - Updated logo to new whimsical cloud illustration design matching cover art aesthetic
