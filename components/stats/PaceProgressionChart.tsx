@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
  * Format pace seconds to M:SS string
  */
 function formatPace(seconds: number): string {
+  if (!isFinite(seconds) || seconds <= 0) return "--:--";
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -51,8 +52,10 @@ export function PaceProgressionChart() {
   const totalMinutes = (hours ?? 0) * 60 + (mins ?? 0) + (secs ?? 0) / 60;
   const targetPaceSeconds = (totalMinutes * 60) / 21.1; // Half marathon distance
 
-  // Filter weeks with valid pace data for scaling
-  const weeksWithPace = data.filter((d) => d.paceSeconds !== null);
+  // Filter weeks with valid pace data for scaling (exclude null and NaN)
+  const weeksWithPace = data.filter(
+    (d) => d.paceSeconds !== null && isFinite(d.paceSeconds) && d.paceSeconds > 0
+  );
 
   if (weeksWithPace.length === 0) {
     return (
@@ -90,10 +93,10 @@ export function PaceProgressionChart() {
     return ((paceSeconds - paddedMin) / paddedRange) * 100;
   };
 
-  // Calculate points for positioning
+  // Calculate points for positioning (filter out null and invalid values)
   const points = data
     .map((d, i) => {
-      if (d.paceSeconds === null) return null;
+      if (d.paceSeconds === null || !isFinite(d.paceSeconds) || d.paceSeconds <= 0) return null;
       const xPercent = ((i + 0.5) / data.length) * 100;
       const yPercent = getYPercent(d.paceSeconds);
       return { xPercent, yPercent, pace: d.paceSeconds, week: d.week };

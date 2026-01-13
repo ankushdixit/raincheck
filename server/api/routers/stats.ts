@@ -19,22 +19,25 @@ import { Phase, RunType } from "@prisma/client";
 /**
  * Convert pace string to seconds for calculations
  * @param pace - Pace in "M:SS" or "MM:SS" format
- * @returns Total seconds
+ * @returns Total seconds, or NaN for invalid input
  */
 function paceToSeconds(pace: string): number {
+  if (!pace || typeof pace !== "string") return NaN;
   const parts = pace.split(":");
-  const minutes = parseInt(parts[0] ?? "0", 10);
-  const seconds = parseInt(parts[1] ?? "0", 10);
+  if (parts.length < 2) return NaN;
+  const minutes = parseInt(parts[0] ?? "", 10);
+  const seconds = parseInt(parts[1] ?? "", 10);
+  if (isNaN(minutes) || isNaN(seconds)) return NaN;
   return minutes * 60 + seconds;
 }
 
 /**
  * Convert seconds to pace string format
  * @param totalSeconds - Total seconds
- * @returns Pace in "M:SS" format
+ * @returns Pace in "M:SS" format, or empty string for invalid input
  */
 function secondsToPace(totalSeconds: number): string {
-  if (totalSeconds <= 0) return "0:00";
+  if (!isFinite(totalSeconds) || totalSeconds <= 0) return "";
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.round(totalSeconds % 60);
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -457,6 +460,9 @@ export const statsRouter = createTRPCRouter({
         if (weekNum < 1 || weekNum > currentWeekNum) continue;
 
         const paceSeconds = paceToSeconds(run.pace);
+        // Skip runs with invalid pace data
+        if (!isFinite(paceSeconds) || paceSeconds <= 0) continue;
+
         const runTime = paceSeconds * run.distance; // Total time in seconds
 
         const existing = weeklyPaces.get(weekNum) ?? { totalDistance: 0, totalTime: 0 };
@@ -484,8 +490,11 @@ export const statsRouter = createTRPCRouter({
         let avgPace: string | null = null;
 
         if (weekData && weekData.totalDistance > 0) {
-          avgPaceSeconds = weekData.totalTime / weekData.totalDistance;
-          avgPace = secondsToPace(avgPaceSeconds);
+          const calculatedPace = weekData.totalTime / weekData.totalDistance;
+          if (isFinite(calculatedPace) && calculatedPace > 0) {
+            avgPaceSeconds = calculatedPace;
+            avgPace = secondsToPace(avgPaceSeconds);
+          }
         }
 
         result.push({
@@ -716,16 +725,19 @@ export const statsRouter = createTRPCRouter({
     }
 
     // Average pace (weighted by distance) - use the recent runs
+    // Skip runs with invalid pace data
     let totalWeightedSeconds = 0;
     let totalDistanceForPace = 0;
     for (const run of recentRuns) {
       const paceSeconds = paceToSeconds(run.pace);
+      if (!isFinite(paceSeconds) || paceSeconds <= 0) continue;
       totalWeightedSeconds += paceSeconds * run.distance;
       totalDistanceForPace += run.distance;
     }
     const avgPaceSeconds =
       totalDistanceForPace > 0 ? totalWeightedSeconds / totalDistanceForPace : 0;
-    const avgPace = avgPaceSeconds > 0 ? secondsToPace(avgPaceSeconds) : "";
+    const avgPace =
+      isFinite(avgPaceSeconds) && avgPaceSeconds > 0 ? secondsToPace(avgPaceSeconds) : "";
 
     // Current streak (consecutive weeks with >10km total mileage)
     let streak = 0;
