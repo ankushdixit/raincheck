@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - ESLint error with emoji regex in FormattedDescription (changed character class to non-capturing group)
+- Stats page Average Pace card and Pace Progression chart displaying `NaN:NaN` when runs have invalid/empty pace values
+  - Added validation in `paceToSeconds()` to return NaN for empty or malformed pace strings
+  - Added `isFinite()` checks in `secondsToPace()` to handle NaN inputs gracefully
+  - Updated `formatPace()` in PaceProgressionChart to display `--:--` for invalid values
+  - Fixed `getSummary` and `getPaceProgression` procedures to skip runs with invalid pace data
+  - Added proper filtering for NaN values in chart data using `isFinite()` checks
 
 ---
 
