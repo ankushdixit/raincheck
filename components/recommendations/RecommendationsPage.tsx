@@ -130,6 +130,8 @@ function PhaseIcon({ phase }: { phase: Phase | null }) {
       return <Mountain className={iconClass} />;
     case "BASE_EXTENSION":
       return <TrendingUp className={iconClass} />;
+    case "RECOVERY":
+      return <Moon className={iconClass} />;
     case "SPEED_DEVELOPMENT":
       return <Zap className={iconClass} />;
     case "PEAK_TAPER":
@@ -156,6 +158,11 @@ function getPhaseColorClasses(phase: Phase | null) {
       text: "text-blue-400",
       bg: "bg-blue-500/20",
       border: "border-blue-500/50",
+    },
+    RECOVERY: {
+      text: "text-teal-400",
+      bg: "bg-teal-500/20",
+      border: "border-teal-500/50",
     },
     SPEED_DEVELOPMENT: {
       text: "text-amber-400",
@@ -362,6 +369,7 @@ export default function RecommendationsPage() {
     null, // General
     "BASE_BUILDING",
     "BASE_EXTENSION",
+    "RECOVERY",
     "SPEED_DEVELOPMENT",
     "PEAK_TAPER",
   ];

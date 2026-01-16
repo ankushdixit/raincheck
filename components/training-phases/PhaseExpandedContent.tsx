@@ -35,7 +35,7 @@ interface PhaseData {
   coachTip: string;
   tableColumns: TableColumnKey[];
   resources: PhaseResource[];
-  status: "completed" | "in_progress" | "upcoming";
+  status: "completed" | "in_progress" | "upcoming" | "interrupted";
   weeks: WeekData[];
 }
 
@@ -55,6 +55,11 @@ function getColorClasses(color: string) {
       text: "text-blue-400",
       bg: "bg-blue-500/20",
       border: "border-blue-500/50",
+    },
+    teal: {
+      text: "text-teal-400",
+      bg: "bg-teal-500/20",
+      border: "border-teal-500/50",
     },
     amber: {
       text: "text-amber-400",

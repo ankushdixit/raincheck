@@ -71,6 +71,7 @@ export const recommendationsRouter = createTRPCRouter({
       GENERAL: [],
       BASE_BUILDING: [],
       BASE_EXTENSION: [],
+      RECOVERY: [],
       SPEED_DEVELOPMENT: [],
       PEAK_TAPER: [],
     };

@@ -164,8 +164,16 @@ describeFn("Database Seed", () => {
         expect(plans[i]?.phase).toBe("BASE_BUILDING");
       }
 
-      // Weeks 16-23: BASE_EXTENSION
-      for (let i = 15; i < 23; i++) {
+      // Week 16: BASE_EXTENSION (before injury)
+      expect(plans[15]?.phase).toBe("BASE_EXTENSION");
+
+      // Weeks 17-19: RECOVERY (injury recovery)
+      for (let i = 16; i < 19; i++) {
+        expect(plans[i]?.phase).toBe("RECOVERY");
+      }
+
+      // Weeks 20-23: BASE_EXTENSION (resumed after recovery)
+      for (let i = 19; i < 23; i++) {
         expect(plans[i]?.phase).toBe("BASE_EXTENSION");
       }
 
@@ -210,11 +218,12 @@ describeFn("Database Seed", () => {
       expect(baseBuildingPlans[0]?.longRunTarget).toBe(7);
       expect(baseBuildingPlans[baseBuildingPlans.length - 1]?.longRunTarget).toBe(14);
 
-      // BASE_EXTENSION: 0-15km → 18km (first week may be recovery with 0)
+      // BASE_EXTENSION: 0-14km (split by RECOVERY phase, W16 has 0km, W20-23 has 6-14km)
       const baseExtensionPlans = plans.filter((p) => p.phase === "BASE_EXTENSION");
-      // First week might be a recovery week with 0 long run target
-      expect(baseExtensionPlans[0]?.longRunTarget).toBeGreaterThanOrEqual(0);
-      expect(baseExtensionPlans[baseExtensionPlans.length - 1]?.longRunTarget).toBe(18);
+      // First week (W16) was interrupted by injury with 0 long run target
+      expect(baseExtensionPlans[0]?.longRunTarget).toBe(0);
+      // Last BASE_EXTENSION week (W23) targets 14km
+      expect(baseExtensionPlans[baseExtensionPlans.length - 1]?.longRunTarget).toBe(14);
 
       // SPEED_DEVELOPMENT: peaks at 20km
       const speedDevPlans = plans.filter((p) => p.phase === "SPEED_DEVELOPMENT");

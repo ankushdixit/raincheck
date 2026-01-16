@@ -3,12 +3,13 @@
 import { api } from "@/lib/api";
 
 /** Phase type from the database */
-type Phase = "BASE_BUILDING" | "BASE_EXTENSION" | "SPEED_DEVELOPMENT" | "PEAK_TAPER";
+type Phase = "BASE_BUILDING" | "BASE_EXTENSION" | "RECOVERY" | "SPEED_DEVELOPMENT" | "PEAK_TAPER";
 
 /** Color mapping for each training phase */
 const PHASE_COLORS: Record<Phase, string> = {
   BASE_BUILDING: "#3b82f6", // Blue
   BASE_EXTENSION: "#22c55e", // Green
+  RECOVERY: "#14b8a6", // Teal
   SPEED_DEVELOPMENT: "#f97316", // Orange
   PEAK_TAPER: "#f59e0b", // Amber
 };

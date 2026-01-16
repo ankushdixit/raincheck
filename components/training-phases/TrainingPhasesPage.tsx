@@ -158,6 +158,13 @@ function getColorClasses(color: string) {
       bgCompleted: "bg-blue-500/60",
       border: "border-blue-500/50",
     },
+    teal: {
+      text: "text-teal-400",
+      bg: "bg-teal-500/20",
+      bgInProgress: "bg-teal-500/40",
+      bgCompleted: "bg-teal-500/60",
+      border: "border-teal-500/50",
+    },
     amber: {
       text: "text-amber-400",
       bg: "bg-amber-500/20",
@@ -177,13 +184,24 @@ function getColorClasses(color: string) {
 }
 
 /** Status badge component */
-function StatusBadge({ status }: { status: "completed" | "in_progress" | "upcoming" }) {
+function StatusBadge({
+  status,
+}: {
+  status: "completed" | "in_progress" | "upcoming" | "interrupted";
+}) {
   switch (status) {
     case "completed":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
           <CheckCircle2 className="h-3.5 w-3.5" />
           Completed
+        </span>
+      );
+    case "interrupted":
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-400">
+          <Clock className="h-3.5 w-3.5" />
+          Interrupted
         </span>
       );
     case "in_progress":
@@ -299,9 +317,11 @@ export default function TrainingPhasesPage() {
                           className={`relative flex items-center justify-center ${
                             phase.status === "completed"
                               ? colors.bgCompleted
-                              : phase.status === "in_progress"
-                                ? colors.bgInProgress
-                                : "bg-white/10"
+                              : phase.status === "interrupted"
+                                ? "bg-amber-500/40"
+                                : phase.status === "in_progress"
+                                  ? colors.bgInProgress
+                                  : "bg-white/10"
                           } ${isFirst ? "rounded-l-lg" : ""} ${isLast ? "rounded-r-lg" : ""}`}
                           style={{ width: `${widthPercent}%` }}
                         >
@@ -373,7 +393,11 @@ export default function TrainingPhasesPage() {
                     <span className="text-white/60">Completed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="h-3 w-3 rounded bg-blue-500/40" />
+                    <div className="h-3 w-3 rounded bg-amber-500/40" />
+                    <span className="text-white/60">Interrupted</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-3 w-3 rounded bg-teal-500/40" />
                     <span className="text-white/60">In Progress</span>
                   </div>
                   <div className="flex items-center gap-1.5">

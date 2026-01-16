@@ -505,7 +505,7 @@ describe("Stats Router", () => {
       const caller = createCaller(await createTRPCContext({ headers: new Headers() }));
       const result = await caller.getCompletionRate();
 
-      expect(result.byPhase).toHaveLength(4);
+      expect(result.byPhase).toHaveLength(5); // BASE_BUILDING, BASE_EXTENSION, RECOVERY, SPEED_DEVELOPMENT, PEAK_TAPER
       expect(result.byPhase[0]).toHaveProperty("phase");
       expect(result.byPhase[0]).toHaveProperty("total");
       expect(result.byPhase[0]).toHaveProperty("completed");
