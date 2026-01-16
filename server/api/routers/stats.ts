@@ -233,6 +233,47 @@ const PHASE_METADATA: Record<Phase, PhaseMetadata> = {
       },
     ],
   },
+  [Phase.RECOVERY]: {
+    name: "Recovery",
+    description:
+      "Focus on healing and rehabilitation from injury. Prioritize rest, cross-training, and gradual return to running with reduced volume and intensity.",
+    focus: [
+      "Complete rest and healing",
+      "Low-impact cross-training",
+      "Gradual return to running",
+      "Injury prevention exercises",
+    ],
+    color: "teal",
+    science:
+      "Recovery phases are essential for tissue repair and adaptation. During this time, inflammation subsides, damaged muscle fibers regenerate, and connective tissues strengthen. Rushing back too soon increases re-injury risk significantly.",
+    successCriteria: [
+      "Pain-free movement in daily activities",
+      "Successful walk-run tests without symptoms",
+      "Gradual mileage rebuild without setbacks",
+      "Maintain fitness through cross-training",
+    ],
+    commonMistakes: [
+      "Returning to running too quickly",
+      "Ignoring warning signs and pushing through pain",
+      "Not addressing root cause of injury",
+      "Complete inactivity (losing too much fitness)",
+    ],
+    coachTip:
+      "Patience is your superpower during recovery. Each pain-free day is progress. Trust the process - your body knows how to heal if you give it the chance.",
+    tableColumns: ["week", "dates", "weeklyMileage", "status"],
+    resources: [
+      {
+        title: "IT Band Syndrome Recovery Guide",
+        url: "https://www.runnersworld.com/health-injuries/a20812117/itbs-treatment/",
+        source: "Runner's World",
+      },
+      {
+        title: "Return to Running After Injury",
+        url: "https://www.physio-pedia.com/Return_to_Running_After_Injury",
+        source: "Physiopedia",
+      },
+    ],
+  },
   [Phase.SPEED_DEVELOPMENT]: {
     name: "Speed Development",
     description:
@@ -633,6 +674,7 @@ export const statsRouter = createTRPCRouter({
         const phases = [
           Phase.BASE_BUILDING,
           Phase.BASE_EXTENSION,
+          Phase.RECOVERY,
           Phase.SPEED_DEVELOPMENT,
           Phase.PEAK_TAPER,
         ];
@@ -815,111 +857,155 @@ export const statsRouter = createTRPCRouter({
       runsByWeek.set(weekNum, existing);
     }
 
-    // Group training plans by phase
-    const phaseGroups = new Map<Phase, typeof trainingPlans>();
-    for (const plan of trainingPlans) {
-      const existing = phaseGroups.get(plan.phase) ?? [];
-      existing.push(plan);
-      phaseGroups.set(plan.phase, existing);
+    // Group training plans by contiguous phase segments
+    // This handles cases where a phase is split (e.g., BASE_EXTENSION interrupted by RECOVERY)
+    interface PhaseSegment {
+      phase: Phase;
+      weeks: typeof trainingPlans;
+      segmentIndex: number; // 0 = first/only, 1 = second segment after interruption
     }
 
-    // Build phase data
-    const phaseOrder: Phase[] = [
-      Phase.BASE_BUILDING,
-      Phase.BASE_EXTENSION,
-      Phase.SPEED_DEVELOPMENT,
-      Phase.PEAK_TAPER,
-    ];
+    const phaseSegments: PhaseSegment[] = [];
+    const phaseSegmentCounts = new Map<Phase, number>();
 
-    const phases = phaseOrder
-      .filter((phase) => phaseGroups.has(phase))
-      .map((phase) => {
-        const weeks = phaseGroups.get(phase)!;
-        const metadata = PHASE_METADATA[phase];
+    let currentSegment: PhaseSegment | null = null;
 
-        // Calculate phase date range
-        const startDate = weeks[0]!.weekStart;
-        const endDate = weeks[weeks.length - 1]!.weekEnd;
+    for (const plan of trainingPlans) {
+      // Check if this continues the current segment (same phase and consecutive week)
+      const continuesCurrent =
+        currentSegment &&
+        currentSegment.phase === plan.phase &&
+        currentSegment.weeks[currentSegment.weeks.length - 1]!.weekNumber === plan.weekNumber - 1;
 
-        // Determine phase status
-        let status: "completed" | "in_progress" | "upcoming";
-        if (currentWeekNum > weeks[weeks.length - 1]!.weekNumber) {
-          status = "completed";
-        } else if (currentWeekNum >= weeks[0]!.weekNumber) {
-          status = "in_progress";
-        } else {
-          status = "upcoming";
+      if (continuesCurrent && currentSegment) {
+        currentSegment.weeks.push(plan);
+      } else {
+        // Start a new segment
+        if (currentSegment) {
+          phaseSegments.push(currentSegment);
         }
 
-        // Build weekly data with actuals
-        const weeklyData = weeks.map((week) => {
-          const actuals = runsByWeek.get(week.weekNumber);
-          let weekStatus: "completed" | "current" | "upcoming";
-          if (week.weekNumber < currentWeekNum) {
-            weekStatus = "completed";
-          } else if (week.weekNumber === currentWeekNum) {
-            weekStatus = "current";
-          } else {
-            weekStatus = "upcoming";
-          }
+        const segmentIndex = phaseSegmentCounts.get(plan.phase) ?? 0;
+        phaseSegmentCounts.set(plan.phase, segmentIndex + 1);
 
-          return {
-            weekNumber: week.weekNumber,
-            weekStart: week.weekStart,
-            weekEnd: week.weekEnd,
-            longRunTarget: week.longRunTarget,
-            longRunActual: actuals?.longRunDistance ?? null,
-            weeklyMileageTarget: week.weeklyMileageTarget,
-            weeklyMileageActual: actuals ? Math.round(actuals.totalDistance * 100) / 100 : null,
-            status: weekStatus,
-          };
-        });
+        currentSegment = {
+          phase: plan.phase,
+          weeks: [plan],
+          segmentIndex,
+        };
+      }
+    }
 
-        // Calculate completion rate for this phase
-        const completedWeeks = weeklyData.filter(
-          (w) => w.status === "completed" && w.weeklyMileageActual !== null
-        );
-        const weeksWithMileage = completedWeeks.filter((w) => (w.weeklyMileageActual ?? 0) > 0);
-        const completionRate =
-          completedWeeks.length > 0
-            ? Math.round((weeksWithMileage.length / completedWeeks.length) * 100)
-            : null;
+    // Don't forget the last segment
+    if (currentSegment) {
+      phaseSegments.push(currentSegment);
+    }
 
-        // Calculate mileage and long run ranges
-        const mileageMin = Math.min(...weeks.map((w) => w.weeklyMileageTarget));
-        const mileageMax = Math.max(...weeks.map((w) => w.weeklyMileageTarget));
-        const longRunMin = Math.min(...weeks.map((w) => w.longRunTarget));
-        const longRunMax = Math.max(...weeks.map((w) => w.longRunTarget));
+    const phases = phaseSegments.map((segment) => {
+      const weeks = segment.weeks;
+      const metadata = PHASE_METADATA[segment.phase];
+      const isInterrupted =
+        segment.segmentIndex === 0 && (phaseSegmentCounts.get(segment.phase) ?? 0) > 1;
+      const isResumed = segment.segmentIndex > 0;
+
+      // Calculate phase date range
+      const startDate = weeks[0]!.weekStart;
+      const endDate = weeks[weeks.length - 1]!.weekEnd;
+
+      // Determine phase status
+      let status: "completed" | "in_progress" | "upcoming" | "interrupted";
+      if (currentWeekNum > weeks[weeks.length - 1]!.weekNumber) {
+        status = isInterrupted ? "interrupted" : "completed";
+      } else if (currentWeekNum >= weeks[0]!.weekNumber) {
+        status = "in_progress";
+      } else {
+        status = "upcoming";
+      }
+
+      // Build weekly data with actuals
+      const weeklyData = weeks.map((week) => {
+        const actuals = runsByWeek.get(week.weekNumber);
+        let weekStatus: "completed" | "current" | "upcoming";
+        if (week.weekNumber < currentWeekNum) {
+          weekStatus = "completed";
+        } else if (week.weekNumber === currentWeekNum) {
+          weekStatus = "current";
+        } else {
+          weekStatus = "upcoming";
+        }
 
         return {
-          id: phase,
-          name: metadata.name,
-          description: metadata.description,
-          focus: metadata.focus,
-          color: metadata.color,
-          // New rich content fields
-          science: metadata.science,
-          successCriteria: metadata.successCriteria,
-          commonMistakes: metadata.commonMistakes,
-          coachTip: metadata.coachTip,
-          tableColumns: metadata.tableColumns,
-          resources: metadata.resources,
-          // Existing computed fields
-          status,
-          startDate,
-          endDate,
-          duration: `${weeks.length} weeks`,
-          weekCount: weeks.length,
-          mileageRange:
-            mileageMin === mileageMax
-              ? `${mileageMin} km/week`
-              : `${mileageMin}-${mileageMax} km/week`,
-          longRunRange:
-            longRunMin === longRunMax ? `${longRunMin} km` : `${longRunMin}-${longRunMax} km`,
-          completionRate,
-          weeks: weeklyData,
+          weekNumber: week.weekNumber,
+          weekStart: week.weekStart,
+          weekEnd: week.weekEnd,
+          longRunTarget: week.longRunTarget,
+          longRunActual: actuals?.longRunDistance ?? null,
+          weeklyMileageTarget: week.weeklyMileageTarget,
+          weeklyMileageActual: actuals ? Math.round(actuals.totalDistance * 100) / 100 : null,
+          status: weekStatus,
         };
       });
+
+      // Calculate completion rate for this phase
+      const completedWeeks = weeklyData.filter(
+        (w) => w.status === "completed" && w.weeklyMileageActual !== null
+      );
+      const weeksWithMileage = completedWeeks.filter((w) => (w.weeklyMileageActual ?? 0) > 0);
+      const completionRate =
+        completedWeeks.length > 0
+          ? Math.round((weeksWithMileage.length / completedWeeks.length) * 100)
+          : null;
+
+      // Calculate mileage and long run ranges
+      const mileageMin = Math.min(...weeks.map((w) => w.weeklyMileageTarget));
+      const mileageMax = Math.max(...weeks.map((w) => w.weeklyMileageTarget));
+      const longRunMin = Math.min(...weeks.map((w) => w.longRunTarget));
+      const longRunMax = Math.max(...weeks.map((w) => w.longRunTarget));
+
+      // Generate unique ID for segment (includes segment index for split phases)
+      const segmentId = isResumed ? `${segment.phase}_resumed` : segment.phase;
+
+      // Generate display name (add context for interrupted/resumed phases)
+      let displayName = metadata.name;
+      if (isInterrupted) {
+        displayName = `${metadata.name} (Interrupted)`;
+      } else if (isResumed) {
+        displayName = `${metadata.name} (Resumed)`;
+      }
+
+      return {
+        id: segmentId,
+        phase: segment.phase, // Keep original phase for styling/icons
+        name: displayName,
+        description: metadata.description,
+        focus: metadata.focus,
+        color: metadata.color,
+        // New rich content fields
+        science: metadata.science,
+        successCriteria: metadata.successCriteria,
+        commonMistakes: metadata.commonMistakes,
+        coachTip: metadata.coachTip,
+        tableColumns: metadata.tableColumns,
+        resources: metadata.resources,
+        // Segment info
+        isInterrupted,
+        isResumed,
+        // Existing computed fields
+        status,
+        startDate,
+        endDate,
+        duration: `${weeks.length} week${weeks.length !== 1 ? "s" : ""}`,
+        weekCount: weeks.length,
+        mileageRange:
+          mileageMin === mileageMax
+            ? `${mileageMin} km/week`
+            : `${mileageMin}-${mileageMax} km/week`,
+        longRunRange:
+          longRunMin === longRunMax ? `${longRunMin} km` : `${longRunMin}-${longRunMax} km`,
+        completionRate,
+        weeks: weeklyData,
+      };
+    });
 
     // Find current phase
     const currentPhaseData = phases.find((p) => p.status === "in_progress") ?? null;

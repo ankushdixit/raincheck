@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **RECOVERY training phase** for injury rehabilitation periods
+  - New phase type in Prisma schema with teal color theme
+  - Phase-specific metadata: science explanation, success criteria, common mistakes, coach's tip
+  - IT Band recovery resources linked (Runner's World, Physiopedia)
+  - Supports split/interrupted phases in training timeline
+- **Split phase handling** in training phases display
+  - Phases can now be interrupted and resumed (e.g., BASE_EXTENSION → RECOVERY → BASE_EXTENSION)
+  - "Interrupted" status badge (amber) for phases cut short by injury
+  - "Resumed" label for phases continuing after recovery
+  - Timeline visualization correctly shows non-contiguous phase segments
+- Teal color scheme for Recovery phase across all components
+
+### Changed
+
+- Training plan structure updated for IT Band injury recovery:
+  - Week 16: Base Extension (Interrupted)
+  - Weeks 17-19: Recovery phase
+  - Weeks 20-23: Base Extension (Resumed)
+- Recovery runs (Jan 12, 16, 18, 20, 22, 25) changed from LONG_RUN/EASY_RUN to RECOVERY_RUN type
+- IT Band recommendations moved to RECOVERY phase (previously GENERAL)
+- Updated recommendation content with current recovery timeline (Jan 27-31 walk-run tests)
+- Timeline legend now shows "Interrupted" status indicator
+- "In Progress" legend color updated to teal to match Recovery phase
+
+### Fixed
+
+- Phase grouping now handles non-contiguous weeks of same phase type
+- Stats router `getCompletionRate` includes RECOVERY in phase breakdown
+- All phase-related components updated with RECOVERY support:
+  - PhaseBadge.tsx, InfoBoxes.tsx, RecommendationsPage.tsx
+  - PhaseExpandedContent.tsx, TrainingPhasesPage.tsx
+  - recommendations.ts router
+- Runs with 0 distance now correctly have "-" for pace and duration
+- Test expectations updated for new phase structure
+
+---
+
+## Previous Changes
+
+### Added
+
 - Public stats API endpoint (`GET /api/public/stats`) for external consumers (e.g., portfolio website)
   - Returns training statistics: longestRun, totalRuns, totalDistance, updatedAt
   - CORS enabled for ankushdixit.com, www.ankushdixit.com, and localhost:3000

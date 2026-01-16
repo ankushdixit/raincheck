@@ -15,7 +15,7 @@ import { calculateDaysUntil, formatRaceDate } from "@/components/countdown/RaceC
 const HALF_MARATHON_KM = 21.1;
 
 /** Phase type from the database */
-type Phase = "BASE_BUILDING" | "BASE_EXTENSION" | "SPEED_DEVELOPMENT" | "PEAK_TAPER";
+type Phase = "BASE_BUILDING" | "BASE_EXTENSION" | "RECOVERY" | "SPEED_DEVELOPMENT" | "PEAK_TAPER";
 
 /**
  * Shared box container styles
