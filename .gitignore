@@ -62,3 +62,6 @@ $RECYCLE.BIN/       # Windows
 
 # Marketing copy (private)
 /marketing-copy/
+
+# Symlink to local ideas inbox
+docs/ideas.md
